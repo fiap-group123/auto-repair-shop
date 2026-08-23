@@ -1,0 +1,77 @@
+[versions]
+kotlin = "2.3.21"
+springBoot = "4.1.1"
+springDependencyManagement = "1.1.7"
+springdoc = "3.1.0"
+mockk = "1.13.13"
+archunit = "1.3.0"
+kover = "0.9.1"
+detekt = "1.23.7"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+
+[libraries]
+# runtime — versoes gerenciadas pelo BOM do Spring Boot
+boot-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+boot-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+boot-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+boot-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+boot-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server" }
+boot-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+boot-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
+postgresql = { module = "org.postgresql:postgresql" }
+springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+# test — starters modulares do Boot 4
+boot-actuator-test = { module = "org.springframework.boot:spring-boot-starter-actuator-test" }
+boot-data-jpa-test = { module = "org.springframework.boot:spring-boot-starter-data-jpa-test" }
+boot-flyway-test = { module = "org.springframework.boot:spring-boot-starter-flyway-test" }
+boot-security-test = { module = "org.springframework.boot:spring-boot-starter-security-test" }
+boot-oauth2-resource-server-test = { module = "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test" }
+boot-validation-test = { module = "org.springframework.boot:spring-boot-starter-validation-test" }
+boot-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+
+[bundles]
+spring-runtime = [
+    "boot-actuator",
+    "boot-data-jpa",
+    "boot-flyway",
+    "boot-security",
+    "boot-oauth2-resource-server",
+    "boot-validation",
+    "boot-webmvc",
+]
+spring-test = [
+    "boot-actuator-test",
+    "boot-data-jpa-test",
+    "boot-flyway-test",
+    "boot-security-test",
+    "boot-oauth2-resource-server-test",
+    "boot-validation-test",
+    "boot-webmvc-test",
+]
+testing = [
+    "boot-testcontainers",
+    "kotlin-test-junit5",
+    "testcontainers-junit-jupiter",
+    "testcontainers-postgresql",
+    "mockk",
+    "archunit",
+]
