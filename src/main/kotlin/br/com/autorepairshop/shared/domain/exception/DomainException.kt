@@ -1,3 +1,3 @@
 package br.com.autorepairshop.shared.domain.exception
 
-sealed class DomainException(message: String) : RuntimeException(message)
+open class DomainException(message: String) : RuntimeException(message)
