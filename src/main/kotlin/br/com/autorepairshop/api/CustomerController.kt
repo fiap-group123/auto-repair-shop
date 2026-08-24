@@ -15,6 +15,7 @@ import br.com.autorepairshop.customer.application.usecase.vehicle.ListVehiclesBy
 import br.com.autorepairshop.customer.application.usecase.vehicle.RegisterVehicleUseCase
 import br.com.autorepairshop.api.dto.RegisterVehicleRequest
 import br.com.autorepairshop.api.dto.UpdateCustomerRequest
+import br.com.autorepairshop.customer.application.usecase.customer.ReactivateCustomerUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
@@ -25,18 +26,18 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import java.util.UUID
 
 @RestController
 @RequestMapping("/customers")
-@Tag(name = "Customer", description = "Cadastro de clientes e veículos (bounded context Customer)")
+@Tag(name = "Customer", description = "Customer and vehicle registration (bounded context Customer)")
 class CustomerController(
     private val registerCustomer: RegisterCustomerUseCase,
     private val updateCustomer: UpdateCustomerUseCase,
     private val deactivateCustomer: DeactivateCustomerUseCase,
+    private val reactivateCustomer: ReactivateCustomerUseCase,
     private val findCustomer: FindCustomerUseCase,
     private val findCustomerByDocument: FindCustomerByDocumentUseCase,
     private val listCustomers: ListCustomersUseCase,
@@ -45,7 +46,7 @@ class CustomerController(
 ) {
 
     @PostMapping
-    @Operation(summary = "Cadastrar cliente")
+    @Operation(summary = "Register customer")
     fun register(@RequestBody command: RegisterCustomerCommand): ResponseEntity<CustomerResponse> {
         val customer = registerCustomer.execute(command)
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -56,28 +57,32 @@ class CustomerController(
     }
 
     @GetMapping
-    @Operation(summary = "Listar clientes ou buscar por CPF/CNPJ")
-    fun list(@RequestParam(required = false) document: String?): ResponseEntity<Any> {
-        if (document != null) {
-            return ResponseEntity.ok(findCustomerByDocument.execute(document))
-        }
-        return ResponseEntity.ok(listCustomers.execute(Unit))
+    @Operation(summary = "List customers")
+    fun list(): ResponseEntity<List<CustomerResponse>> {
+        return ResponseEntity.ok(listCustomers.execute(input = Unit))
+    }
+
+    @GetMapping("/document/{document}")
+    @Operation(summary = "Search by CPF/CNPJ")
+    fun findByDocument(@PathVariable document: String): ResponseEntity<CustomerResponse> {
+        return ResponseEntity.ok(findCustomerByDocument.execute(input = document))
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar cliente por id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<CustomerResponse> =
-        ResponseEntity.ok(findCustomer.execute(id))
+    @Operation(summary = "Search for a customer by id")
+    fun findById(@PathVariable id: UUID): ResponseEntity<CustomerResponse> {
+        return  ResponseEntity.ok(findCustomer.execute(input = id))
+    }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar nome e contato")
+    @Operation(summary = "Update name and/or contact information")
     fun update(
         @PathVariable id: UUID,
         @RequestBody request: UpdateCustomerRequest,
-    ): ResponseEntity<CustomerResponse> =
-        ResponseEntity.ok(
+    ): ResponseEntity<CustomerResponse> {
+        return ResponseEntity.ok(
             updateCustomer.execute(
-                UpdateCustomerCommand(
+                input = UpdateCustomerCommand(
                     customerId = id,
                     name = request.name,
                     email = request.email,
@@ -85,22 +90,30 @@ class CustomerController(
                 )
             )
         )
+    }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Desativar cliente (não apaga o histórico)")
-    fun deactivate(@PathVariable id: UUID): ResponseEntity<Void> {
-        deactivateCustomer.execute(id)
+    @Operation(summary = "Deactivate customer (does not delete history)\n")
+    open fun deactivate(@PathVariable id: UUID): ResponseEntity<Void> {
+        deactivateCustomer.execute(input = id)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/{id}")
+    @Operation(summary = "Reactivate customer")
+    fun reactivate(@PathVariable id: UUID): ResponseEntity<Void> {
+        reactivateCustomer.execute(input = id)
         return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/{id}/vehicles")
-    @Operation(summary = "Cadastrar veículo do cliente")
-    fun registerVehicle(
+    @Operation(summary = "Register customer vehicle\n")
+    open fun registerVehicle(
         @PathVariable id: UUID,
         @RequestBody request: RegisterVehicleRequest,
     ): ResponseEntity<VehicleResponse> {
         val vehicle = registerVehicle.execute(
-            RegisterVehicleCommand(
+            input = RegisterVehicleCommand(
                 ownerId = id,
                 plate = request.plate,
                 brand = request.brand,
@@ -116,7 +129,8 @@ class CustomerController(
     }
 
     @GetMapping("/{id}/vehicles")
-    @Operation(summary = "Listar veículos do cliente")
-    fun listVehicles(@PathVariable id: UUID): ResponseEntity<List<VehicleResponse>> =
-        ResponseEntity.ok(listVehiclesByOwner.execute(id))
+    @Operation(summary = "List customer vehicles")
+    open fun listVehicles(@PathVariable id: UUID): ResponseEntity<List<VehicleResponse>> {
+        return ResponseEntity.ok(listVehiclesByOwner.execute(input = id))
+    }
 }

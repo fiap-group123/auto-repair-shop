@@ -1,6 +1,7 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
 import br.com.autorepairshop.customer.domain.event.CustomerDeactivated
+import br.com.autorepairshop.customer.domain.event.CustomerReactivated
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
@@ -50,9 +51,15 @@ class Customer private constructor(
         )
     }
 
-    fun reactivate() {
-        if (active) throw CustomerException.CustomerAlreadyExists(message = "Customer is already active.")
+    fun reactivate(at: Instant = Clock.System.now()) {
+        if (active) throw CustomerException.CustomerAlreadyActive(message = "Customer is already active.")
         active = true
+        registerEvent(
+            CustomerReactivated(
+                customerId = id,
+                occurredOn = at.toJavaInstant()
+            )
+        )
     }
 
     private fun requireActive() {

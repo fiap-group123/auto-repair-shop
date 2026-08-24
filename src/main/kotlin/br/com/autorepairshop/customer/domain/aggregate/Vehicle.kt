@@ -47,10 +47,10 @@ class Vehicle private constructor(
         plate = newPlate
     }
 
-    fun updateSpec(brand: String, model: String, year: ModelYear) {
-        this.brand = normalizeName(brand, field = "brand")
-        this.model = normalizeName(model, field = "model")
-        this.year = year
+    fun updateSpec(brand: String?, model: String?, year: ModelYear?) {
+        brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
+        model?.let { this.model = normalizeName(raw = it, field = "model") }
+        year?.let { this.year = it }
     }
 
     companion object {
@@ -65,8 +65,8 @@ class Vehicle private constructor(
             id = VehicleId.generate(),
             ownerId = ownerId,
             plate = plate,
-            brand = normalizeName(brand, field = "brand"),
-            model = normalizeName(model, field = "model"),
+            brand = normalizeName(raw = brand, field = "brand"),
+            model = normalizeName(raw = model, field = "model"),
             year = year,
             registeredAt = at,
         )

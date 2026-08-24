@@ -34,19 +34,27 @@ GET {{baseUrl}}/customers
 
 ###
 # Buscar por CPF/CNPJ (fluxo da OS)
-GET {{baseUrl}}/customers?document=529.982.247-25
+GET {{baseUrl}}/customers/document/52998224725
 
 ###
 # Buscar por id
 GET {{baseUrl}}/customers/{{customerId}}
 
 ###
-# Atualizar nome e contato
+# Atualizar só o nome
 PUT {{baseUrl}}/customers/{{customerId}}
 Content-Type: application/json
 
 {
-  "name": "Ana Souza Silva",
+  "name": "Ana Souza Silva"
+}
+
+###
+# Atualizar e-mail e telefone
+PUT {{baseUrl}}/customers/{{customerId}}
+Content-Type: application/json
+
+{
   "email": "ana.silva@email.com",
   "phone": "11988887777"
 }
@@ -90,14 +98,31 @@ GET {{baseUrl}}/vehicles/{{vehicleId}}
 GET {{baseUrl}}/vehicles?plate=ABC1D23
 
 ###
-# Atualizar marca, modelo e ano
+# Atualizar só o modelo
+PUT {{baseUrl}}/vehicles/{{vehicleId}}
+Content-Type: application/json
+
+{
+  "model": "Corolla Cross"
+}
+
+###
+# Atualizar marca e ano
 PUT {{baseUrl}}/vehicles/{{vehicleId}}
 Content-Type: application/json
 
 {
   "brand": "Toyota",
-  "model": "Corolla Cross",
   "year": 2025
+}
+
+###
+# Atualizar só a placa
+PUT {{baseUrl}}/vehicles/{{vehicleId}}
+Content-Type: application/json
+
+{
+  "plate": "XYZ1A23"
 }
 
 ###

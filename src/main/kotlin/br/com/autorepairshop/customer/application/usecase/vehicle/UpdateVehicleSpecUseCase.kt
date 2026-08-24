@@ -5,6 +5,7 @@ import br.com.autorepairshop.customer.application.dto.vehicle.VehicleResponse
 import br.com.autorepairshop.customer.application.dto.vehicle.toResponse
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
+import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.ModelYear
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
 import br.com.autorepairshop.shared.application.UseCase
@@ -20,12 +21,13 @@ class UpdateVehicleSpecUseCase(
     override fun execute(input: UpdateVehicleSpecCommand): VehicleResponse {
         val vehicle = vehicles.findById(VehicleId(input.vehicleId))
             ?: throw VehicleException.VehicleNotFound("Vehicle ${input.vehicleId} was not found.")
+
         vehicle.updateSpec(
             brand = input.brand,
             model = input.model,
-            year = ModelYear.of(input.year),
+            year = input.year?.let { ModelYear.of(year = it) },
         )
-        vehicles.save(vehicle)
+        vehicles.save(vehicle = vehicle)
         return vehicle.toResponse()
     }
 }

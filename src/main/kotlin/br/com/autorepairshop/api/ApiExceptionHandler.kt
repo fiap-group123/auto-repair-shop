@@ -9,21 +9,33 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
-class ApiExceptionHandler {
+open class ApiExceptionHandler {
 
-    @ExceptionHandler(CustomerException.CustomerNotFound::class, VehicleException.VehicleNotFound::class)
-    fun notFound(ex: DomainException): ProblemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message)
+    @ExceptionHandler(CustomerException::class)
+    open fun handleCustomer(ex: CustomerException): ProblemDetail = when (ex) {
+        is CustomerException.CustomerNotFound -> problem(status = HttpStatus.NOT_FOUND, ex)
+        is CustomerException.CustomerAlreadyExists -> problem(status = HttpStatus.CONFLICT, ex)
+        is CustomerException.CustomerAlreadyActive,
+        is CustomerException.InvalidDocument,
+        is CustomerException.InvalidPersonName,
+        is CustomerException.InvalidPhoneNumber,
+        is CustomerException.InvalidEmailAddress -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex)
+    }
 
-    @ExceptionHandler(
-        CustomerException.CustomerAlreadyExists::class,
-        VehicleException.VehicleAlreadyExists::class,
-        VehicleException.AlreadyOwnedByCustomer::class,
-    )
-    fun conflict(ex: DomainException): ProblemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message)
+    @ExceptionHandler(VehicleException::class)
+    open fun handleVehicle(ex: VehicleException): ProblemDetail = when (ex) {
+        is VehicleException.VehicleNotFound -> problem(status = HttpStatus.NOT_FOUND, ex)
+        is VehicleException.VehicleAlreadyExists,
+        is VehicleException.AlreadyOwnedByCustomer -> problem(status = HttpStatus.CONFLICT, ex)
+        is VehicleException.InvalidLicensePlate,
+        is VehicleException.InvalidModelYear,
+        is VehicleException.InvalidVehicleName -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex)
+    }
 
     @ExceptionHandler(DomainException::class)
-    fun unprocessable(ex: DomainException): ProblemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.message)
+    open fun handleDomain(ex: DomainException): ProblemDetail =
+        problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex)
+
+    private fun problem(status: HttpStatus, ex: DomainException): ProblemDetail =
+        ProblemDetail.forStatusAndDetail(status, ex.message)
 }

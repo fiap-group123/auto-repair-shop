@@ -37,24 +37,26 @@ class VehicleController(
 ) {
 
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar veículo por id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<VehicleResponse> =
-        ResponseEntity.ok(findVehicle.execute(id))
+    @Operation(summary = "Search for vehicle by id")
+    fun findById(@PathVariable id: UUID): ResponseEntity<VehicleResponse> {
+        return ResponseEntity.ok(findVehicle.execute(input = id))
+    }
 
     @GetMapping
-    @Operation(summary = "Buscar veículo por placa")
-    fun findByPlate(@RequestParam plate: String): ResponseEntity<VehicleResponse> =
-        ResponseEntity.ok(findVehicleByPlate.execute(plate))
+    @Operation(summary = "Search for vehicle by license plate")
+    fun findByPlate(@RequestParam plate: String): ResponseEntity<VehicleResponse> {
+        return ResponseEntity.ok(findVehicleByPlate.execute(input = plate))
+    }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar marca, modelo e ano")
+    @Operation(summary = "Update brand, model and/or year")
     fun updateSpec(
         @PathVariable id: UUID,
         @RequestBody request: UpdateVehicleSpecRequest,
-    ): ResponseEntity<VehicleResponse> =
-        ResponseEntity.ok(
+    ): ResponseEntity<VehicleResponse> {
+        return ResponseEntity.ok(
             updateVehicleSpec.execute(
-                UpdateVehicleSpecCommand(
+                input = UpdateVehicleSpecCommand(
                     vehicleId = id,
                     brand = request.brand,
                     model = request.model,
@@ -62,28 +64,31 @@ class VehicleController(
                 )
             )
         )
+    }
 
     @PatchMapping("/{id}/plate")
-    @Operation(summary = "Alterar placa")
+    @Operation(summary = "Change license plate")
     fun changePlate(
         @PathVariable id: UUID,
         @RequestBody request: ChangeVehiclePlateRequest,
-    ): ResponseEntity<VehicleResponse> =
-        ResponseEntity.ok(
+    ): ResponseEntity<VehicleResponse> {
+        return ResponseEntity.ok(
             changeVehiclePlate.execute(
-                ChangeVehiclePlateCommand(vehicleId = id, plate = request.plate)
+                input = ChangeVehiclePlateCommand(vehicleId = id, plate = request.plate)
             )
         )
+    }
 
     @PatchMapping("/{id}/owner")
-    @Operation(summary = "Transferir veículo para outro cliente")
+    @Operation(summary = "Transfer vehicle to another customer")
     fun transfer(
         @PathVariable id: UUID,
         @RequestBody request: TransferVehicleRequest,
-    ): ResponseEntity<VehicleResponse> =
-        ResponseEntity.ok(
+    ): ResponseEntity<VehicleResponse> {
+        return ResponseEntity.ok(
             transferVehicle.execute(
-                TransferVehicleCommand(vehicleId = id, newOwnerId = request.newOwnerId)
+                input = TransferVehicleCommand(vehicleId = id, newOwnerId = request.newOwnerId)
             )
         )
+    }
 }

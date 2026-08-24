@@ -10,16 +10,17 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class DeactivateCustomerUseCase(
+class ReactivateCustomerUseCase(
     private val customers: CustomerRepository,
     private val events: EventPublisher,
 ) : UseCase<UUID, Unit> {
 
     @Transactional
     override fun execute(input: UUID) {
-        val customer = customers.findById(CustomerId(value = input))
-            ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
-        customer.deactivate()
+        val customer = customers.findById(
+            id = CustomerId(value = input)
+        ) ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
+        customer.reactivate()
         customers.save(customer = customer)
         events.publish(aggregate = customer)
     }

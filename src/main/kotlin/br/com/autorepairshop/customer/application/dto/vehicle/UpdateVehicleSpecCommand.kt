@@ -4,7 +4,7 @@ import java.util.UUID
 
 data class UpdateVehicleSpecCommand(
     val vehicleId: UUID,
-    val brand: String,
-    val model: String,
-    val year: Int,
+    val brand: String? = null,
+    val model: String? = null,
+    val year: Int? = null,
 )
