@@ -1,4 +1,4 @@
-package br.com.autorepairshop.customer.valueobject.contact
+package br.com.autorepairshop.customer.domain.valueobject.contact
 
 import br.com.autorepairshop.shared.domain.ValueObject
 

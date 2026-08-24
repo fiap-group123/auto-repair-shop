@@ -1,4 +1,4 @@
-package br.com.autorepairshop.customer.valueobject
+package br.com.autorepairshop.customer.domain.valueobject.vehicle
 
 import br.com.autorepairshop.shared.domain.ValueObject
 import java.util.UUID

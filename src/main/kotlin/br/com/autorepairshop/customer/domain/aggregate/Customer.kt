@@ -1,13 +1,15 @@
-package br.com.autorepairshop.customer
+package br.com.autorepairshop.customer.domain.aggregate
 
-import br.com.autorepairshop.customer.exception.CustomerException
-import br.com.autorepairshop.customer.valueobject.contact.ContactInfo
-import br.com.autorepairshop.customer.valueobject.customer.CustomerId
-import br.com.autorepairshop.customer.valueobject.customer.PersonName
-import br.com.autorepairshop.customer.valueobject.document.DocumentId
+import br.com.autorepairshop.customer.domain.event.CustomerDeactivated
+import br.com.autorepairshop.customer.domain.exception.CustomerException
+import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
+import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
+import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
+import br.com.autorepairshop.customer.domain.valueobject.document.DocumentId
 import br.com.autorepairshop.shared.domain.AggregateRoot
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 class Customer private constructor(
     id: CustomerId,
@@ -17,6 +19,7 @@ class Customer private constructor(
     active: Boolean,
     val registeredAt: Instant,
 ) : AggregateRoot<CustomerId>(id){
+
     var name: PersonName = name
         private set
 
@@ -39,17 +42,23 @@ class Customer private constructor(
     fun deactivate(at: Instant = Clock.System.now()) {
         requireActive()
         active = false
-        // registerEvent(CustomerDeactivated(id.value, at))
+        registerEvent(
+            CustomerDeactivated(
+                customerId = id,
+                occurredOn = at.toJavaInstant()
+            )
+        )
     }
+
     fun reactivate() {
-        if (active) throw CustomerException.CustomerAlreadyExists("Customer is already active")
+        if (active) throw CustomerException.CustomerAlreadyExists(message = "Customer is already active.")
         active = true
     }
 
     private fun requireActive() {
-        if (!active) throw CustomerException.InvalidDocument("Customer ${documentId.masked()} is inactive")
+        if (!active) throw CustomerException.InvalidDocument(message = "Customer ${documentId.masked()} is inactive.")
     }
-
+    
     companion object {
         fun register(
             documentId: DocumentId,
@@ -59,7 +68,8 @@ class Customer private constructor(
         ) = Customer(
             id = CustomerId.generate(),
             documentId = documentId,
-            name = name, contact,
+            name = name, 
+            contact = contact,
             active = true,
             registeredAt = at
         )

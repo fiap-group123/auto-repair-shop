@@ -1,4 +1,4 @@
-package br.com.autorepairshop.customer.exception
+package br.com.autorepairshop.customer.domain.exception
 
 import br.com.autorepairshop.shared.domain.exception.DomainException
 

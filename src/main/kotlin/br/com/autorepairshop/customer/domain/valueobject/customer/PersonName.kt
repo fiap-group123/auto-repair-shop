@@ -1,6 +1,6 @@
-package br.com.autorepairshop.customer.valueobject.customer
+package br.com.autorepairshop.customer.domain.valueobject.customer
 
-import br.com.autorepairshop.customer.exception.CustomerException
+import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.shared.domain.ValueObject
 
 @JvmInline
