@@ -27,7 +27,7 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/vehicles")
-@Tag(name = "Vehicle", description = "Consulta e alteração de veículos")
+@Tag(name = "Vehicle", description = "Vehicle search and modification")
 class VehicleController(
     private val findVehicle: FindVehicleUseCase,
     private val findVehicleByPlate: FindVehicleByPlateUseCase,
