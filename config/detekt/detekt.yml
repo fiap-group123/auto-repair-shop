@@ -1,0 +1,35 @@
+complexity:
+  TooManyFunctions:
+    ignoreAnnotated:
+      - RestController
+      - RestControllerAdvice
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated:
+      - Composable
+      - Test
+      - ParameterizedTest
+
+style:
+  MaxLineLength:
+    maxLineLength: 120
+    excludePackageStatements: true
+    excludeImportStatements: true
+    excludeCommentStatements: true
+    excludeRawStrings: true
+  MagicNumber:
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignoreExtensionFunctions: true
+  WildcardImport:
+    active: true

@@ -46,6 +46,18 @@ Não use `bootTestRun` a menos que o Docker esteja de pé: esse modo sobe o Post
 
 O arquivo `.http` cobre cadastro de cliente, veículo, busca por CPF/placa e os erros (documento inválido, placa duplicada, cliente inativo). Execute na ordem: os primeiros `POST` gravam os ids para as próximas chamadas.
 
+## Qualidade
+
+Detekt analisa o Kotlin (type resolution em `main`). Relatório HTML em `build/reports/detekt/`.
+
+```bash
+./gradlew detekt
+./gradlew detektMain
+./gradlew check
+```
+
+`check` inclui `detektMain` e falha se houver finding.
+
 ## Parar
 
 ```bash

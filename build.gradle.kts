@@ -51,6 +51,28 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+detekt {
+    buildUponDefaultConfig = true
+    allRules = false
+    parallel = true
+    ignoreFailures = false
+    config.setFrom(files("config/detekt/detekt.yml"))
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    jvmTarget = "17"
+    reports {
+        html.required.set(true)
+        xml.required.set(false)
+        txt.required.set(true)
+        sarif.required.set(true)
+    }
+}
+
+tasks.named("check") {
+    dependsOn("detektMain")
+}
+
 kover {
     reports {
         verify {
