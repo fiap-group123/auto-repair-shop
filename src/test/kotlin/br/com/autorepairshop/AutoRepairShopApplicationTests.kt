@@ -10,6 +10,7 @@ class AutoRepairShopApplicationTests {
 
     @Test
     fun contextLoads() {
+        // smoke test: Spring context starts with Testcontainers
     }
 
 }

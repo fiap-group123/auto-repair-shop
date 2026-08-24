@@ -59,12 +59,11 @@ detekt {
     config.setFrom(files("config/detekt/detekt.yml"))
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = "17"
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    jvmTarget.set("17")
     reports {
         html.required.set(true)
-        xml.required.set(false)
-        txt.required.set(true)
+        checkstyle.required.set(false)
         sarif.required.set(true)
     }
 }

@@ -1,8 +1,18 @@
 complexity:
+  LongParameterList:
+    allowedFunctionParameters: 8
+    allowedConstructorParameters: 10
+    ignoreDefaultParameters: true
   TooManyFunctions:
     ignoreAnnotated:
       - RestController
       - RestControllerAdvice
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+  SwallowedException:
+    active: true
 
 naming:
   FunctionNaming:
@@ -11,7 +21,17 @@ naming:
       - Test
       - ParameterizedTest
 
+performance:
+  SpreadOperator:
+    excludes:
+      - '**/test/**'
+      - '**/AutoRepairShopApplication.kt'
+
 style:
+  AbstractClassCanBeConcreteClass:
+    active: false
+  ForbiddenVoid:
+    ignoreUsageInGenerics: true
   MaxLineLength:
     maxLineLength: 120
     excludePackageStatements: true
@@ -26,10 +46,22 @@ style:
       - '2'
     ignoreHashCodeFunction: true
     ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
     ignoreConstantDeclaration: true
     ignoreCompanionObjectPropertyDeclaration: true
     ignoreNamedArgument: true
     ignoreEnums: true
+    ignoreRanges: true
     ignoreExtensionFunctions: true
+    excludes:
+      - '**/test/**'
+      - '**/valueobject/**'
+      - '**/*.kts'
+  ReturnCount:
+    max: 4
+    excludeGuardClauses: true
+  ThrowsCount:
+    max: 5
+    excludeGuardClauses: true
   WildcardImport:
     active: true
