@@ -1,0 +1,26 @@
+package br.com.autorepairshop.customer.application.usecase.customer
+
+import br.com.autorepairshop.customer.domain.exception.CustomerException
+import br.com.autorepairshop.customer.domain.repository.CustomerRepository
+import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
+import br.com.autorepairshop.shared.application.UseCase
+import br.com.autorepairshop.shared.application.event.EventPublisher
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
+
+@Service
+class DeactivateCustomerUseCase(
+    private val customers: CustomerRepository,
+    private val events: EventPublisher,
+) : UseCase<UUID, Unit> {
+
+    @Transactional
+    override fun execute(input: UUID) {
+        val customer = customers.findById(CustomerId(input))
+            ?: throw CustomerException.CustomerNotFound("Customer $input was not found.")
+        customer.deactivate()
+        customers.save(customer)
+        events.publish(customer)
+    }
+}

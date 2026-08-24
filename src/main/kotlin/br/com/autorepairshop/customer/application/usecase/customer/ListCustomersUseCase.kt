@@ -1,0 +1,18 @@
+package br.com.autorepairshop.customer.application.usecase.customer
+
+import br.com.autorepairshop.customer.application.dto.customer.CustomerResponse
+import br.com.autorepairshop.customer.application.dto.customer.toResponse
+import br.com.autorepairshop.customer.domain.repository.CustomerRepository
+import br.com.autorepairshop.shared.application.UseCase
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+class ListCustomersUseCase(
+    private val customers: CustomerRepository,
+) : UseCase<Unit, List<CustomerResponse>> {
+
+    @Transactional(readOnly = true)
+    override fun execute(input: Unit): List<CustomerResponse> =
+        customers.findAll().map { it.toResponse() }
+}
