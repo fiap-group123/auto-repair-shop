@@ -1,0 +1,185 @@
+@baseUrl = http://localhost:8080
+
+###
+# Cadastro — primeiro usuário deve ser MANAGER (banco vazio)
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123",
+  "role": "MANAGER"
+}
+
+###
+# Login — gerente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {% client.global.set("managerToken", response.body.accessToken); %}
+
+###
+# Cadastro — recepcionista
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "recepcao@oficina.com",
+  "password": "senha123",
+  "role": "RECEPTIONIST"
+}
+
+###
+# Cadastro — mecânico
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "mecanico@oficina.com",
+  "password": "senha123",
+  "role": "MECHANIC"
+}
+
+###
+# Cadastro de cliente da oficina (necessário para vincular o user CLIENT)
+POST {{baseUrl}}/customers
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "documentId": "529.982.247-25",
+  "name": "Ana Souza",
+  "email": "ana.souza@email.com",
+  "phone": "11987654321"
+}
+
+> {% client.global.set("customerId", response.body.id); %}
+
+###
+# Cadastro — cliente (CLIENT precisa de customerId)
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "ana.souza@email.com",
+  "password": "senha123",
+  "role": "CLIENT",
+  "customerId": "{{customerId}}"
+}
+
+###
+# Login — recepcionista
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "recepcao@oficina.com",
+  "password": "senha123"
+}
+
+> {% client.global.set("receptionistToken", response.body.accessToken); %}
+
+###
+# Login — mecânico
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "mecanico@oficina.com",
+  "password": "senha123"
+}
+
+> {% client.global.set("mechanicToken", response.body.accessToken); %}
+
+###
+# Login — cliente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ana.souza@email.com",
+  "password": "senha123"
+}
+
+> {% client.global.set("clientToken", response.body.accessToken); %}
+
+###
+# Primeiro usuário com papel errado — espera 422 (somente com banco vazio)
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "primeiro@oficina.com",
+  "password": "senha123",
+  "role": "RECEPTIONIST"
+}
+
+###
+# E-mail duplicado — espera 409
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "outra-senha",
+  "role": "MANAGER"
+}
+
+###
+# Credenciais inválidas — espera 401
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "errada"
+}
+
+###
+# E-mail inválido — espera 422
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nao-eh-email",
+  "password": "senha123"
+}
+
+###
+# Papel desconhecido — espera 422
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "desconhecido@oficina.com",
+  "password": "senha123",
+  "role": "ADMIN"
+}
+
+###
+# CLIENT sem customerId — espera 422
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "cliente.sem.vinculo@oficina.com",
+  "password": "senha123",
+  "role": "CLIENT"
+}
+
+###
+# Staff com customerId — espera 422
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "mecanico.vinculado@oficina.com",
+  "password": "senha123",
+  "role": "MECHANIC",
+  "customerId": "{{customerId}}"
+}
