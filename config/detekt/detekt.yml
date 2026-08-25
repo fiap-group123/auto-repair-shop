@@ -1,0 +1,198 @@
+# Overrides on detekt defaults (buildUponDefaultConfig).
+# Kotlin: https://kotlinlang.org/docs/coding-conventions.html
+# Detekt: https://detekt.dev/docs/next/intro
+
+config:
+  validation: true
+  warningsAsErrors: true
+
+complexity:
+  CognitiveComplexMethod:
+    active: true
+  CyclomaticComplexMethod:
+    ignoreSingleWhenExpression: true
+  LongParameterList:
+    allowedFunctionParameters: 8
+    allowedConstructorParameters: 10
+    ignoreDefaultParameters: true
+  NamedArguments:
+    active: true
+    allowedArguments: 0
+    ignoreArgumentsMatchingNames: false
+  TooManyFunctions:
+    ignoreAnnotated:
+      - RestController
+      - RestControllerAdvice
+    ignoreOverridden: true
+    ignorePrivate: true
+
+coroutines:
+  CoroutineLaunchedInTestWithoutRunTest:
+    active: true
+  GlobalCoroutineUsage:
+    active: true
+  SuspendFunInFinallySection:
+    active: true
+  SuspendFunSwallowedCancellation:
+    active: true
+  SuspendFunWithCoroutineScopeReceiver:
+    active: true
+
+exceptions:
+  ErrorUsageWithThrowable:
+    active: true
+  NotImplementedDeclaration:
+    active: true
+  ObjectExtendsThrowable:
+    active: true
+  SwallowedException:
+    active: true
+  TooGenericExceptionCaught:
+    active: true
+  TooGenericExceptionThrown:
+    active: true
+
+naming:
+  FunctionNaming:
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+    ignoreAnnotated:
+      - Composable
+      - Test
+      - ParameterizedTest
+      - RepeatedTest
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+  LambdaParameterNaming:
+    active: true
+  NonBooleanPropertyPrefixedWithIs:
+    active: true
+
+performance:
+  SpreadOperator:
+    excludes:
+      - '**/test/**'
+      - '**/AutoRepairShopApplication.kt'
+  UnnecessaryTypeCasting:
+    active: true
+
+potential-bugs:
+  CastNullableToNonNullableType:
+    active: true
+  CastToNullableType:
+    active: true
+  ElseCaseInsteadOfExhaustiveWhen:
+    active: true
+  NullCheckOnMutableProperty:
+    active: true
+  UnconditionalJumpStatementInLoop:
+    active: true
+  UnnecessaryNotNullCheck:
+    active: true
+  UnsafeCallOnNullableType:
+    active: true
+
+style:
+  AbstractClassCanBeConcreteClass:
+    active: false
+  AlsoCouldBeApply:
+    active: true
+  BracesOnIfStatements:
+    active: false
+  CanBeNonNullable:
+    active: true
+  ClassOrdering:
+    active: true
+  CollapsibleIfStatements:
+    active: true
+  DoubleNegativeLambda:
+    active: true
+  ExplicitCollectionElementAccessMethod:
+    active: true
+  ForbiddenImport:
+    active: true
+    forbiddenImports:
+      - 'java.util.ArrayList'
+      - 'java.util.HashMap'
+      - 'java.util.HashSet'
+      - 'java.util.LinkedList'
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - reason: 'Use a logger instead of stdout'
+        value: 'kotlin.io.println'
+      - reason: 'Use a logger instead of stdout'
+        value: 'kotlin.io.print'
+  ForbiddenVoid:
+    ignoreUsageInGenerics: true
+  MandatoryBracesLoops:
+    active: false
+  MaxLineLength:
+    active: false
+  ModifierOrder:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  NoTabs:
+    active: false
+  TrailingWhitespace:
+    active: false
+  UnusedImport:
+    active: false
+  WildcardImport:
+    active: false
+  MagicNumber:
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignoreRanges: true
+    ignoreExtensionFunctions: true
+    excludes:
+      - '**/test/**'
+      - '**/valueobject/**'
+      - '**/*.kts'
+  MultilineLambdaItParameter:
+    active: true
+  NullableBooleanCheck:
+    active: true
+  RangeUntilInsteadOfRangeTo:
+    active: true
+  ReturnCount:
+    max: 4
+    excludeGuardClauses: true
+  ThrowsCount:
+    max: 5
+    excludeGuardClauses: true
+  UnnecessaryInnerClass:
+    active: true
+  UnnecessaryLet:
+    active: true
+  UseEmptyCounterpart:
+    active: true
+  UseIfEmptyOrIfBlank:
+    active: true
+  UseIsNullOrEmpty:
+    active: true
+  UseOrEmpty:
+    active: true
+
+ktlint:
+  active: true
+  code_style: intellij_idea
+  autoCorrect: true
+  ClassSignature:
+    forceMultilineWhenParameterCountGreaterOrEqualThan: "2"
+  FunctionSignature:
+    forceMultilineWhenParameterCountGreaterOrEqualThan: 2
+  MaximumLineLength:
+    maxLineLength: 120
+    ignoreBackTickedIdentifier: true

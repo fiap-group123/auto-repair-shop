@@ -11,25 +11,20 @@ import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
 @Repository
-class VehicleRepositoryImpl(
-    private val jpa: VehicleJpaRepository,
-) : VehicleRepository {
+class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepository {
 
     override fun save(vehicle: Vehicle) {
         jpa.save(vehicle.toEntity())
     }
 
-    override fun findById(id: VehicleId): Vehicle? =
-        jpa.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findById(id: VehicleId): Vehicle? = jpa.findById(id.value).map { it.toDomain() }.orElse(null)
 
-    override fun findByPlate(plate: LicensePlate): Vehicle? =
-        jpa.findByPlate(plate.value)?.toDomain()
+    override fun findByPlate(plate: LicensePlate): Vehicle? = jpa.findByPlate(plate = plate.value)?.toDomain()
 
     override fun findByOwner(ownerId: CustomerId): List<Vehicle> =
-        jpa.findAllByOwnerId(ownerId.value).map { it.toDomain() }
+        jpa.findAllByOwnerId(ownerId = ownerId.value).map(transform = { it.toDomain() })
 
-    override fun existsByPlate(plate: LicensePlate): Boolean =
-        jpa.existsByPlate(plate.value)
+    override fun existsByPlate(plate: LicensePlate): Boolean = jpa.existsByPlate(plate = plate.value)
 
     private fun Vehicle.toEntity() = VehicleEntity(
         id = id.value,
@@ -42,12 +37,12 @@ class VehicleRepositoryImpl(
     )
 
     private fun VehicleEntity.toDomain() = Vehicle.rehydrate(
-        id = VehicleId(id),
-        ownerId = CustomerId(ownerId),
-        plate = LicensePlate.of(plate),
+        id = VehicleId(value = id),
+        ownerId = CustomerId(value = ownerId),
+        plate = LicensePlate.of(raw = plate),
         brand = brand,
         model = model,
-        year = ModelYear.of(year),
+        year = ModelYear.of(year = year),
         registeredAt = registeredAt.toKotlinInstant(),
     )
 }

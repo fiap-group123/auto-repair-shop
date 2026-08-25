@@ -6,5 +6,5 @@ import java.time.Instant
 
 data class CustomerReactivated(
     val customerId: CustomerId,
-    override val occurredOn: Instant
+    override val occurredOn: Instant,
 ) : DomainEvent

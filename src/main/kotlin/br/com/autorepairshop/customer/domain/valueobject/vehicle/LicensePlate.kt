@@ -10,32 +10,35 @@ value class LicensePlate private constructor(val value: String) : ValueObject {
         get() = if (value[4].isLetter()) LicensePlateType.MERCOSUL else LicensePlateType.NATIONAl
 
     fun formatted(): String = when (type) {
-        LicensePlateType.NATIONAl -> "${value.substring(0, 3)}-${value.substring(3)}"
+        LicensePlateType.NATIONAl ->
+            "${value.substring(startIndex = 0, endIndex = 3)}-${value.substring(startIndex = 3)}"
+
         LicensePlateType.MERCOSUL -> value
     }
 
     override fun toString(): String = formatted()
 
     companion object {
-        private val NATIONAL = Regex("^[A-Z]{3}[0-9]{4}$")
-        private val MERCOSUL = Regex("^[A-Z]{3}[0-9][A-Z][0-9]{2}$")
+        private val NATIONAL = Regex(pattern = "^[A-Z]{3}[0-9]{4}$")
+        private val MERCOSUL = Regex(pattern = "^[A-Z]{3}[0-9][A-Z][0-9]{2}$")
 
         fun of(raw: String): LicensePlate {
-            val normalized = normalize(raw)
-            if (!isValidNormalized(normalized)) {
-                throw VehicleException.InvalidLicensePlate("Invalid license plate: $raw")
+            val normalized = normalize(raw = raw)
+            if (!isValidNormalized(candidate = normalized)) {
+                throw VehicleException.InvalidLicensePlate(message = "Invalid license plate: $raw")
             }
-            return LicensePlate(normalized)
+            return LicensePlate(value = normalized)
         }
 
-        fun ofOrNull(raw: String): LicensePlate? =
-            normalize(raw).takeIf(::isValidNormalized)?.let(::LicensePlate)
+        fun ofOrNull(raw: String): LicensePlate? = normalize(raw = raw)
+            .takeIf(predicate = ::isValidNormalized)
+            ?.let(block = ::LicensePlate)
 
-        fun isValid(raw: String): Boolean = isValidNormalized(normalize(raw))
+        fun isValid(raw: String): Boolean = isValidNormalized(candidate = normalize(raw = raw))
 
-        private fun normalize(raw: String) = raw.uppercase().filter(Char::isLetterOrDigit)
+        private fun normalize(raw: String) = raw.uppercase().filter(predicate = Char::isLetterOrDigit)
 
         private fun isValidNormalized(candidate: String) =
-            NATIONAL.matches(candidate) || MERCOSUL.matches(candidate)
+            NATIONAL.matches(input = candidate) || MERCOSUL.matches(input = candidate)
     }
 }

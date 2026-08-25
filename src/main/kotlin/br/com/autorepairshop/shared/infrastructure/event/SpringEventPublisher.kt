@@ -7,13 +7,11 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
-class SpringEventPublisher(
-    private val publisher: ApplicationEventPublisher
-) : EventPublisher {
+class SpringEventPublisher(private val publisher: ApplicationEventPublisher) : EventPublisher {
     override fun publish(event: DomainEvent) = publisher.publishEvent(event)
 
     override fun publish(aggregate: AggregateRoot<*>) {
-        aggregate.domainEvents.forEach { publish(it) }
+        aggregate.domainEvents.forEach(action = { publish(event = it) })
         aggregate.clearEvents()
     }
 }

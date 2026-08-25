@@ -11,25 +11,19 @@ import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
 @Repository
-class CustomerRepositoryImpl(
-    private val jpa: CustomerJpaRepository,
-) : CustomerRepository {
+class CustomerRepositoryImpl(private val jpa: CustomerJpaRepository) : CustomerRepository {
 
     override fun save(customer: Customer) {
         jpa.save(customer.toEntity())
     }
 
-    override fun findById(id: CustomerId): Customer? =
-        jpa.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findById(id: CustomerId): Customer? = jpa.findById(id.value).map { it.toDomain() }.orElse(null)
 
-    override fun findByDocumentId(id: DocumentId): Customer? =
-        jpa.findByDocumentId(id.value)?.toDomain()
+    override fun findByDocumentId(id: DocumentId): Customer? = jpa.findByDocumentId(documentId = id.value)?.toDomain()
 
-    override fun existsByDocumentId(id: DocumentId): Boolean =
-        jpa.existsByDocumentId(id.value)
+    override fun existsByDocumentId(id: DocumentId): Boolean = jpa.existsByDocumentId(documentId = id.value)
 
-    override fun findAll(): List<Customer> =
-        jpa.findAll().map { it.toDomain() }
+    override fun findAll(): List<Customer> = jpa.findAll().map(transform = { it.toDomain() })
 
     private fun Customer.toEntity() = CustomerEntity(
         id = id.value,
@@ -42,10 +36,13 @@ class CustomerRepositoryImpl(
     )
 
     private fun CustomerEntity.toDomain() = Customer.rehydrate(
-        id = CustomerId(id),
-        documentId = DocumentId.of(documentId),
-        name = PersonName.of(name),
-        contact = ContactInfo.of(email, phone),
+        id = CustomerId(value = id),
+        documentId = DocumentId.of(raw = documentId),
+        name = PersonName.of(raw = name),
+        contact = ContactInfo.of(
+            email = email,
+            phone = phone,
+        ),
         active = active,
         registeredAt = registeredAt.toKotlinInstant(),
     )

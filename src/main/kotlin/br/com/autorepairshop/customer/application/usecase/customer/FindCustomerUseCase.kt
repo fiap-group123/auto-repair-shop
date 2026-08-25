@@ -11,14 +11,12 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class FindCustomerUseCase(
-    private val customers: CustomerRepository,
-) : UseCase<UUID, CustomerResponse> {
+class FindCustomerUseCase(private val customers: CustomerRepository) : UseCase<UUID, CustomerResponse> {
 
     @Transactional(readOnly = true)
     override fun execute(input: UUID): CustomerResponse {
-        val customer = customers.findById(CustomerId(input))
-            ?: throw CustomerException.CustomerNotFound("Customer $input was not found.")
+        val customer = customers.findById(id = CustomerId(value = input))
+            ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
         return customer.toResponse()
     }
 }

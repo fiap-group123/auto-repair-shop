@@ -23,19 +23,21 @@ class RegisterVehicleUseCase(
 
     @Transactional
     override fun execute(input: RegisterVehicleCommand): VehicleResponse {
-        val ownerId = CustomerId(input.ownerId)
-        val owner = customers.findById(ownerId)
-            ?: throw CustomerException.CustomerNotFound("Customer ${input.ownerId} was not found.")
+        val ownerId = CustomerId(value = input.ownerId)
+        val owner = customers.findById(id = ownerId)
+            ?: throw CustomerException.CustomerNotFound(
+                message = "Customer ${input.ownerId} was not found.",
+            )
         if (!owner.active) {
             throw CustomerException.InvalidDocument(
-                "Customer ${owner.documentId.masked()} is inactive."
+                message = "Customer ${owner.documentId.masked()} is inactive.",
             )
         }
 
-        val plate = LicensePlate.of(input.plate)
-        if (vehicles.existsByPlate(plate)) {
+        val plate = LicensePlate.of(raw = input.plate)
+        if (vehicles.existsByPlate(plate = plate)) {
             throw VehicleException.VehicleAlreadyExists(
-                "Vehicle ${plate.formatted()} already exists."
+                message = "Vehicle ${plate.formatted()} already exists.",
             )
         }
 
@@ -44,9 +46,9 @@ class RegisterVehicleUseCase(
             plate = plate,
             brand = input.brand,
             model = input.model,
-            year = ModelYear.of(input.year),
+            year = ModelYear.of(year = input.year),
         )
-        vehicles.save(vehicle)
+        vehicles.save(vehicle = vehicle)
         return vehicle.toResponse()
     }
 }

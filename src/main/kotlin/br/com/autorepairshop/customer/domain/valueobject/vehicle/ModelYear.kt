@@ -10,14 +10,17 @@ value class ModelYear private constructor(val value: Int) : ValueObject {
     companion object {
         private const val MIN_YEAR = 1900
 
-        fun of(year: Int, currentYear: Int = Year.now().value): ModelYear {
+        fun of(
+            year: Int,
+            currentYear: Int = Year.now().value,
+        ): ModelYear {
             val maxYear = currentYear + 1
             if (year !in MIN_YEAR..maxYear) {
                 throw VehicleException.InvalidModelYear(
-                    "Model year must be between $MIN_YEAR and $maxYear."
+                    message = "Model year must be between $MIN_YEAR and $maxYear.",
                 )
             }
-            return ModelYear(year)
+            return ModelYear(value = year)
         }
     }
 }

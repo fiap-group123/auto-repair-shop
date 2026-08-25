@@ -10,16 +10,14 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class FindVehicleByPlateUseCase(
-    private val vehicles: VehicleRepository,
-) : UseCase<String, VehicleResponse> {
+class FindVehicleByPlateUseCase(private val vehicles: VehicleRepository) : UseCase<String, VehicleResponse> {
 
     @Transactional(readOnly = true)
     override fun execute(input: String): VehicleResponse {
-        val plate = LicensePlate.of(input)
-        val vehicle = vehicles.findByPlate(plate)
+        val plate = LicensePlate.of(raw = input)
+        val vehicle = vehicles.findByPlate(plate = plate)
             ?: throw VehicleException.VehicleNotFound(
-                "Vehicle ${plate.formatted()} was not found."
+                message = "Vehicle ${plate.formatted()} was not found.",
             )
         return vehicle.toResponse()
     }

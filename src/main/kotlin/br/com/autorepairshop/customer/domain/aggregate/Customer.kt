@@ -19,7 +19,7 @@ class Customer private constructor(
     contact: ContactInfo,
     active: Boolean,
     val registeredAt: Instant,
-) : AggregateRoot<CustomerId>(id){
+) : AggregateRoot<CustomerId>(id = id) {
 
     var name: PersonName = name
         private set
@@ -35,7 +35,7 @@ class Customer private constructor(
         name = newName
     }
 
-    fun updateContact(newContact: ContactInfo){
+    fun updateContact(newContact: ContactInfo) {
         requireActive()
         contact = newContact
     }
@@ -44,10 +44,10 @@ class Customer private constructor(
         requireActive()
         active = false
         registerEvent(
-            CustomerDeactivated(
+            event = CustomerDeactivated(
                 customerId = id,
-                occurredOn = at.toJavaInstant()
-            )
+                occurredOn = at.toJavaInstant(),
+            ),
         )
     }
 
@@ -55,17 +55,21 @@ class Customer private constructor(
         if (active) throw CustomerException.CustomerAlreadyActive(message = "Customer is already active.")
         active = true
         registerEvent(
-            CustomerReactivated(
+            event = CustomerReactivated(
                 customerId = id,
-                occurredOn = at.toJavaInstant()
-            )
+                occurredOn = at.toJavaInstant(),
+            ),
         )
     }
 
     private fun requireActive() {
-        if (!active) throw CustomerException.InvalidDocument(message = "Customer ${documentId.masked()} is inactive.")
+        if (!active) {
+            throw CustomerException.InvalidDocument(
+                message = "Customer ${documentId.masked()} is inactive.",
+            )
+        }
     }
-    
+
     companion object {
         fun register(
             documentId: DocumentId,
@@ -75,10 +79,10 @@ class Customer private constructor(
         ) = Customer(
             id = CustomerId.generate(),
             documentId = documentId,
-            name = name, 
+            name = name,
             contact = contact,
             active = true,
-            registeredAt = at
+            registeredAt = at,
         )
 
         internal fun rehydrate(
@@ -94,7 +98,7 @@ class Customer private constructor(
             name = name,
             contact = contact,
             active = active,
-            registeredAt = registeredAt
+            registeredAt = registeredAt,
         )
     }
 }

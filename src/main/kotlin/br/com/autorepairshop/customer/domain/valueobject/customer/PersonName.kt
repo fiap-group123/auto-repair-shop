@@ -7,9 +7,14 @@ import br.com.autorepairshop.shared.domain.ValueObject
 value class PersonName private constructor(val value: String) : ValueObject {
     companion object {
         fun of(raw: String): PersonName {
-            val normalized = raw.trim().replace(Regex("\\s+"), " ")
+            val normalized = raw.trim().replace(
+                regex = Regex(pattern = "\\s+"),
+                replacement = " ",
+            )
             if (normalized.length !in 2..60) {
-                throw CustomerException.InvalidPersonName(message = "Name must be between 2 and 60 characters.")
+                throw CustomerException.InvalidPersonName(
+                    message = "Name must be between 2 and 60 characters.",
+                )
             }
             return PersonName(value = normalized)
         }

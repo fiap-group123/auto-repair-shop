@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class AutoRepairShopApplication
 
 fun main(args: Array<String>) {
-    runApplication<AutoRepairShopApplication>(*args)
+    runApplication<AutoRepairShopApplication>(args = args)
 }

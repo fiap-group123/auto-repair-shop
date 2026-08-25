@@ -19,9 +19,9 @@ class ListVehiclesByOwnerUseCase(
 
     @Transactional(readOnly = true)
     override fun execute(input: UUID): List<VehicleResponse> {
-        val ownerId = CustomerId(input)
-        customers.findById(ownerId)
-            ?: throw CustomerException.CustomerNotFound("Customer $input was not found.")
-        return vehicles.findByOwner(ownerId).map { it.toResponse() }
+        val ownerId = CustomerId(value = input)
+        customers.findById(id = ownerId)
+            ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
+        return vehicles.findByOwner(ownerId = ownerId).map(transform = { it.toResponse() })
     }
 }

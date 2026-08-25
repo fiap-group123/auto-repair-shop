@@ -6,6 +6,6 @@ import java.util.UUID
 @JvmInline
 value class CustomerId(val value: UUID) : ValueObject {
     companion object {
-        fun generate(): CustomerId = CustomerId(UUID.randomUUID())
+        fun generate(): CustomerId = CustomerId(value = UUID.randomUUID())
     }
 }
