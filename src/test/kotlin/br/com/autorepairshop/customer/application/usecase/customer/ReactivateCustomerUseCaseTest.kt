@@ -1,0 +1,59 @@
+package br.com.autorepairshop.customer.application.usecase.customer
+
+import br.com.autorepairshop.customer.CustomerFixtures
+import br.com.autorepairshop.customer.domain.exception.CustomerException
+import br.com.autorepairshop.customer.domain.repository.CustomerRepository
+import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
+import br.com.autorepairshop.shared.application.event.EventPublisher
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
+import java.util.UUID
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+
+@Tag("unit")
+class ReactivateCustomerUseCaseTest {
+    private val customers = mockk<CustomerRepository>()
+    private val events = mockk<EventPublisher>()
+    private val useCase = ReactivateCustomerUseCase(
+        customers = customers,
+        events = events,
+    )
+
+    @Test
+    fun `throws when customer is missing`() {
+        val id = UUID.randomUUID()
+        every { customers.findById(id = CustomerId(value = id)) } returns null
+
+        assertFailsWith<CustomerException.CustomerNotFound> {
+            useCase.execute(input = id)
+        }
+    }
+
+    @Test
+    fun `throws when customer is already active`() {
+        val customer = CustomerFixtures.activeCustomer()
+        every { customers.findById(id = customer.id) } returns customer
+
+        assertFailsWith<CustomerException.CustomerAlreadyActive> {
+            useCase.execute(input = customer.id.value)
+        }
+    }
+
+    @Test
+    fun `saves and publishes when reactivating`() {
+        val customer = CustomerFixtures.inactiveCustomer()
+        every { customers.findById(id = customer.id) } returns customer
+        every { customers.save(customer = customer) } returns Unit
+        every { events.publish(aggregate = customer) } returns Unit
+
+        useCase.execute(input = customer.id.value)
+
+        assertTrue(customer.active)
+        verify { customers.save(customer = customer) }
+        verify { events.publish(aggregate = customer) }
+    }
+}
