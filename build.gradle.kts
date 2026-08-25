@@ -49,8 +49,18 @@ allOpen {
     annotation("jakarta.persistence.Embeddable")
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+}
+
+tasks.register<Test>("unitTest") {
+    group = "verification"
+    description = "Unit tests without Testcontainers"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("unit")
+    }
 }
 
 detekt {
@@ -104,9 +114,33 @@ tasks.named("compileKotlin") {
 
 kover {
     reports {
+        filters {
+            includes {
+                packages(
+                    "br.com.autorepairshop.customer.domain.aggregate",
+                    "br.com.autorepairshop.customer.domain.valueobject",
+                    "br.com.autorepairshop.customer.application.usecase",
+                    "br.com.autorepairshop.authentication.domain.aggregate",
+                    "br.com.autorepairshop.authentication.domain.valueobject",
+                    "br.com.autorepairshop.authentication.application.usecase",
+                )
+            }
+            excludes {
+                classes(
+                    "*HashedPassword",
+                    "*UserId",
+                    "*CustomerId",
+                    "*VehicleId",
+                    "*DocumentType",
+                    "*LicensePlateType",
+                    "*Role",
+                    "*ContactInfo",
+                )
+            }
+        }
         verify {
             rule {
-                minBound(80)
+                minBound(98)
             }
         }
     }

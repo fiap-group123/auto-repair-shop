@@ -84,7 +84,7 @@ value class DocumentId private constructor(val value: String) : ValueObject {
             val verifiers = cnpj.drop(n = 12)
 
             // Root accepts A-Z and 0-9 since July 2026; the two check digits stay numeric.
-            if (!root.all { it.isDigit() || it in 'A'..'Z' }) return false
+            if (!root.all { it in 'A'..'Z' || it.isDigit() }) return false
             if (!verifiers.all { it.isDigit() }) return false
             if (root.all { it == root[0] }) return false
 
