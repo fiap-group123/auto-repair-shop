@@ -8,6 +8,5 @@ interface CustomerRepository {
     fun save(customer: Customer)
     fun findById(id: CustomerId): Customer?
     fun findByDocumentId(id: DocumentId): Customer?
-    fun existsByDocumentId(id: DocumentId): Boolean
-    fun findAll(): List<Customer>
+    fun existsByDocumentId(id: DocumentId): Boolean fun findAll(): List<Customer>
 }
