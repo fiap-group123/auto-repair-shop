@@ -52,9 +52,9 @@ class Vehicle private constructor(
         model: String?,
         year: ModelYear?,
     ) {
-        brand?.let(block = { this.brand = normalizeName(raw = it, field = "brand") })
-        model?.let(block = { this.model = normalizeName(raw = it, field = "model") })
-        year?.let(block = { this.year = it })
+        brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
+        model?.let { this.model = normalizeName(raw = it, field = "model") }
+        year?.let { this.year = it }
     }
 
     companion object {

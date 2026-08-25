@@ -84,11 +84,11 @@ value class DocumentId private constructor(val value: String) : ValueObject {
             val verifiers = cnpj.drop(n = 12)
 
             // Root accepts A-Z and 0-9 since July 2026; the two check digits stay numeric.
-            if (!root.all(predicate = { it.isDigit() || it in 'A'..'Z' })) return false
-            if (!verifiers.all(predicate = Char::isDigit)) return false
-            if (root.all(predicate = { it == root[0] })) return false
+            if (!root.all { it.isDigit() || it in 'A'..'Z' }) return false
+            if (!verifiers.all { it.isDigit() }) return false
+            if (root.all { it == root[0] }) return false
 
-            val values = cnpj.map(transform = ::valueOf)
+            val values = cnpj.map(::valueOf)
             return checkDigit(values = values.take(n = 12), weights = CNPJ_FIRST_WEIGHTS) == values[12] &&
                 checkDigit(values = values.take(n = 13), weights = CNPJ_SECOND_WEIGHTS) == values[13]
         }

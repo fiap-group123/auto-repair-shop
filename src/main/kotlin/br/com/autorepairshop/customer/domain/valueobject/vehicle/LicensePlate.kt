@@ -30,12 +30,6 @@ value class LicensePlate private constructor(val value: String) : ValueObject {
             return LicensePlate(value = normalized)
         }
 
-        fun ofOrNull(raw: String): LicensePlate? = normalize(raw = raw)
-            .takeIf(predicate = ::isValidNormalized)
-            ?.let(block = ::LicensePlate)
-
-        fun isValid(raw: String): Boolean = isValidNormalized(candidate = normalize(raw = raw))
-
         private fun normalize(raw: String) = raw.uppercase().filter(predicate = Char::isLetterOrDigit)
 
         private fun isValidNormalized(candidate: String) =
