@@ -59,6 +59,8 @@ Detekt (Kotlin coding conventions + ktlint + type resolution em `main`). Relató
 
 `check` inclui `detektMain` e falha se houver finding. `--auto-correct` aplica o ktlint no código.
 
+O Gradle roda `hooks/install.sh` na compilação e no Detekt, copiando `hooks/pre-commit` para `.git/hooks`. Cada `git commit` executa o Detekt; se houver finding, o commit é recusado.
+
 ## Parar
 
 ```bash
