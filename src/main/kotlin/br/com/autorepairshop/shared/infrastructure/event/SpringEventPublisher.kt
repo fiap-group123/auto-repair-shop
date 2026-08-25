@@ -11,7 +11,7 @@ class SpringEventPublisher(private val publisher: ApplicationEventPublisher) : E
     override fun publish(event: DomainEvent) = publisher.publishEvent(event)
 
     override fun publish(aggregate: AggregateRoot<*>) {
-        aggregate.domainEvents.forEach(action = { publish(event = it) })
+        aggregate.domainEvents.forEach { publish(event = it) }
         aggregate.clearEvents()
     }
 }

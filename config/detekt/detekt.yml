@@ -17,7 +17,7 @@ complexity:
     ignoreDefaultParameters: true
   NamedArguments:
     active: true
-    allowedArguments: 0
+    allowedArguments: 1
     ignoreArgumentsMatchingNames: false
   TooManyFunctions:
     ignoreAnnotated:

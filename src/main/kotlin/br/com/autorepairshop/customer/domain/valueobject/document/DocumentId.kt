@@ -57,12 +57,12 @@ value class DocumentId private constructor(val value: String) : ValueObject {
         }
 
         fun ofOrNull(raw: String): DocumentId? = normalize(raw = raw)
-            .takeIf(predicate = ::isValidNormalized)
-            ?.let(block = ::DocumentId)
+            .takeIf { isValidNormalized(candidate = it) }
+            ?.let { DocumentId(value = it) }
 
         fun isValid(raw: String): Boolean = isValidNormalized(candidate = normalize(raw = raw))
 
-        private fun normalize(raw: String) = raw.uppercase().filter(predicate = Char::isLetterOrDigit)
+        private fun normalize(raw: String) = raw.uppercase().filter { it.isLetterOrDigit() }
 
         private fun isValidNormalized(candidate: String) = when (candidate.length) {
             CPF_LENGTH -> isValidCpf(cpf = candidate)
@@ -71,10 +71,10 @@ value class DocumentId private constructor(val value: String) : ValueObject {
         }
 
         private fun isValidCpf(cpf: String): Boolean {
-            if (!cpf.all(predicate = Char::isDigit)) return false
-            if (cpf.all(predicate = { it == cpf[0] })) return false
+            if (!cpf.all { it.isDigit() }) return false
+            if (cpf.all { it == cpf[0] }) return false
 
-            val values = cpf.map(transform = ::valueOf)
+            val values = cpf.map { valueOf(it) }
             return checkDigit(values = values.take(n = 9), weights = CPF_FIRST_WEIGHTS) == values[9] &&
                 checkDigit(values = values.take(n = 10), weights = CPF_SECOND_WEIGHTS) == values[10]
         }
@@ -88,7 +88,7 @@ value class DocumentId private constructor(val value: String) : ValueObject {
             if (!verifiers.all { it.isDigit() }) return false
             if (root.all { it == root[0] }) return false
 
-            val values = cnpj.map(::valueOf)
+            val values = cnpj.map { valueOf(it) }
             return checkDigit(values = values.take(n = 12), weights = CNPJ_FIRST_WEIGHTS) == values[12] &&
                 checkDigit(values = values.take(n = 13), weights = CNPJ_SECOND_WEIGHTS) == values[13]
         }
@@ -101,7 +101,7 @@ value class DocumentId private constructor(val value: String) : ValueObject {
             weights: List<Int>,
         ): Int {
             val remainder = values.zip(other = weights)
-                .sumOf(selector = { (value, weight) -> value * weight }) % 11
+                .sumOf { (value, weight) -> value * weight } % 11
             return if (remainder < 2) 0 else 11 - remainder
         }
 

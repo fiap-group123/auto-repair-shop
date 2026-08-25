@@ -27,9 +27,9 @@ class RegisterUserUseCase(
                 message = "User with this email already exists.",
             )
         }
-        val role = runCatching { Role.valueOf(value = input.role) }.getOrElse(onFailure = {
+        val role = runCatching { Role.valueOf(value = input.role) }.getOrElse {
             throw AuthenticationException.InvalidRole(message = "Unknown role: ${input.role}")
-        })
+        }
         if (!users.existsAny() && role != Role.MANAGER) {
             throw AuthenticationException.InvalidRole(
                 message = "The first user must be MANAGER.",

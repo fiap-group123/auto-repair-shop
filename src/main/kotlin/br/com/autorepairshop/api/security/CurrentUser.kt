@@ -17,13 +17,13 @@ class CurrentUser {
             ?: throw AuthenticationException.Unauthenticated(message = "JWT subject is missing.")
         val roleClaim = jwt.getClaimAsString("role")
             ?: throw AuthenticationException.Unauthenticated(message = "JWT role claim is missing.")
-        val role = runCatching { Role.valueOf(value = roleClaim) }.getOrElse(onFailure = {
+        val role = runCatching { Role.valueOf(value = roleClaim) }.getOrElse {
             throw AuthenticationException.InvalidRole(message = "Unknown role: $roleClaim")
-        })
+        }
         return AuthenticatedUser(
             userId = UUID.fromString(subject),
             role = role,
-            customerId = jwt.getClaimAsString("customerId")?.let(block = UUID::fromString),
+            customerId = jwt.getClaimAsString("customerId")?.let { UUID.fromString(it) },
         )
     }
 }

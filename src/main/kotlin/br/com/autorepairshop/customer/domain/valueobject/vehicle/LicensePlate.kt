@@ -30,7 +30,7 @@ value class LicensePlate private constructor(val value: String) : ValueObject {
             return LicensePlate(value = normalized)
         }
 
-        private fun normalize(raw: String) = raw.uppercase().filter(predicate = Char::isLetterOrDigit)
+        private fun normalize(raw: String) = raw.uppercase().filter { it.isLetterOrDigit() }
 
         private fun isValidNormalized(candidate: String) =
             NATIONAL.matches(input = candidate) || MERCOSUL.matches(input = candidate)
