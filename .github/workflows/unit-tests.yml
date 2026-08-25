@@ -23,7 +23,7 @@ jobs:
         with:
           gradle-version: ${{ vars.GRADLE_VERSION }}
 
-      - name: Gradle Permission
+      - name: Gradle permission
         run: chmod +x gradlew
 
       - name: Run tests
@@ -56,6 +56,7 @@ jobs:
       - name: Replace coverage comment on this PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           COVERAGE_PERCENTAGE: ${{ needs.unit-tests.outputs.coverage-percentage }}
           COVERAGE_REPORT_URL: ${{ needs.unit-tests.outputs.coverage-report-url }}
@@ -69,7 +70,7 @@ jobs:
             gh api --method DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/${id}"
           done
 
-          gh pr comment "$PR_NUMBER" --body "${MARKER}
+          gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "${MARKER}
           ## Coverage
 
           **Line coverage:** ${COVERAGE_PERCENTAGE}%
