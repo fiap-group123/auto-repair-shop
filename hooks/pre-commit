@@ -1,0 +1,17 @@
+#!/bin/sh
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+echo "pre-commit: running Detekt"
+GRADLE_OUTPUT=$(./gradlew detekt detektMain 2>&1)
+RESULT=$?
+
+if [ "$RESULT" -ne 0 ]; then
+    echo "Detekt found issues, please fix them before committing."
+    echo "Detekt output:"
+    echo "$GRADLE_OUTPUT"
+    exit 1
+fi
+
+echo "Detekt passed, continuing with commit."
+exit 0

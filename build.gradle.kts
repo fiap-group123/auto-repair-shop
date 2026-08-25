@@ -71,6 +71,7 @@ configurations.matching { it.name.contains("detekt", ignoreCase = true) }.config
 }
 
 tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    dependsOn("installGitHooks")
     jvmTarget.set("17")
     reports {
         html.required.set(true)
@@ -82,6 +83,23 @@ tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
 
 tasks.named("check") {
     dependsOn("detektMain")
+}
+
+val installGitHooks by tasks.registering(type = Exec::class) {
+    group = "verification"
+    description = "Installs the Git pre-commit hook that runs Detekt."
+    workingDir(rootDir)
+    commandLine("sh", "hooks/install.sh")
+    onlyIf { layout.projectDirectory.dir(".git").asFile.exists() }
+    inputs.files(
+        layout.projectDirectory.file("hooks/install.sh"),
+        layout.projectDirectory.file("hooks/pre-commit"),
+    )
+    outputs.file(layout.projectDirectory.file(".git/hooks/pre-commit"))
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(installGitHooks)
 }
 
 kover {
