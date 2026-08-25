@@ -19,7 +19,7 @@ jobs:
           java-version: ${{ vars.JAVA_VERSION }}
 
       - name: Setup Gradle
-        uses: gradle/setup-gradle@v6
+        uses: actions/setup-gradle@v6
         with:
           gradle-version: ${{ vars.GRADLE_VERSION }}
 
@@ -48,7 +48,7 @@ jobs:
     permissions:
       pull-requests: write
       issues: write
-      
+
     steps:
       - name: Replace coverage comment on this PR
         env:
