@@ -23,6 +23,9 @@ jobs:
         with:
           gradle-version: ${{ vars.GRADLE_VERSION }}
 
+      - name: Gradle Permission
+        run: chmod +x gradlew
+
       - name: Run tests
         run: ./gradlew koverHtmlReport koverXmlReport koverVerify
 
