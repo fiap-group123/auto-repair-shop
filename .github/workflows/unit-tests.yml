@@ -71,8 +71,8 @@ jobs:
           done
 
           gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "${MARKER}
-          ## Coverage
+          ## Unit Tests Coverage
 
-          **Line coverage:** ${COVERAGE_PERCENTAGE}%
+          **Unit Tests Coverage:** ${COVERAGE_PERCENTAGE}%
 
-          [HTML report](${COVERAGE_REPORT_URL})"
+          [Unit Tests Coverage Report](${COVERAGE_REPORT_URL})"
