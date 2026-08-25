@@ -12,24 +12,25 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class ChangeVehiclePlateUseCase(
-    private val vehicles: VehicleRepository,
-) : UseCase<ChangeVehiclePlateCommand, VehicleResponse> {
+class ChangeVehiclePlateUseCase(private val vehicles: VehicleRepository) :
+    UseCase<ChangeVehiclePlateCommand, VehicleResponse> {
 
     @Transactional
     override fun execute(input: ChangeVehiclePlateCommand): VehicleResponse {
-        val vehicle = vehicles.findById(VehicleId(input.vehicleId))
-            ?: throw VehicleException.VehicleNotFound("Vehicle ${input.vehicleId} was not found.")
+        val vehicle = vehicles.findById(id = VehicleId(value = input.vehicleId))
+            ?: throw VehicleException.VehicleNotFound(
+                message = "Vehicle ${input.vehicleId} was not found.",
+            )
 
-        val newPlate = LicensePlate.of(input.plate)
-        if (newPlate != vehicle.plate && vehicles.existsByPlate(newPlate)) {
+        val newPlate = LicensePlate.of(raw = input.plate)
+        if (newPlate != vehicle.plate && vehicles.existsByPlate(plate = newPlate)) {
             throw VehicleException.VehicleAlreadyExists(
-                "Vehicle ${newPlate.formatted()} already exists."
+                message = "Vehicle ${newPlate.formatted()} already exists.",
             )
         }
 
-        vehicle.changePlate(newPlate)
-        vehicles.save(vehicle)
+        vehicle.changePlate(newPlate = newPlate)
+        vehicles.save(vehicle = vehicle)
         return vehicle.toResponse()
     }
 }

@@ -17,7 +17,7 @@ class DeactivateCustomerUseCase(
 
     @Transactional
     override fun execute(input: UUID) {
-        val customer = customers.findById(CustomerId(value = input))
+        val customer = customers.findById(id = CustomerId(value = input))
             ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
         customer.deactivate()
         customers.save(customer = customer)

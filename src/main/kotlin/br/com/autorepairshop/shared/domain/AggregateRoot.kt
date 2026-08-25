@@ -6,7 +6,7 @@ abstract class AggregateRoot<ID : Any>(id: ID) : Entity<ID>(id = id) {
     val domainEvents: List<DomainEvent> get() = events.toList()
 
     protected fun registerEvent(event: DomainEvent) {
-        events.add(event)
+        events.add(element = event)
     }
 
     fun clearEvents() = events.clear()

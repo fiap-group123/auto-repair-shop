@@ -6,6 +6,6 @@ import java.util.UUID
 @JvmInline
 value class VehicleId(val value: UUID) : ValueObject {
     companion object {
-        fun generate() = VehicleId(UUID.randomUUID())
+        fun generate() = VehicleId(value = UUID.randomUUID())
     }
 }

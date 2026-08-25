@@ -21,20 +21,24 @@ class TransferVehicleUseCase(
 
     @Transactional
     override fun execute(input: TransferVehicleCommand): VehicleResponse {
-        val vehicle = vehicles.findById(VehicleId(input.vehicleId))
-            ?: throw VehicleException.VehicleNotFound("Vehicle ${input.vehicleId} was not found.")
+        val vehicle = vehicles.findById(id = VehicleId(value = input.vehicleId))
+            ?: throw VehicleException.VehicleNotFound(
+                message = "Vehicle ${input.vehicleId} was not found.",
+            )
 
-        val newOwnerId = CustomerId(input.newOwnerId)
-        val newOwner = customers.findById(newOwnerId)
-            ?: throw CustomerException.CustomerNotFound("Customer ${input.newOwnerId} was not found.")
+        val newOwnerId = CustomerId(value = input.newOwnerId)
+        val newOwner = customers.findById(id = newOwnerId)
+            ?: throw CustomerException.CustomerNotFound(
+                message = "Customer ${input.newOwnerId} was not found.",
+            )
         if (!newOwner.active) {
             throw CustomerException.InvalidDocument(
-                "Customer ${newOwner.documentId.masked()} is inactive."
+                message = "Customer ${newOwner.documentId.masked()} is inactive.",
             )
         }
 
-        vehicle.transferTo(newOwnerId)
-        vehicles.save(vehicle)
+        vehicle.transferTo(newOwnerId = newOwnerId)
+        vehicles.save(vehicle = vehicle)
         return vehicle.toResponse()
     }
 }

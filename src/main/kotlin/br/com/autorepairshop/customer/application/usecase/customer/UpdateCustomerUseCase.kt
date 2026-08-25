@@ -13,23 +13,24 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class UpdateCustomerUseCase(
-    private val customers: CustomerRepository,
-) : UseCase<UpdateCustomerCommand, CustomerResponse> {
+class UpdateCustomerUseCase(private val customers: CustomerRepository) :
+    UseCase<UpdateCustomerCommand, CustomerResponse> {
 
     @Transactional
     override fun execute(input: UpdateCustomerCommand): CustomerResponse {
-        val customer = customers.findById(CustomerId(value = input.customerId))
-            ?: throw CustomerException.CustomerNotFound(message = "Customer ${input.customerId} was not found.")
+        val customer = customers.findById(id = CustomerId(value = input.customerId))
+            ?: throw CustomerException.CustomerNotFound(
+                message = "Customer ${input.customerId} was not found.",
+            )
 
-        input.name?.let { customer.rename(newName = PersonName.of(raw = it)) }
+        input.name?.let(block = { customer.rename(newName = PersonName.of(raw = it)) })
 
         if (input.email != null || input.phone != null) {
             customer.updateContact(
                 newContact = ContactInfo.of(
                     email = input.email ?: customer.contact.email.value,
                     phone = input.phone ?: customer.contact.phone.value,
-                )
+                ),
             )
         }
         customers.save(customer = customer)

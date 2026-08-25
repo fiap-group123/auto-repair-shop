@@ -8,11 +8,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class ListCustomersUseCase(
-    private val customers: CustomerRepository,
-) : UseCase<Unit, List<CustomerResponse>> {
+class ListCustomersUseCase(private val customers: CustomerRepository) : UseCase<Unit, List<CustomerResponse>> {
 
     @Transactional(readOnly = true)
-    override fun execute(input: Unit): List<CustomerResponse> =
-        customers.findAll().map { it.toResponse() }
+    override fun execute(input: Unit): List<CustomerResponse> = customers.findAll().map(transform = { it.toResponse() })
 }

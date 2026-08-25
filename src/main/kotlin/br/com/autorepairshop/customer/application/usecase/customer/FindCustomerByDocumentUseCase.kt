@@ -10,16 +10,14 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class FindCustomerByDocumentUseCase(
-    private val customers: CustomerRepository,
-) : UseCase<String, CustomerResponse> {
+class FindCustomerByDocumentUseCase(private val customers: CustomerRepository) : UseCase<String, CustomerResponse> {
 
     @Transactional(readOnly = true)
     override fun execute(input: String): CustomerResponse {
-        val documentId = DocumentId.of(input)
-        val customer = customers.findByDocumentId(documentId)
+        val documentId = DocumentId.of(raw = input)
+        val customer = customers.findByDocumentId(id = documentId)
             ?: throw CustomerException.CustomerNotFound(
-                "Customer with document ${documentId.masked()} was not found."
+                message = "Customer with document ${documentId.masked()} was not found.",
             )
         return customer.toResponse()
     }

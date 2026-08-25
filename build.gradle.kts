@@ -23,6 +23,8 @@ repositories {
 }
 
 dependencies {
+    detektPlugins(libs.detekt.rules.ktlint)
+
     implementation(libs.bundles.spring.runtime)
     implementation(libs.flyway.postgresql)
     implementation(libs.kotlin.reflect)
@@ -49,6 +51,37 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+detekt {
+    toolVersion = libs.versions.detekt.get()
+    buildUponDefaultConfig = true
+    allRules = false
+    parallel = true
+    ignoreFailures = false
+    config.setFrom(files("config/detekt/detekt.yml"))
+}
+
+configurations.matching { it.name.contains("detekt", ignoreCase = true) }.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion(libs.versions.kotlin.get())
+        }
+    }
+}
+
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    jvmTarget.set("17")
+    reports {
+        html.required.set(true)
+        markdown.required.set(true)
+        sarif.required.set(true)
+        checkstyle.required.set(false)
+    }
+}
+
+tasks.named("check") {
+    dependsOn("detektMain")
 }
 
 kover {

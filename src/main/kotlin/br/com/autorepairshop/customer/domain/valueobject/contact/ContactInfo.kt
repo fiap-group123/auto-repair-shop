@@ -4,14 +4,15 @@ import br.com.autorepairshop.shared.domain.ValueObject
 
 data class ContactInfo(
     val email: EmailAddress,
-    val phone: PhoneNumber
+    val phone: PhoneNumber,
 ) : ValueObject {
     companion object {
-        fun of(email: String, phone: String): ContactInfo {
-            return ContactInfo(
-                email = EmailAddress.of(email),
-                phone = PhoneNumber.of(phone)
-            )
-        }
+        fun of(
+            email: String,
+            phone: String,
+        ): ContactInfo = ContactInfo(
+            email = EmailAddress.of(raw = email),
+            phone = PhoneNumber.of(raw = phone),
+        )
     }
 }

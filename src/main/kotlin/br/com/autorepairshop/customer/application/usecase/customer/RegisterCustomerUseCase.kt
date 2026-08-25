@@ -14,24 +14,26 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class RegisterCustomerUseCase(
-    private val customers: CustomerRepository,
-) : UseCase<RegisterCustomerCommand, CustomerResponse> {
+class RegisterCustomerUseCase(private val customers: CustomerRepository) :
+    UseCase<RegisterCustomerCommand, CustomerResponse> {
 
     @Transactional
     override fun execute(input: RegisterCustomerCommand): CustomerResponse {
-        val documentId = DocumentId.of(input.documentId)
-        if (customers.existsByDocumentId(documentId)) {
+        val documentId = DocumentId.of(raw = input.documentId)
+        if (customers.existsByDocumentId(id = documentId)) {
             throw CustomerException.CustomerAlreadyExists(
-                "Customer with document ${documentId.masked()} already exists."
+                message = "Customer with document ${documentId.masked()} already exists.",
             )
         }
         val customer = Customer.register(
             documentId = documentId,
-            name = PersonName.of(input.name),
-            contact = ContactInfo.of(input.email, input.phone),
+            name = PersonName.of(raw = input.name),
+            contact = ContactInfo.of(
+                email = input.email,
+                phone = input.phone,
+            ),
         )
-        customers.save(customer)
+        customers.save(customer = customer)
         return customer.toResponse()
     }
 }

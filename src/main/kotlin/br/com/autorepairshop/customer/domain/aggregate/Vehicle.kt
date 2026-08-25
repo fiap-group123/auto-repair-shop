@@ -17,7 +17,7 @@ class Vehicle private constructor(
     model: String,
     year: ModelYear,
     val registeredAt: Instant,
-) : AggregateRoot<VehicleId>(id) {
+) : AggregateRoot<VehicleId>(id = id) {
 
     var ownerId: CustomerId = ownerId
         private set
@@ -37,7 +37,7 @@ class Vehicle private constructor(
     fun transferTo(newOwnerId: CustomerId) {
         if (newOwnerId == ownerId) {
             throw VehicleException.AlreadyOwnedByCustomer(
-                "Vehicle ${plate.formatted()} already belongs to this customer."
+                message = "Vehicle ${plate.formatted()} already belongs to this customer.",
             )
         }
         ownerId = newOwnerId
@@ -47,10 +47,14 @@ class Vehicle private constructor(
         plate = newPlate
     }
 
-    fun updateSpec(brand: String?, model: String?, year: ModelYear?) {
-        brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
-        model?.let { this.model = normalizeName(raw = it, field = "model") }
-        year?.let { this.year = it }
+    fun updateSpec(
+        brand: String?,
+        model: String?,
+        year: ModelYear?,
+    ) {
+        brand?.let(block = { this.brand = normalizeName(raw = it, field = "brand") })
+        model?.let(block = { this.model = normalizeName(raw = it, field = "model") })
+        year?.let(block = { this.year = it })
     }
 
     companion object {
@@ -89,11 +93,17 @@ class Vehicle private constructor(
             registeredAt = registeredAt,
         )
 
-        private fun normalizeName(raw: String, field: String): String {
-            val normalized = raw.trim().replace(Regex("\\s+"), " ")
+        private fun normalizeName(
+            raw: String,
+            field: String,
+        ): String {
+            val normalized = raw.trim().replace(
+                regex = Regex(pattern = "\\s+"),
+                replacement = " ",
+            )
             if (normalized.length !in 2..40) {
                 throw VehicleException.InvalidVehicleName(
-                    "$field must be between 2 and 40 characters."
+                    message = "$field must be between 2 and 40 characters.",
                 )
             }
             return normalized

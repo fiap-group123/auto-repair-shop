@@ -18,7 +18,7 @@ class ReactivateCustomerUseCase(
     @Transactional
     override fun execute(input: UUID) {
         val customer = customers.findById(
-            id = CustomerId(value = input)
+            id = CustomerId(value = input),
         ) ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
         customer.reactivate()
         customers.save(customer = customer)
