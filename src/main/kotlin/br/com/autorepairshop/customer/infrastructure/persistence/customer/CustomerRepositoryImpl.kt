@@ -23,7 +23,7 @@ class CustomerRepositoryImpl(private val jpa: CustomerJpaRepository) : CustomerR
 
     override fun existsByDocumentId(id: DocumentId): Boolean = jpa.existsByDocumentId(documentId = id.value)
 
-    override fun findAll(): List<Customer> = jpa.findAll().map(transform = { it.toDomain() })
+    override fun findAll(): List<Customer> = jpa.findAll().map { it.toDomain() }
 
     private fun Customer.toEntity() = CustomerEntity(
         id = id.value,

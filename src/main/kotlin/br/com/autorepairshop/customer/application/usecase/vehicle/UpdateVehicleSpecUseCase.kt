@@ -25,7 +25,7 @@ class UpdateVehicleSpecUseCase(private val vehicles: VehicleRepository) :
         vehicle.updateSpec(
             brand = input.brand,
             model = input.model,
-            year = input.year?.let(block = { ModelYear.of(year = it) }),
+            year = input.year?.let { ModelYear.of(year = it) },
         )
         vehicles.save(vehicle = vehicle)
         return vehicle.toResponse()

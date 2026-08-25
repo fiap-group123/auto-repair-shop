@@ -22,6 +22,6 @@ class ListVehiclesByOwnerUseCase(
         val ownerId = CustomerId(value = input)
         customers.findById(id = ownerId)
             ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
-        return vehicles.findByOwner(ownerId = ownerId).map(transform = { it.toResponse() })
+        return vehicles.findByOwner(ownerId = ownerId).map { it.toResponse() }
     }
 }

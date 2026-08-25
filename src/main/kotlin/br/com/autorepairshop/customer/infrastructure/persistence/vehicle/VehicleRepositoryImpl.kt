@@ -22,7 +22,7 @@ class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepo
     override fun findByPlate(plate: LicensePlate): Vehicle? = jpa.findByPlate(plate = plate.value)?.toDomain()
 
     override fun findByOwner(ownerId: CustomerId): List<Vehicle> =
-        jpa.findAllByOwnerId(ownerId = ownerId.value).map(transform = { it.toDomain() })
+        jpa.findAllByOwnerId(ownerId = ownerId.value).map { it.toDomain() }
 
     override fun existsByPlate(plate: LicensePlate): Boolean = jpa.existsByPlate(plate = plate.value)
 

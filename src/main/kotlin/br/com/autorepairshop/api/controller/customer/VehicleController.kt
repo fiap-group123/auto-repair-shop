@@ -1,8 +1,9 @@
-package br.com.autorepairshop.api
+package br.com.autorepairshop.api.controller.customer
 
-import br.com.autorepairshop.api.dto.ChangeVehiclePlateRequest
-import br.com.autorepairshop.api.dto.TransferVehicleRequest
-import br.com.autorepairshop.api.dto.UpdateVehicleSpecRequest
+import br.com.autorepairshop.api.dto.customer.ChangeVehiclePlateRequest
+import br.com.autorepairshop.api.dto.customer.TransferVehicleRequest
+import br.com.autorepairshop.api.dto.customer.UpdateVehicleSpecRequest
+import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.customer.application.dto.vehicle.ChangeVehiclePlateCommand
 import br.com.autorepairshop.customer.application.dto.vehicle.TransferVehicleCommand
 import br.com.autorepairshop.customer.application.dto.vehicle.UpdateVehicleSpecCommand
@@ -27,24 +28,31 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/vehicles")
-@Tag(name = "Vehicle", description = "Consulta e alteração de veículos")
+@Tag(name = "Vehicle", description = "Vehicle search and update")
 class VehicleController(
     private val findVehicle: FindVehicleUseCase,
     private val findVehicleByPlate: FindVehicleByPlateUseCase,
     private val updateVehicleSpec: UpdateVehicleSpecUseCase,
     private val changeVehiclePlate: ChangeVehiclePlateUseCase,
     private val transferVehicle: TransferVehicleUseCase,
+    private val authorization: AuthorizationSupport,
 ) {
 
     @GetMapping("/{id}")
     @Operation(summary = "Search for vehicle by id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<VehicleResponse> =
-        ResponseEntity.ok(findVehicle.execute(input = id))
+    fun findById(@PathVariable id: UUID): ResponseEntity<VehicleResponse> {
+        val vehicle = findVehicle.execute(input = id)
+        authorization.requireCanAccessVehicleOwner(ownerId = vehicle.ownerId)
+        return ResponseEntity.ok(vehicle)
+    }
 
     @GetMapping
     @Operation(summary = "Search for vehicle by license plate")
-    fun findByPlate(@RequestParam plate: String): ResponseEntity<VehicleResponse> =
-        ResponseEntity.ok(findVehicleByPlate.execute(input = plate))
+    fun findByPlate(@RequestParam plate: String): ResponseEntity<VehicleResponse> {
+        val vehicle = findVehicleByPlate.execute(input = plate)
+        authorization.requireCanAccessVehicleOwner(ownerId = vehicle.ownerId)
+        return ResponseEntity.ok(vehicle)
+    }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update brand, model and/or year")

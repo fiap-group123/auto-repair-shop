@@ -1,7 +1,8 @@
-package br.com.autorepairshop.api
+package br.com.autorepairshop.api.controller.customer
 
-import br.com.autorepairshop.api.dto.RegisterVehicleRequest
-import br.com.autorepairshop.api.dto.UpdateCustomerRequest
+import br.com.autorepairshop.api.dto.customer.RegisterVehicleRequest
+import br.com.autorepairshop.api.dto.customer.UpdateCustomerRequest
+import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.customer.application.dto.customer.CustomerResponse
 import br.com.autorepairshop.customer.application.dto.customer.RegisterCustomerCommand
 import br.com.autorepairshop.customer.application.dto.customer.UpdateCustomerCommand
@@ -43,6 +44,7 @@ class CustomerController(
     private val listCustomers: ListCustomersUseCase,
     private val registerVehicle: RegisterVehicleUseCase,
     private val listVehiclesByOwner: ListVehiclesByOwnerUseCase,
+    private val authorization: AuthorizationSupport,
 ) {
 
     @PostMapping
@@ -67,8 +69,10 @@ class CustomerController(
 
     @GetMapping("/{id}")
     @Operation(summary = "Search for a customer by id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<CustomerResponse> =
-        ResponseEntity.ok(findCustomer.execute(input = id))
+    fun findById(@PathVariable id: UUID): ResponseEntity<CustomerResponse> {
+        authorization.requireCanAccessCustomer(customerId = id)
+        return ResponseEntity.ok(findCustomer.execute(input = id))
+    }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update name and/or contact information")
@@ -124,6 +128,8 @@ class CustomerController(
 
     @GetMapping("/{id}/vehicles")
     @Operation(summary = "List customer vehicles")
-    open fun listVehicles(@PathVariable id: UUID): ResponseEntity<List<VehicleResponse>> =
-        ResponseEntity.ok(listVehiclesByOwner.execute(input = id))
+    open fun listVehicles(@PathVariable id: UUID): ResponseEntity<List<VehicleResponse>> {
+        authorization.requireCanAccessCustomer(customerId = id)
+        return ResponseEntity.ok(listVehiclesByOwner.execute(input = id))
+    }
 }

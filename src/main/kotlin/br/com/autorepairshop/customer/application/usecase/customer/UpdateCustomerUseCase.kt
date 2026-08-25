@@ -23,7 +23,7 @@ class UpdateCustomerUseCase(private val customers: CustomerRepository) :
                 message = "Customer ${input.customerId} was not found.",
             )
 
-        input.name?.let(block = { customer.rename(newName = PersonName.of(raw = it)) })
+        input.name?.let { customer.rename(newName = PersonName.of(raw = it)) }
 
         if (input.email != null || input.phone != null) {
             customer.updateContact(
