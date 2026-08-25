@@ -1,21 +1,26 @@
-package br.com.autorepairshop.api
+package br.com.autorepairshop.api.exception.customer
 
+import br.com.autorepairshop.api.exception.problem
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.exception.VehicleException
-import br.com.autorepairshop.shared.domain.exception.DomainException
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
-open class ApiExceptionHandler {
+@Order(Ordered.HIGHEST_PRECEDENCE)
+class CustomerApiExceptionHandler {
 
     @ExceptionHandler(CustomerException::class)
-    open fun handleCustomer(ex: CustomerException): ProblemDetail = when (ex) {
-        is CustomerException.CustomerNotFound -> problem(status = HttpStatus.NOT_FOUND, ex = ex)
+    fun handleCustomer(ex: CustomerException): ProblemDetail = when (ex) {
+        is CustomerException.CustomerNotFound ->
+            problem(status = HttpStatus.NOT_FOUND, ex = ex)
 
-        is CustomerException.CustomerAlreadyExists -> problem(status = HttpStatus.CONFLICT, ex = ex)
+        is CustomerException.CustomerAlreadyExists ->
+            problem(status = HttpStatus.CONFLICT, ex = ex)
 
         is CustomerException.CustomerAlreadyActive,
         is CustomerException.InvalidDocument,
@@ -26,8 +31,9 @@ open class ApiExceptionHandler {
     }
 
     @ExceptionHandler(VehicleException::class)
-    open fun handleVehicle(ex: VehicleException): ProblemDetail = when (ex) {
-        is VehicleException.VehicleNotFound -> problem(status = HttpStatus.NOT_FOUND, ex = ex)
+    fun handleVehicle(ex: VehicleException): ProblemDetail = when (ex) {
+        is VehicleException.VehicleNotFound ->
+            problem(status = HttpStatus.NOT_FOUND, ex = ex)
 
         is VehicleException.VehicleAlreadyExists,
         is VehicleException.AlreadyOwnedByCustomer,
@@ -38,13 +44,4 @@ open class ApiExceptionHandler {
         is VehicleException.InvalidVehicleName,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
-
-    @ExceptionHandler(DomainException::class)
-    open fun handleDomain(ex: DomainException): ProblemDetail =
-        problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
-
-    private fun problem(
-        status: HttpStatus,
-        ex: DomainException,
-    ): ProblemDetail = ProblemDetail.forStatusAndDetail(status, ex.message)
 }

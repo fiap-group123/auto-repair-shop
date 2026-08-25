@@ -1,4 +1,4 @@
-package br.com.autorepairshop.api.dto
+package br.com.autorepairshop.api.dto.customer
 
 data class UpdateVehicleSpecRequest(
     val brand: String? = null,

@@ -1,4 +1,4 @@
-package br.com.autorepairshop.api.dto
+package br.com.autorepairshop.api.dto.customer
 
 data class UpdateCustomerRequest(
     val name: String? = null,
