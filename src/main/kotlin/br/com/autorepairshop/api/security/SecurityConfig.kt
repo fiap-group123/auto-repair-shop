@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
@@ -50,35 +51,63 @@ class SecurityConfig {
                 resourceServer.accessDeniedHandler(securityProblemSupport)
             }
             .addFilterAfter(activeUserFilter, BearerTokenAuthenticationFilter::class.java)
-            .authorizeHttpRequests { requests ->
-                requests.requestMatchers(
-                    "/error",
-                    "/.well-known/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/v3/api-docs/**",
-                ).permitAll()
-                requests.requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                requests.requestMatchers(HttpMethod.POST, "/auth/users").permitAll()
-                requests.requestMatchers(HttpMethod.POST, "/customers").hasAnyRole("RECEPTIONIST", "MANAGER")
-                requests.requestMatchers(HttpMethod.GET, "/customers").hasAnyRole("RECEPTIONIST", "MANAGER")
-                requests.requestMatchers(HttpMethod.GET, "/customers/document/**")
-                    .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
-                requests.requestMatchers(HttpMethod.GET, "/customers/*/vehicles")
-                    .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
-                requests.requestMatchers(HttpMethod.POST, "/customers/*/vehicles")
-                    .hasAnyRole("RECEPTIONIST", "MANAGER")
-                requests.requestMatchers(HttpMethod.GET, "/customers/**")
-                    .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
-                requests.requestMatchers(HttpMethod.PUT, "/customers/**").hasAnyRole("RECEPTIONIST", "MANAGER")
-                requests.requestMatchers(HttpMethod.DELETE, "/customers/**").hasRole("MANAGER")
-                requests.requestMatchers(HttpMethod.POST, "/customers/**").hasRole("MANAGER")
-                requests.requestMatchers(HttpMethod.GET, "/vehicles/**")
-                    .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
-                requests.requestMatchers(HttpMethod.PUT, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
-                requests.requestMatchers(HttpMethod.PATCH, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
-                requests.anyRequest().authenticated()
-            }
+            .authorizeHttpRequests { requests -> configureAuthorization(requests = requests) }
         return http.build()
+    }
+
+    private fun configureAuthorization(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
+        requests.requestMatchers(
+            "/error",
+            "/.well-known/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+        ).permitAll()
+        requests.requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+        requests.requestMatchers(HttpMethod.POST, "/auth/users").permitAll()
+        requests.requestMatchers(HttpMethod.POST, "/customers").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/customers").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/customers/document/**")
+            .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/customers/*/vehicles")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/customers/*/vehicles")
+            .hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/customers/**")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.PUT, "/customers/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.DELETE, "/customers/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/customers/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/vehicles/**")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.PUT, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.PATCH, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/services", "/services/**")
+            .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/services", "/services/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.PUT, "/services/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.DELETE, "/services/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/items")
+            .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.DELETE, "/service-orders/*/items/**")
+            .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis/complete")
+            .hasAnyRole("MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis")
+            .hasAnyRole("MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/approve")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/complete")
+            .hasAnyRole("MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/deliver")
+            .hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders")
+            .hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/service-orders/metrics/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/service-orders", "/service-orders/**")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.anyRequest().authenticated()
     }
 }

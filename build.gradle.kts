@@ -123,6 +123,12 @@ kover {
                     "br.com.autorepairshop.authentication.domain.aggregate",
                     "br.com.autorepairshop.authentication.domain.valueobject",
                     "br.com.autorepairshop.authentication.application.usecase",
+                    "br.com.autorepairshop.serviceorder.domain.aggregate",
+                    "br.com.autorepairshop.serviceorder.domain.valueobject",
+                    "br.com.autorepairshop.serviceorder.application.usecase",
+                    "br.com.autorepairshop.catalog.domain.aggregate",
+                    "br.com.autorepairshop.catalog.domain.valueobject",
+                    "br.com.autorepairshop.catalog.application.usecase",
                 )
             }
             excludes {
@@ -131,10 +137,15 @@ kover {
                     "*UserId",
                     "*CustomerId",
                     "*VehicleId",
+                    "*ServiceOrderId",
+                    "*OfferedServiceId",
                     "*DocumentType",
                     "*LicensePlateType",
                     "*Role",
+                    "*ServiceOrderStatus",
                     "*ContactInfo",
+                    "*ServiceOrderItem",
+                    "*ServiceOrderTimeline",
                 )
             }
         }
