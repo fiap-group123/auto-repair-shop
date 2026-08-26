@@ -41,6 +41,7 @@ object CustomerFixtures {
         brand: String = "Fiat",
         model: String = "Argo",
         year: Int = 2024,
+        active: Boolean = true
     ): Vehicle = Vehicle.register(
         ownerId = owner.id,
         plate = LicensePlate.of(raw = plate),
