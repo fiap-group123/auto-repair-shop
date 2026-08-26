@@ -7,6 +7,7 @@ import br.com.autorepairshop.authentication.domain.valueobject.LoginEmail
 import br.com.autorepairshop.authentication.domain.valueobject.Role
 import br.com.autorepairshop.authentication.domain.valueobject.UserId
 import org.springframework.stereotype.Repository
+import java.util.UUID
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
@@ -22,6 +23,8 @@ class UserRepositoryImpl(private val jpa: UserJpaRepository) : UserRepository {
     override fun findByEmail(email: LoginEmail): User? = jpa.findByEmail(email = email.value)?.toDomain()
 
     override fun existsByEmail(email: LoginEmail): Boolean = jpa.existsByEmail(email = email.value)
+
+    override fun existsByCustomerId(customerId: UUID): Boolean = jpa.existsByCustomerId(customerId = customerId)
 
     override fun existsAny(): Boolean = jpa.count() > 0
 

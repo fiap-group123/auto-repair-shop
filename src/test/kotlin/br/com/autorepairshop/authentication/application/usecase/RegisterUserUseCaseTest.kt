@@ -130,6 +130,25 @@ class RegisterUserUseCaseTest {
     }
 
     @Test
+    fun `rejects a second login for the same customer`() {
+        stubOpenRegistration()
+        val customerId = UUID.randomUUID()
+        every { users.existsByCustomerId(customerId = customerId) } returns true
+
+        assertFailsWith<AuthenticationException.CustomerAlreadyHasUser> {
+            useCase.execute(
+                input = RegisterUserCommand(
+                    email = AuthFixtures.CLIENT_EMAIL,
+                    password = AuthFixtures.RAW_PASSWORD,
+                    role = "CLIENT",
+                    customerId = customerId,
+                ),
+            )
+        }
+        verify(exactly = 0) { users.save(user = any()) }
+    }
+
+    @Test
     fun `registers receptionist after the first user exists`() {
         stubOpenRegistration()
 
@@ -153,6 +172,7 @@ class RegisterUserUseCaseTest {
     private fun stubOpenRegistration() {
         every { users.existsByEmail(email = any()) } returns false
         every { users.existsAny() } returns true
+        every { users.existsByCustomerId(customerId = any()) } returns false
         every { passwords.hash(raw = any()) } returns AuthFixtures.hashedPassword()
         every { users.save(user = any()) } returns Unit
     }

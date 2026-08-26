@@ -25,8 +25,9 @@ class AuthApiExceptionHandler {
         is AuthenticationException.UserNotFound ->
             problem(status = HttpStatus.NOT_FOUND, ex = ex)
 
-        is AuthenticationException.UserAlreadyExists ->
-            problem(status = HttpStatus.CONFLICT, ex = ex)
+        is AuthenticationException.UserAlreadyExists,
+        is AuthenticationException.CustomerAlreadyHasUser,
+        -> problem(status = HttpStatus.CONFLICT, ex = ex)
 
         is AuthenticationException.Forbidden ->
             problem(status = HttpStatus.FORBIDDEN, ex = ex)

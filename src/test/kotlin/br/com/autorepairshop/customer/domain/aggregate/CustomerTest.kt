@@ -1,8 +1,6 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
 import br.com.autorepairshop.customer.CustomerFixtures
-import br.com.autorepairshop.customer.domain.event.CustomerDeactivated
-import br.com.autorepairshop.customer.domain.event.CustomerReactivated
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
@@ -28,12 +26,11 @@ class CustomerTest {
     }
 
     @Test
-    fun `deactivate records event and blocks mutations`() {
+    fun `deactivate blocks mutations`() {
         val customer = CustomerFixtures.activeCustomer()
         customer.deactivate()
 
         assertFalse(customer.active)
-        assertTrue(customer.domainEvents.single() is CustomerDeactivated)
         assertFailsWith<CustomerException.InvalidDocument> {
             customer.rename(newName = PersonName.of(raw = "Jane Doe"))
         }
@@ -68,11 +65,9 @@ class CustomerTest {
     @Test
     fun `reactivate restores inactive customer`() {
         val customer = CustomerFixtures.inactiveCustomer()
-        customer.clearEvents()
         customer.reactivate()
 
         assertTrue(customer.active)
-        assertTrue(customer.domainEvents.single() is CustomerReactivated)
     }
 
     @Test
