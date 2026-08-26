@@ -9,16 +9,20 @@ import br.com.autorepairshop.customer.application.dto.vehicle.TransferVehicleCom
 import br.com.autorepairshop.customer.application.dto.vehicle.UpdateVehicleSpecCommand
 import br.com.autorepairshop.customer.application.dto.vehicle.VehicleResponse
 import br.com.autorepairshop.customer.application.usecase.vehicle.ChangeVehiclePlateUseCase
+import br.com.autorepairshop.customer.application.usecase.vehicle.DeactivateVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.FindVehicleByPlateUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.FindVehicleUseCase
+import br.com.autorepairshop.customer.application.usecase.vehicle.ReactivateVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.TransferVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.UpdateVehicleSpecUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -35,6 +39,8 @@ class VehicleController(
     private val updateVehicleSpec: UpdateVehicleSpecUseCase,
     private val changeVehiclePlate: ChangeVehiclePlateUseCase,
     private val transferVehicle: TransferVehicleUseCase,
+    private val deactivateVehicle: DeactivateVehicleUseCase,
+    private val reactivateVehicle: ReactivateVehicleUseCase,
     private val authorization: AuthorizationSupport,
 ) {
 
@@ -69,6 +75,20 @@ class VehicleController(
             ),
         ),
     )
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Deactivate vehicle (does not delete history)\n")
+    open fun deactivate(@PathVariable id: UUID): ResponseEntity<Void> {
+        deactivateVehicle.execute(input = id)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/{id}")
+    @Operation(summary = "Reactivate vehicle")
+    fun reactivate(@PathVariable id: UUID): ResponseEntity<Void> {
+        reactivateVehicle.execute(input = id)
+        return ResponseEntity.noContent().build()
+    }
 
     @PatchMapping("/{id}/plate")
     @Operation(summary = "Change license plate")

@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
+import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
@@ -8,6 +9,7 @@ import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
 import br.com.autorepairshop.shared.domain.AggregateRoot
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 class Vehicle private constructor(
     id: VehicleId,
@@ -16,6 +18,7 @@ class Vehicle private constructor(
     brand: String,
     model: String,
     year: ModelYear,
+    active: Boolean,
     val registeredAt: Instant,
 ) : AggregateRoot<VehicleId>(id = id) {
 
@@ -34,7 +37,11 @@ class Vehicle private constructor(
     var year: ModelYear = year
         private set
 
+    var active: Boolean = active
+        private set
+
     fun transferTo(newOwnerId: CustomerId) {
+        requireActive()
         if (newOwnerId == ownerId) {
             throw VehicleException.AlreadyOwnedByCustomer(
                 message = "Vehicle ${plate.formatted()} already belongs to this customer.",
@@ -44,6 +51,7 @@ class Vehicle private constructor(
     }
 
     fun changePlate(newPlate: LicensePlate) {
+        requireActive()
         plate = newPlate
     }
 
@@ -52,9 +60,28 @@ class Vehicle private constructor(
         model: String?,
         year: ModelYear?,
     ) {
+        requireActive()
         brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
         model?.let { this.model = normalizeName(raw = it, field = "model") }
         year?.let { this.year = it }
+    }
+
+    fun reactivate() {
+        if (active) throw VehicleException.VehicleAlreadyActive(message = "Vehicle is already active.")
+        active = true
+    }
+
+    fun deactivate() {
+        requireActive()
+        active = false
+    }
+
+    private fun requireActive() {
+        if (!active) {
+            throw VehicleException.VehicleInactive(
+                message = "Vehicle with plate ${plate} is inactive.",
+            )
+        }
     }
 
     companion object {
@@ -64,7 +91,8 @@ class Vehicle private constructor(
             brand: String,
             model: String,
             year: ModelYear,
-            at: Instant = Clock.System.now(),
+            active: Boolean,
+            at: Instant = Clock.System.now()
         ) = Vehicle(
             id = VehicleId.generate(),
             ownerId = ownerId,
@@ -72,7 +100,8 @@ class Vehicle private constructor(
             brand = normalizeName(raw = brand, field = "brand"),
             model = normalizeName(raw = model, field = "model"),
             year = year,
-            registeredAt = at,
+            active = active,
+            registeredAt = at
         )
 
         internal fun rehydrate(
@@ -82,7 +111,8 @@ class Vehicle private constructor(
             brand: String,
             model: String,
             year: ModelYear,
-            registeredAt: Instant,
+            active: Boolean,
+            registeredAt: Instant
         ) = Vehicle(
             id = id,
             ownerId = ownerId,
@@ -90,7 +120,8 @@ class Vehicle private constructor(
             brand = brand,
             model = model,
             year = year,
-            registeredAt = registeredAt,
+            active = active,
+            registeredAt = registeredAt
         )
 
         private fun normalizeName(
