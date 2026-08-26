@@ -35,6 +35,14 @@ class RegisterUserUseCase(
                 message = "The first user must be MANAGER.",
             )
         }
+        if (role == Role.CLIENT &&
+            input.customerId != null &&
+            users.existsByCustomerId(customerId = input.customerId)
+        ) {
+            throw AuthenticationException.CustomerAlreadyHasUser(
+                message = "Customer already has a login.",
+            )
+        }
         val user = User.register(
             email = email,
             hashedPassword = passwords.hash(raw = input.password),

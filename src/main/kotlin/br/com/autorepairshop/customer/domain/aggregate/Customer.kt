@@ -1,7 +1,5 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
-import br.com.autorepairshop.customer.domain.event.CustomerDeactivated
-import br.com.autorepairshop.customer.domain.event.CustomerReactivated
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
@@ -10,7 +8,6 @@ import br.com.autorepairshop.customer.domain.valueobject.document.DocumentId
 import br.com.autorepairshop.shared.domain.AggregateRoot
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlin.time.toJavaInstant
 
 class Customer private constructor(
     id: CustomerId,
@@ -40,26 +37,14 @@ class Customer private constructor(
         contact = newContact
     }
 
-    fun deactivate(at: Instant = Clock.System.now()) {
+    fun deactivate() {
         requireActive()
         active = false
-        registerEvent(
-            event = CustomerDeactivated(
-                customerId = id,
-                occurredOn = at.toJavaInstant(),
-            ),
-        )
     }
 
-    fun reactivate(at: Instant = Clock.System.now()) {
+    fun reactivate() {
         if (active) throw CustomerException.CustomerAlreadyActive(message = "Customer is already active.")
         active = true
-        registerEvent(
-            event = CustomerReactivated(
-                customerId = id,
-                occurredOn = at.toJavaInstant(),
-            ),
-        )
     }
 
     private fun requireActive() {

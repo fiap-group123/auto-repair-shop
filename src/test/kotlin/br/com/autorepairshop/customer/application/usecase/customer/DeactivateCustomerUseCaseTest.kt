@@ -4,7 +4,6 @@ import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
-import br.com.autorepairshop.shared.application.event.EventPublisher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -17,10 +16,8 @@ import kotlin.test.assertFalse
 @Tag("unit")
 class DeactivateCustomerUseCaseTest {
     private val customers = mockk<CustomerRepository>()
-    private val events = mockk<EventPublisher>()
     private val useCase = DeactivateCustomerUseCase(
         customers = customers,
-        events = events,
     )
 
     @Test
@@ -34,16 +31,14 @@ class DeactivateCustomerUseCaseTest {
     }
 
     @Test
-    fun `saves and publishes when deactivating`() {
+    fun `saves when deactivating`() {
         val customer = CustomerFixtures.activeCustomer()
         every { customers.findById(id = customer.id) } returns customer
         every { customers.save(customer = customer) } returns Unit
-        every { events.publish(aggregate = customer) } returns Unit
 
         useCase.execute(input = customer.id.value)
 
         assertFalse(customer.active)
         verify { customers.save(customer = customer) }
-        verify { events.publish(aggregate = customer) }
     }
 }
