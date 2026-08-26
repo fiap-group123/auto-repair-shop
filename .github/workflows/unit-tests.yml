@@ -13,6 +13,9 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
+        with:
+          java-version: ${{ vars.JAVA_VERSION }}
+          gradle-version: ${{ vars.GRADLE_VERSION }}
 
       - name: Run unit tests
         run: ./gradlew koverVerify
