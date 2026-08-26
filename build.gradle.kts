@@ -138,6 +138,14 @@ kover {
                 )
             }
         }
+        total {
+            html {
+                onCheck = true
+            }
+            xml {
+                onCheck = true
+            }
+        }
         verify {
             rule {
                 minBound(98)

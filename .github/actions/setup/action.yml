@@ -1,0 +1,33 @@
+name: Setup
+description: "Setup the environment for the project"
+
+inputs:
+  java-version:
+    description: JDK version
+    required: true
+  gradle-version:
+    description: Gradle version
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Setup java
+      uses: actions/setup-java@v6
+      with: 
+        distribution: "temurin"
+        java-version: ${{ inputs.java-version }}
+
+    - name: Setup gradle
+      uses: gradle/actions/setup-gradle@v6
+      with:
+          gradle-version: ${{ inputs.gradle-version }}
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+    - name: Gradle permission
+      shell: bash
+      run: chmod +x gradlew
+      
