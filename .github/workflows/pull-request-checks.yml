@@ -1,4 +1,4 @@
-name: Pull Request Verify
+name: Pull Request Checks
 
 on:
   pull_request:
