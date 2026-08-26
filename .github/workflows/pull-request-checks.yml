@@ -33,7 +33,7 @@ jobs:
           gradle-version: ${{ vars.GRADLE_VERSION }}
 
       - name: Run tests
-        run: ./gradlew koverVerify
+        run: ./gradlew koverVerify koverXmlReport koverHtmlReport
 
       - name: Extract coverage percentage
         id: extract-coverage-percentage
