@@ -12,9 +12,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v7
-
     - name: Setup java
       uses: actions/setup-java@v6
       with: 
