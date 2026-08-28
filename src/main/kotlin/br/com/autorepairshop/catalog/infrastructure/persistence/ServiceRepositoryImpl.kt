@@ -13,7 +13,7 @@ import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
 @Repository
-class OfferedServiceRepositoryImpl(private val jpa: OfferedServiceJpaRepository) : ServiceRepository {
+class ServiceRepositoryImpl(private val jpa: ServiceJpaRepository) : ServiceRepository {
 
     override fun save(service: Service) {
         jpa.save(service.toEntity())
@@ -31,30 +31,33 @@ class OfferedServiceRepositoryImpl(private val jpa: OfferedServiceJpaRepository)
 
     override fun findAll(): List<Service> = jpa.findAll().map { it.toDomain() }
 
-    override fun findByIds(ids: Collection<UUID>): List<Service> {
-        if (ids.isEmpty()) return emptyList()
-        return jpa.findAllById(ids).map { it.toDomain() }
+    override fun findByServiceOrderId(serviceOrderId: UUID): List<Service> =
+        jpa.findAllByServiceOrderId(serviceOrderId).map { it.toDomain() }
+
+    override fun findByServiceOrderIds(serviceOrderIds: Collection<UUID>): List<Service> {
+        if (serviceOrderIds.isEmpty()) return emptyList()
+        return jpa.findAllByServiceOrderIdIn(serviceOrderIds).map { it.toDomain() }
     }
 
-    private fun Service.toEntity() = OfferedServiceEntity(
+    override fun existsByServiceOrderId(serviceOrderId: UUID): Boolean = jpa.existsByServiceOrderId(serviceOrderId)
+
+    private fun Service.toEntity() = ServiceEntity(
         id = id.value,
         serviceOrderId = serviceOrderId,
         name = name.value,
         price = basePrice.amount,
         status = ServiceStatusColumn.valueOf(value = status.name),
-        active = active,
         registeredAt = registeredAt.toJavaInstant(),
         openedAt = openedAt?.toJavaInstant(),
         finishedAt = finishedAt?.toJavaInstant(),
         estimatedTimeSeconds = estimatedTime?.inWholeSeconds,
     )
 
-    private fun OfferedServiceEntity.toDomain() = Service.rehydrate(
+    private fun ServiceEntity.toDomain() = Service.rehydrate(
         id = ServiceId(value = id),
         serviceOrderId = serviceOrderId,
         name = ServiceName.of(raw = name),
         price = Money.of(raw = price),
-        active = active,
         registeredAt = registeredAt.toKotlinInstant(),
         status = ServiceStatus.valueOf(value = status.name),
         openedAt = openedAt?.toKotlinInstant(),

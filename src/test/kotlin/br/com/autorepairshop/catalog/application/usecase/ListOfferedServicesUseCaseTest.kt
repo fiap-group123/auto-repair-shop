@@ -1,7 +1,7 @@
 package br.com.autorepairshop.catalog.application.usecase
 
 import br.com.autorepairshop.catalog.CatalogFixtures
-import br.com.autorepairshop.catalog.domain.repository.OfferedServiceRepository
+import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Tag
@@ -11,14 +11,14 @@ import kotlin.test.assertTrue
 
 @Tag("unit")
 class ListOfferedServicesUseCaseTest {
-    private val services = mockk<OfferedServiceRepository>()
-    private val useCase = ListOfferedServicesUseCase(services = services)
+    private val services = mockk<ServiceRepository>()
+    private val useCase = ListServicesUseCase(services = services)
 
     @Test
     fun `maps persisted services to responses`() {
-        val active = CatalogFixtures.activeService()
-        val inactive = CatalogFixtures.inactiveService()
-        every { services.findAll() } returns listOf(element = active).plus(element = inactive)
+        val first = CatalogFixtures.activeService()
+        val second = CatalogFixtures.activeService()
+        every { services.findAll() } returns listOf(element = first).plus(element = second)
 
         val response = useCase.execute(input = Unit)
 
@@ -27,13 +27,12 @@ class ListOfferedServicesUseCaseTest {
             actual = response.size,
         )
         assertEquals(
-            expected = active.id.value,
+            expected = first.id.value,
             actual = response[0].id,
         )
-        assertTrue(response[0].active)
         assertEquals(
-            expected = false,
-            actual = response[1].active,
+            expected = second.id.value,
+            actual = response[1].id,
         )
     }
 

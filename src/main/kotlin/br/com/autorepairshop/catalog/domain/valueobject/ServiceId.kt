@@ -4,8 +4,8 @@ import br.com.autorepairshop.shared.domain.ValueObject
 import java.util.UUID
 
 @JvmInline
-value class OfferedServiceId(val value: UUID) : ValueObject {
+value class ServiceId(val value: UUID) : ValueObject {
     companion object {
-        fun generate(): OfferedServiceId = OfferedServiceId(value = UUID.randomUUID())
+        fun generate(): ServiceId = ServiceId(value = UUID.randomUUID())
     }
 }

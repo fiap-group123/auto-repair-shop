@@ -1,10 +1,10 @@
 package br.com.autorepairshop.catalog.application.usecase
 
 import br.com.autorepairshop.catalog.CatalogFixtures
-import br.com.autorepairshop.catalog.application.dto.UpdateOfferedServiceCommand
+import br.com.autorepairshop.catalog.application.dto.UpdateServiceCommand
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
-import br.com.autorepairshop.catalog.domain.repository.OfferedServiceRepository
-import br.com.autorepairshop.catalog.domain.valueobject.OfferedServiceId
+import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
+import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -17,16 +17,16 @@ import kotlin.test.assertFailsWith
 
 @Tag("unit")
 class UpdateOfferedServiceUseCaseTest {
-    private val services = mockk<OfferedServiceRepository>()
-    private val useCase = UpdateOfferedServiceUseCase(services = services)
+    private val services = mockk<ServiceRepository>()
+    private val useCase = UpdateServiceUseCase(services = services)
 
     @Test
     fun `throws when the service is missing`() {
         val id = UUID.randomUUID()
-        every { services.findById(id = OfferedServiceId(value = id)) } returns null
+        every { services.findById(id = ServiceId(value = id)) } returns null
 
         assertFailsWith<CatalogException.ServiceNotFound> {
-            useCase.execute(input = UpdateOfferedServiceCommand(serviceId = id))
+            useCase.execute(input = UpdateServiceCommand(serviceId = id))
         }
     }
 
@@ -34,11 +34,11 @@ class UpdateOfferedServiceUseCaseTest {
     fun `rejects renaming to an existing name`() {
         val service = CatalogFixtures.activeService()
         every { services.findById(id = service.id) } returns service
-        every { services.existsByName(name = any()) } returns true
+        every { services.existsByName(name = any(), serviceOrderId = service.serviceOrderId) } returns true
 
         assertFailsWith<CatalogException.ServiceAlreadyExists> {
             useCase.execute(
-                input = UpdateOfferedServiceCommand(
+                input = UpdateServiceCommand(
                     serviceId = service.id.value,
                     name = CatalogFixtures.OTHER_NAME,
                 ),
@@ -54,7 +54,7 @@ class UpdateOfferedServiceUseCaseTest {
         every { services.save(service = service) } returns Unit
 
         val response = useCase.execute(
-            input = UpdateOfferedServiceCommand(
+            input = UpdateServiceCommand(
                 serviceId = service.id.value,
                 name = CatalogFixtures.NAME,
             ),
@@ -64,7 +64,7 @@ class UpdateOfferedServiceUseCaseTest {
             expected = CatalogFixtures.NAME,
             actual = response.name,
         )
-        verify(exactly = 0) { services.existsByName(name = any()) }
+        verify(exactly = 0) { services.existsByName(name = any(), serviceOrderId = any()) }
         verify { services.save(service = service) }
     }
 
@@ -72,14 +72,14 @@ class UpdateOfferedServiceUseCaseTest {
     fun `renames and reprices the service`() {
         val service = CatalogFixtures.activeService()
         every { services.findById(id = service.id) } returns service
-        every { services.existsByName(name = any()) } returns false
+        every { services.existsByName(name = any(), serviceOrderId = service.serviceOrderId) } returns false
         every { services.save(service = service) } returns Unit
 
         val response = useCase.execute(
-            input = UpdateOfferedServiceCommand(
+            input = UpdateServiceCommand(
                 serviceId = service.id.value,
                 name = CatalogFixtures.OTHER_NAME,
-                price = BigDecimal("200.00"),
+                basePrice = BigDecimal("200.00"),
             ),
         )
 
@@ -89,7 +89,7 @@ class UpdateOfferedServiceUseCaseTest {
         )
         assertEquals(
             expected = "200.00",
-            actual = response.price.toPlainString(),
+            actual = response.basePrice.toPlainString(),
         )
     }
 
@@ -100,9 +100,9 @@ class UpdateOfferedServiceUseCaseTest {
         every { services.save(service = service) } returns Unit
 
         val response = useCase.execute(
-            input = UpdateOfferedServiceCommand(
+            input = UpdateServiceCommand(
                 serviceId = service.id.value,
-                price = BigDecimal("99.90"),
+                basePrice = BigDecimal("99.90"),
             ),
         )
 
@@ -112,7 +112,7 @@ class UpdateOfferedServiceUseCaseTest {
         )
         assertEquals(
             expected = "99.90",
-            actual = response.price.toPlainString(),
+            actual = response.basePrice.toPlainString(),
         )
     }
 }

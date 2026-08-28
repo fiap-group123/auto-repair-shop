@@ -11,8 +11,8 @@ import java.time.Instant
 import java.util.UUID
 
 @Entity
-@Table(name = "offered_services")
-class OfferedServiceEntity(
+@Table(name = "services")
+class ServiceEntity(
     @Id
     val id: UUID,
     @Column(name = "service_order_id", nullable = false)
@@ -24,8 +24,6 @@ class OfferedServiceEntity(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     var status: ServiceStatusColumn,
-    @Column(nullable = false)
-    var active: Boolean,
     @Column(name = "registered_at", nullable = false)
     val registeredAt: Instant,
     @Column(name = "opened_at")

@@ -6,6 +6,10 @@ fun Service.toResponse() = ServiceResponse(
     id = id.value,
     serviceOrderId = serviceOrderId,
     name = name.value,
-    price = basePrice.amount,
-    active = active,
+    basePrice = basePrice.amount,
+    status = status.name,
+    registeredAt = registeredAt,
+    openedAt = openedAt,
+    finishedAt = finishedAt,
+    estimatedTime = estimatedTime,
 )

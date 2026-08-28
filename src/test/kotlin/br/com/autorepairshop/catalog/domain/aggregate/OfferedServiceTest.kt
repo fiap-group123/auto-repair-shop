@@ -3,28 +3,42 @@ package br.com.autorepairshop.catalog.domain.aggregate
 import br.com.autorepairshop.catalog.CatalogFixtures
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
+import br.com.autorepairshop.catalog.domain.valueobject.ServiceStatus
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 @Tag("unit")
 class OfferedServiceTest {
 
     @Test
-    fun `register creates an active service with a price`() {
-        val service = CatalogFixtures.activeService()
+    fun `register creates a waiting service with a price`() {
+        val serviceOrderId = UUID.randomUUID()
+        val service = CatalogFixtures.activeService(serviceOrderId = serviceOrderId)
 
-        assertTrue(service.active)
+        assertEquals(
+            expected = serviceOrderId,
+            actual = service.serviceOrderId,
+        )
+        assertEquals(
+            expected = ServiceStatus.WAITING,
+            actual = service.status,
+        )
+        assertNull(service.estimatedTime)
         assertEquals(
             expected = CatalogFixtures.NAME,
             actual = service.name.value,
         )
         assertEquals(
             expected = "150.00",
-            actual = service.price.toString(),
+            actual = service.basePrice.toString(),
         )
     }
 
@@ -33,7 +47,7 @@ class OfferedServiceTest {
         val service = CatalogFixtures.activeService()
 
         service.rename(newName = ServiceName.of(raw = CatalogFixtures.OTHER_NAME))
-        service.changePrice(newPrice = CatalogFixtures.money(raw = "200.00"))
+        service.changeBasePrice(newBasePrice = CatalogFixtures.money(raw = "200.00"))
 
         assertEquals(
             expected = CatalogFixtures.OTHER_NAME,
@@ -41,68 +55,104 @@ class OfferedServiceTest {
         )
         assertEquals(
             expected = "200.00",
-            actual = service.price.toString(),
+            actual = service.basePrice.toString(),
         )
     }
 
     @Test
-    fun `deactivate blocks mutations`() {
+    fun `inProgress records the start of execution`() {
         val service = CatalogFixtures.activeService()
-        service.deactivate()
+        val opened = Instant.fromEpochSeconds(epochSeconds = 1_700_000_000)
 
-        assertFalse(service.active)
-        assertFailsWith<CatalogException.ServiceInactive> {
-            service.rename(newName = ServiceName.of(raw = CatalogFixtures.OTHER_NAME))
-        }
-        assertFailsWith<CatalogException.ServiceInactive> {
-            service.changePrice(newPrice = CatalogFixtures.money(raw = "200.00"))
+        service.inProgress(at = opened)
+
+        assertEquals(
+            expected = ServiceStatus.IN_PROGRESS,
+            actual = service.status,
+        )
+        assertEquals(
+            expected = opened,
+            actual = service.openedAt,
+        )
+    }
+
+    @Test
+    fun `finish records the last duration as estimated time`() {
+        val service = CatalogFixtures.activeService()
+        val opened = Instant.fromEpochSeconds(epochSeconds = 1_700_000_000)
+        val finished = opened + 2.hours + 30.minutes
+
+        service.inProgress(at = opened)
+        service.finish(at = finished)
+
+        assertEquals(
+            expected = ServiceStatus.FINISHED,
+            actual = service.status,
+        )
+        assertEquals(
+            expected = finished,
+            actual = service.finishedAt,
+        )
+        assertEquals(
+            expected = 2.hours + 30.minutes,
+            actual = service.estimatedTime,
+        )
+    }
+
+    @Test
+    fun `finish before openedAt is rejected`() {
+        val service = CatalogFixtures.activeService()
+        val opened = Instant.fromEpochSeconds(epochSeconds = 1_700_000_000)
+
+        service.inProgress(at = opened)
+
+        assertFailsWith<CatalogException.InvalidDuration> {
+            service.finish(at = opened - 1.hours)
         }
     }
 
     @Test
-    fun `second deactivate fails`() {
-        val service = CatalogFixtures.inactiveService()
-
-        assertFailsWith<CatalogException.ServiceInactive> {
-            service.deactivate()
-        }
-    }
-
-    @Test
-    fun `reactivate on an active service fails`() {
+    fun `rejects status transitions from the wrong status`() {
         val service = CatalogFixtures.activeService()
 
-        assertFailsWith<CatalogException.ServiceAlreadyActive> {
-            service.reactivate()
+        assertFailsWith<CatalogException.InvalidStatusTransition> {
+            service.finish()
+        }
+
+        service.inProgress()
+        assertFailsWith<CatalogException.InvalidStatusTransition> {
+            service.inProgress()
         }
     }
 
     @Test
-    fun `reactivate restores an inactive service`() {
-        val service = CatalogFixtures.inactiveService()
-
-        service.reactivate()
-
-        assertTrue(service.active)
-    }
-
-    @Test
-    fun `rehydrate restores an inactive service from persistence`() {
-        val original = CatalogFixtures.inactiveService()
-        val restored = OfferedService.rehydrate(
+    fun `rehydrate restores the service without domain events`() {
+        val original = CatalogFixtures.activeService()
+        original.inProgress()
+        val restored = Service.rehydrate(
             id = original.id,
+            serviceOrderId = original.serviceOrderId,
             name = original.name,
-            price = original.price,
-            active = false,
+            price = original.basePrice,
             registeredAt = original.registeredAt,
+            status = original.status,
+            openedAt = original.openedAt,
+            finishedAt = original.finishedAt,
+            estimatedTime = original.estimatedTime,
         )
 
-        assertFalse(restored.active)
         assertEquals(
             expected = original.id,
             actual = restored.id,
         )
-        restored.reactivate()
-        assertTrue(restored.active)
+        assertEquals(
+            expected = original.serviceOrderId,
+            actual = restored.serviceOrderId,
+        )
+        assertEquals(
+            expected = ServiceStatus.IN_PROGRESS,
+            actual = restored.status,
+        )
+        assertTrue(restored.domainEvents.isEmpty())
     }
 }

@@ -1,20 +1,17 @@
 package br.com.autorepairshop.api.controller.catalog
 
-import br.com.autorepairshop.api.dto.catalog.RegisterOfferedServiceRequest
+import br.com.autorepairshop.api.dto.catalog.RegisterServiceRequest
 import br.com.autorepairshop.api.dto.catalog.UpdateOfferedServiceRequest
-import br.com.autorepairshop.catalog.application.dto.OfferedServiceResponse
-import br.com.autorepairshop.catalog.application.dto.RegisterOfferedServiceCommand
-import br.com.autorepairshop.catalog.application.dto.UpdateOfferedServiceCommand
-import br.com.autorepairshop.catalog.application.usecase.DeactivateOfferedServiceUseCase
-import br.com.autorepairshop.catalog.application.usecase.FindOfferedServiceUseCase
-import br.com.autorepairshop.catalog.application.usecase.ListOfferedServicesUseCase
-import br.com.autorepairshop.catalog.application.usecase.ReactivateOfferedServiceUseCase
-import br.com.autorepairshop.catalog.application.usecase.RegisterOfferedServiceUseCase
-import br.com.autorepairshop.catalog.application.usecase.UpdateOfferedServiceUseCase
+import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
+import br.com.autorepairshop.catalog.application.dto.ServiceResponse
+import br.com.autorepairshop.catalog.application.dto.UpdateServiceCommand
+import br.com.autorepairshop.catalog.application.usecase.FindServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.ListServicesUseCase
+import br.com.autorepairshop.catalog.application.usecase.RegisterServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.UpdateServiceUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -29,21 +26,20 @@ import java.util.UUID
 @RequestMapping("/services")
 @Tag(name = "Catalog", description = "Offered services catalog (bounded context Catalog)")
 class OfferedServiceController(
-    private val registerService: RegisterOfferedServiceUseCase,
-    private val updateService: UpdateOfferedServiceUseCase,
-    private val deactivateService: DeactivateOfferedServiceUseCase,
-    private val reactivateService: ReactivateOfferedServiceUseCase,
-    private val findService: FindOfferedServiceUseCase,
-    private val listServices: ListOfferedServicesUseCase,
+    private val registerService: RegisterServiceUseCase,
+    private val updateService: UpdateServiceUseCase,
+    private val findService: FindServiceUseCase,
+    private val listServices: ListServicesUseCase,
 ) {
 
     @PostMapping
     @Operation(summary = "Register offered service")
-    fun register(@RequestBody request: RegisterOfferedServiceRequest): ResponseEntity<OfferedServiceResponse> {
+    fun register(@RequestBody request: RegisterServiceRequest): ResponseEntity<ServiceResponse> {
         val service = registerService.execute(
-            input = RegisterOfferedServiceCommand(
+            input = RegisterServiceCommand(
+                serviceOrderId = request.serviceOrderId,
                 name = request.name,
-                price = request.price,
+                basePrice = request.price,
             ),
         )
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -55,11 +51,11 @@ class OfferedServiceController(
 
     @GetMapping
     @Operation(summary = "List offered services")
-    fun list(): ResponseEntity<List<OfferedServiceResponse>> = ResponseEntity.ok(listServices.execute(input = Unit))
+    fun list(): ResponseEntity<List<ServiceResponse>> = ResponseEntity.ok(listServices.execute(input = Unit))
 
     @GetMapping("/{id}")
     @Operation(summary = "Search for an offered service by id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<OfferedServiceResponse> =
+    fun findById(@PathVariable id: UUID): ResponseEntity<ServiceResponse> =
         ResponseEntity.ok(findService.execute(input = id))
 
     @PutMapping("/{id}")
@@ -67,27 +63,13 @@ class OfferedServiceController(
     fun update(
         @PathVariable id: UUID,
         @RequestBody request: UpdateOfferedServiceRequest,
-    ): ResponseEntity<OfferedServiceResponse> = ResponseEntity.ok(
+    ): ResponseEntity<ServiceResponse> = ResponseEntity.ok(
         updateService.execute(
-            input = UpdateOfferedServiceCommand(
+            input = UpdateServiceCommand(
                 serviceId = id,
                 name = request.name,
-                price = request.price,
+                basePrice = request.price,
             ),
         ),
     )
-
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Deactivate offered service (keeps service order history)")
-    fun deactivate(@PathVariable id: UUID): ResponseEntity<Void> {
-        deactivateService.execute(input = id)
-        return ResponseEntity.noContent().build()
-    }
-
-    @PostMapping("/{id}")
-    @Operation(summary = "Reactivate offered service")
-    fun reactivate(@PathVariable id: UUID): ResponseEntity<Void> {
-        reactivateService.execute(input = id)
-        return ResponseEntity.noContent().build()
-    }
 }

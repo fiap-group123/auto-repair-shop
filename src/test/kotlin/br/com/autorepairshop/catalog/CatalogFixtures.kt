@@ -1,9 +1,10 @@
 package br.com.autorepairshop.catalog
 
-import br.com.autorepairshop.catalog.domain.aggregate.OfferedService
+import br.com.autorepairshop.catalog.domain.aggregate.Service
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
 import br.com.autorepairshop.shared.domain.Money
 import java.math.BigDecimal
+import java.util.UUID
 
 object CatalogFixtures {
     const val NAME = "Troca de oleo"
@@ -15,10 +16,10 @@ object CatalogFixtures {
     fun activeService(
         name: String = NAME,
         price: String = PRICE,
-    ): OfferedService = OfferedService.register(
+        serviceOrderId: UUID = UUID.randomUUID(),
+    ): Service = Service.register(
+        serviceOrderId = serviceOrderId,
         name = ServiceName.of(raw = name),
         price = money(raw = price),
     )
-
-    fun inactiveService(): OfferedService = activeService().apply { deactivate() }
 }

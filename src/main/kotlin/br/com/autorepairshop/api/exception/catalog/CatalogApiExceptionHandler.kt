@@ -22,8 +22,9 @@ class CatalogApiExceptionHandler {
             problem(status = HttpStatus.CONFLICT, ex = ex)
 
         is CatalogException.ServiceAlreadyActive,
-        is CatalogException.ServiceInactive,
         is CatalogException.InvalidServiceName,
+        is CatalogException.InvalidStatusTransition,
+        is CatalogException.InvalidDuration,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
 }
