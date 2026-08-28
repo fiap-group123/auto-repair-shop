@@ -6,5 +6,5 @@ import java.util.UUID
 data class RegisterServiceRequest(
     val serviceOrderId: UUID,
     val name: String,
-    val price: BigDecimal,
+    val basePrice: BigDecimal,
 )

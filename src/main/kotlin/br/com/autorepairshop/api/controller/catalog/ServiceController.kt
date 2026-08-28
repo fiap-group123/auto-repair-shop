@@ -1,11 +1,13 @@
 package br.com.autorepairshop.api.controller.catalog
 
 import br.com.autorepairshop.api.dto.catalog.RegisterServiceRequest
-import br.com.autorepairshop.api.dto.catalog.UpdateOfferedServiceRequest
+import br.com.autorepairshop.api.dto.catalog.UpdateServiceRequest
 import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
 import br.com.autorepairshop.catalog.application.dto.ServiceResponse
 import br.com.autorepairshop.catalog.application.dto.UpdateServiceCommand
 import br.com.autorepairshop.catalog.application.usecase.FindServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.FinishServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.InProgressServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.ListServicesUseCase
 import br.com.autorepairshop.catalog.application.usecase.RegisterServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.UpdateServiceUseCase
@@ -24,33 +26,35 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/services")
-@Tag(name = "Catalog", description = "Offered services catalog (bounded context Catalog)")
-class OfferedServiceController(
+@Tag(name = "Catalog", description = "Services requested in a service order (bounded context Catalog)")
+class ServiceController(
     private val registerService: RegisterServiceUseCase,
     private val updateService: UpdateServiceUseCase,
+    private val inProgressService: InProgressServiceUseCase,
+    private val finishService: FinishServiceUseCase,
     private val findService: FindServiceUseCase,
     private val listServices: ListServicesUseCase,
 ) {
 
     @PostMapping
-    @Operation(summary = "Register offered service")
+    @Operation(summary = "Register service")
     fun register(@RequestBody request: RegisterServiceRequest): ResponseEntity<ServiceResponse> {
         val service = registerService.execute(
             input = RegisterServiceCommand(
                 serviceOrderId = request.serviceOrderId,
                 name = request.name,
-                basePrice = request.price,
+                basePrice = request.basePrice,
             ),
         )
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(service.id)
             .toUri()
-        return ResponseEntity.created(location).body(service)
+        return ResponseEntity.created(location).build()
     }
 
     @GetMapping
-    @Operation(summary = "List offered services")
+    @Operation(summary = "List services")
     fun list(): ResponseEntity<List<ServiceResponse>> = ResponseEntity.ok(listServices.execute(input = Unit))
 
     @GetMapping("/{id}")
@@ -58,11 +62,21 @@ class OfferedServiceController(
     fun findById(@PathVariable id: UUID): ResponseEntity<ServiceResponse> =
         ResponseEntity.ok(findService.execute(input = id))
 
+    @PostMapping("/{id}/in-progress")
+    @Operation(summary = "Start executing the service")
+    fun start(@PathVariable id: UUID): ResponseEntity<ServiceResponse> =
+        ResponseEntity.ok(inProgressService.execute(input = id))
+
+    @PostMapping("/{id}/finish")
+    @Operation(summary = "Finish the service and record how long it took")
+    fun finish(@PathVariable id: UUID): ResponseEntity<ServiceResponse> =
+        ResponseEntity.ok(finishService.execute(input = id))
+
     @PutMapping("/{id}")
     @Operation(summary = "Update name and/or price")
     fun update(
         @PathVariable id: UUID,
-        @RequestBody request: UpdateOfferedServiceRequest,
+        @RequestBody request: UpdateServiceRequest,
     ): ResponseEntity<ServiceResponse> = ResponseEntity.ok(
         updateService.execute(
             input = UpdateServiceCommand(

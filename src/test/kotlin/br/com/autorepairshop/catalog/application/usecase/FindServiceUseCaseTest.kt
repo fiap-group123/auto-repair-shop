@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 @Tag("unit")
-class FindOfferedServiceUseCaseTest {
+class FindServiceUseCaseTest {
     private val services = mockk<ServiceRepository>()
     private val useCase = FindServiceUseCase(services = services)
 

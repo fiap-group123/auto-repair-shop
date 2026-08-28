@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @Tag("unit")
-class ListOfferedServicesUseCaseTest {
+class ListServicesUseCaseTest {
     private val services = mockk<ServiceRepository>()
     private val useCase = ListServicesUseCase(services = services)
 
