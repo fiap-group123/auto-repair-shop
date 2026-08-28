@@ -1,7 +1,6 @@
 package br.com.autorepairshop.serviceorder.application.usecase
 
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
-import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.serviceOrderAssembler
 import io.mockk.every
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 @Tag("unit")
 class ListServiceOrdersByCustomerIdUseCaseTest {
@@ -21,13 +20,13 @@ class ListServiceOrdersByCustomerIdUseCaseTest {
     )
 
     @Test
-    fun `throws when the customer has no orders`() {
+    fun `returns an empty list when the customer has no orders`() {
         val customerId = UUID.randomUUID()
         every { orders.findByCustomerId(customerId = customerId) } returns emptyList()
 
-        assertFailsWith<ServiceOrderException.ServiceOrderNotFound> {
-            useCase.execute(input = customerId)
-        }
+        val response = useCase.execute(input = customerId)
+
+        assertTrue(response.isEmpty())
     }
 
     @Test
