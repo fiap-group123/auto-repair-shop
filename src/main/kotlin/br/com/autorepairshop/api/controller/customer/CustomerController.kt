@@ -116,6 +116,7 @@ class CustomerController(
                 plate = request.plate,
                 brand = request.brand,
                 model = request.model,
+                color = request.color,
                 year = request.year,
             ),
         )

@@ -4,5 +4,6 @@ data class RegisterVehicleRequest(
     val plate: String,
     val brand: String,
     val model: String,
+    val color: String,
     val year: Int,
 )

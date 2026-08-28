@@ -63,6 +63,7 @@ class UpdateVehicleSpecUseCaseTest {
                 vehicleId = vehicle.id.value,
                 brand = "Honda",
                 model = "Civic",
+                color = "Preto",
                 year = 2026
             ))
         }
@@ -79,6 +80,7 @@ class UpdateVehicleSpecUseCaseTest {
                 vehicleId = vehicle.id.value,
                 brand = "Honda",
                 model = "Civic",
+                color = "Preto",
                 year = 2020,
             ),
         )

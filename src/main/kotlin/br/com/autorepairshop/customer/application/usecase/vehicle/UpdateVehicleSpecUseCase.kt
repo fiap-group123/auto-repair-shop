@@ -25,6 +25,7 @@ class UpdateVehicleSpecUseCase(private val vehicles: VehicleRepository) :
         vehicle.updateSpec(
             brand = input.brand,
             model = input.model,
+            color = input.color,
             year = input.year?.let { ModelYear.of(year = it) },
         )
         vehicles.save(vehicle = vehicle)

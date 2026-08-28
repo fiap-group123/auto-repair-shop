@@ -18,6 +18,7 @@ class Vehicle private constructor(
     brand: String,
     model: String,
     year: ModelYear,
+    color: String,
     active: Boolean,
     val registeredAt: Instant,
 ) : AggregateRoot<VehicleId>(id = id) {
@@ -32,6 +33,9 @@ class Vehicle private constructor(
         private set
 
     var model: String = model
+        private set
+
+    var color: String = color
         private set
 
     var year: ModelYear = year
@@ -58,11 +62,13 @@ class Vehicle private constructor(
     fun updateSpec(
         brand: String?,
         model: String?,
+        color: String?,
         year: ModelYear?,
     ) {
         requireActive()
         brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
         model?.let { this.model = normalizeName(raw = it, field = "model") }
+        color?.let { this.color = it}
         year?.let { this.year = it }
     }
 
@@ -90,6 +96,7 @@ class Vehicle private constructor(
             plate: LicensePlate,
             brand: String,
             model: String,
+            color: String,
             year: ModelYear,
             at: Instant = Clock.System.now()
         ) = Vehicle(
@@ -98,6 +105,7 @@ class Vehicle private constructor(
             plate = plate,
             brand = normalizeName(raw = brand, field = "brand"),
             model = normalizeName(raw = model, field = "model"),
+            color = color,
             year = year,
             active = true,
             registeredAt = at
@@ -109,6 +117,7 @@ class Vehicle private constructor(
             plate: LicensePlate,
             brand: String,
             model: String,
+            color: String,
             year: ModelYear,
             active: Boolean,
             registeredAt: Instant
@@ -118,6 +127,7 @@ class Vehicle private constructor(
             plate = plate,
             brand = brand,
             model = model,
+            color = color,
             year = year,
             active = active,
             registeredAt = registeredAt

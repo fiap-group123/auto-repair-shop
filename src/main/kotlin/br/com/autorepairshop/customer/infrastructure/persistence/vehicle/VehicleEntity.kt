@@ -21,6 +21,8 @@ class VehicleEntity(
     @Column(nullable = false, length = 40)
     var model: String,
     @Column(nullable = false)
+    var color: String,
+    @Column(nullable = false)
     var year: Int,
     @Column(nullable = false)
     var active: Boolean,

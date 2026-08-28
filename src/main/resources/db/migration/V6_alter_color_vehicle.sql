@@ -1,0 +1,2 @@
+ALTER TABLE vehicles
+    ADD COLUMN color VARCHAR(16) NOT NULL;

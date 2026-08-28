@@ -21,6 +21,7 @@ object CustomerFixtures {
     const val PLATE = MERCOSUL_PLATE
     const val BRAND = "Fiat"
     const val MODEL = "Argo"
+    const val COLOR = "Preto"
     const val YEAR = 2024
 
     fun activeCustomer(
@@ -46,12 +47,14 @@ object CustomerFixtures {
         plate: String = PLATE,
         brand: String = BRAND,
         model: String = MODEL,
+        color: String = COLOR,
         year: Int = YEAR,
     ): Vehicle = Vehicle.register(
         ownerId = owner.id,
         plate = LicensePlate.of(raw = plate),
         brand = brand,
         model = model,
+        color = color,
         year = ModelYear.of(
             year = year,
             currentYear = 2026,
