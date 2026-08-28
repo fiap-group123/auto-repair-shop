@@ -9,5 +9,4 @@ interface ServiceOrderJpaRepository : JpaRepository<ServiceOrderEntity, UUID> {
         vehicleId: UUID,
         status: ServiceOrderStatusColumn,
     ): Boolean
-    fun findAllByApprovedAtNotNullAndCompletedAtNotNull(): List<ServiceOrderEntity>
 }

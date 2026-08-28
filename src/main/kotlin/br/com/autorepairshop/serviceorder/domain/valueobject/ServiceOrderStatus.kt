@@ -5,6 +5,6 @@ enum class ServiceOrderStatus {
     IN_DIAGNOSIS,
     WAITING_APPROVAL,
     IN_EXECUTION,
-    COMPLETED,
+    FINISHED,
     DELIVERED,
 }

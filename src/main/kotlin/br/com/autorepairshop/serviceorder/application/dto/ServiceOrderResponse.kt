@@ -1,15 +1,17 @@
 package br.com.autorepairshop.serviceorder.application.dto
 
 import java.math.BigDecimal
-import java.time.Instant
 import java.util.UUID
+import kotlin.time.Instant
 
 data class ServiceOrderResponse(
     val id: UUID,
     val customerId: UUID,
     val vehicleId: UUID,
+    val serviceIds: List<UUID>,
     val status: String,
-    val openedAt: Instant,
-    val items: List<ServiceOrderItemResponse>,
+    val registeredAt: Instant,
+    val openedAt: Instant?,
+    val finishedAt: Instant?,
     val total: BigDecimal,
 )

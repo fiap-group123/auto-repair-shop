@@ -4,6 +4,7 @@ import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
+import br.com.autorepairshop.serviceorder.serviceOrderAssembler
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Tag
@@ -15,7 +16,10 @@ import kotlin.test.assertFailsWith
 @Tag("unit")
 class FindServiceOrderUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
-    private val useCase = FindServiceOrderUseCase(orders = orders)
+    private val useCase = FindServiceOrderUseCase(
+        orders = orders,
+        responses = serviceOrderAssembler(),
+    )
 
     @Test
     fun `throws when the order is missing`() {

@@ -5,6 +5,7 @@ import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
+import br.com.autorepairshop.serviceorder.serviceOrderAssembler
 import br.com.autorepairshop.shared.application.event.EventPublisher
 import io.mockk.every
 import io.mockk.mockk
@@ -19,9 +20,10 @@ import kotlin.test.assertFailsWith
 class CompleteServiceOrderUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
     private val events = mockk<EventPublisher>()
-    private val useCase = CompleteServiceOrderUseCase(
+    private val useCase = FinishServiceOrderUseCase(
         orders = orders,
         events = events,
+        responses = serviceOrderAssembler(),
     )
 
     @Test
@@ -55,7 +57,7 @@ class CompleteServiceOrderUseCaseTest {
         val response = useCase.execute(input = order.id.value)
 
         assertEquals(
-            expected = ServiceOrderStatus.COMPLETED.name,
+            expected = ServiceOrderStatus.FINISHED.name,
             actual = response.status,
         )
         verify { orders.save(order = order) }

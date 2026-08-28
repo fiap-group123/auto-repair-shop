@@ -16,18 +16,15 @@ class ServiceOrderApiExceptionHandler {
     @ExceptionHandler(ServiceOrderException::class)
     fun handleServiceOrder(ex: ServiceOrderException): ProblemDetail = when (ex) {
         is ServiceOrderException.ServiceOrderNotFound,
-        is ServiceOrderException.ItemNotFound,
         -> problem(status = HttpStatus.NOT_FOUND, ex = ex)
 
         is ServiceOrderException.OpenOrderAlreadyExists,
         is ServiceOrderException.VehicleNotOwnedByCustomer,
-        is ServiceOrderException.ItemAlreadyAdded,
         -> problem(status = HttpStatus.CONFLICT, ex = ex)
 
         is ServiceOrderException.InvalidStatusTransition,
         is ServiceOrderException.ItemsLocked,
         is ServiceOrderException.EmptyBudget,
-        is ServiceOrderException.InvalidQuantity,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
 }

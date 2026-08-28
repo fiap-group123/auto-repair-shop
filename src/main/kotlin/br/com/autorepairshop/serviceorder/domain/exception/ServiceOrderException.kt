@@ -7,9 +7,6 @@ sealed class ServiceOrderException(message: String) : DomainException(message = 
     class OpenOrderAlreadyExists(message: String) : ServiceOrderException(message = message)
     class VehicleNotOwnedByCustomer(message: String) : ServiceOrderException(message = message)
     class InvalidStatusTransition(message: String) : ServiceOrderException(message = message)
-    class ItemAlreadyAdded(message: String) : ServiceOrderException(message = message)
-    class ItemNotFound(message: String) : ServiceOrderException(message = message)
     class ItemsLocked(message: String) : ServiceOrderException(message = message)
     class EmptyBudget(message: String) : ServiceOrderException(message = message)
-    class InvalidQuantity(message: String) : ServiceOrderException(message = message)
 }

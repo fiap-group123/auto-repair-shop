@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class CompleteServiceOrderUseCase(
+class FinishServiceOrderUseCase(
     private val orders: ServiceOrderRepository,
     private val events: EventPublisher,
     private val responses: ServiceOrderAssembler,

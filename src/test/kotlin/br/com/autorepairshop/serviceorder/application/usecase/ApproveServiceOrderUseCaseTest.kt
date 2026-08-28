@@ -5,6 +5,7 @@ import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
+import br.com.autorepairshop.serviceorder.serviceOrderAssembler
 import br.com.autorepairshop.shared.application.event.EventPublisher
 import io.mockk.every
 import io.mockk.mockk
@@ -22,6 +23,7 @@ class ApproveServiceOrderUseCaseTest {
     private val useCase = ApproveServiceOrderUseCase(
         orders = orders,
         events = events,
+        responses = serviceOrderAssembler(),
     )
 
     @Test

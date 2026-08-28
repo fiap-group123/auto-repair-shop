@@ -2,6 +2,7 @@ package br.com.autorepairshop.serviceorder.application.usecase
 
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceorder.serviceOrderAssembler
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Tag
@@ -11,7 +12,10 @@ import kotlin.test.assertEquals
 @Tag("unit")
 class ListServiceOrdersUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
-    private val useCase = ListServiceOrdersUseCase(orders = orders)
+    private val useCase = ListServiceOrdersUseCase(
+        orders = orders,
+        responses = serviceOrderAssembler(),
+    )
 
     @Test
     fun `lists all orders when no customer filter is given`() {

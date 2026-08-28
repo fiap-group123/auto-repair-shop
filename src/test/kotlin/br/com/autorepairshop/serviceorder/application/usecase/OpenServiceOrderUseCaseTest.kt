@@ -7,7 +7,7 @@ import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
-import br.com.autorepairshop.serviceorder.application.dto.OpenServiceOrderCommand
+import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
@@ -27,7 +27,7 @@ class OpenServiceOrderUseCaseTest {
     private val vehicles = mockk<VehicleRepository>()
     private val orders = mockk<ServiceOrderRepository>()
     private val events = mockk<EventPublisher>()
-    private val useCase = OpenServiceOrderUseCase(
+    private val useCase = RegisterServiceOrderUseCase(
         customers = customers,
         vehicles = vehicles,
         orders = orders,
@@ -145,7 +145,7 @@ class OpenServiceOrderUseCaseTest {
     private fun command(
         customerId: UUID = UUID.randomUUID(),
         vehicleId: UUID = UUID.randomUUID(),
-    ) = OpenServiceOrderCommand(
+    ) = RegisterServiceOrderCommand(
         customerId = customerId,
         vehicleId = vehicleId,
     )

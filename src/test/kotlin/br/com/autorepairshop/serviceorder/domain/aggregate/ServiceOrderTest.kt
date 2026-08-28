@@ -13,10 +13,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Instant
 
 @Tag("unit")
 class ServiceOrderTest {
@@ -28,11 +25,6 @@ class ServiceOrderTest {
         assertEquals(
             expected = ServiceOrderStatus.RECEIVED,
             actual = order.status,
-        )
-        assertTrue(order.items.isEmpty())
-        assertEquals(
-            expected = "0.00",
-            actual = order.total().toString(),
         )
         assertTrue(order.domainEvents.single() is ServiceOrderOpened)
     }
@@ -47,8 +39,7 @@ class ServiceOrderTest {
         )
         assertTrue(order.domainEvents.last() is DiagnosisStarted)
 
-        order.addItem(item = ServiceOrderFixtures.item())
-        order.finishDiagnosis()
+        order.finishDiagnosis(hasServices = true)
         assertEquals(
             expected = ServiceOrderStatus.WAITING_APPROVAL,
             actual = order.status,
@@ -62,9 +53,9 @@ class ServiceOrderTest {
         )
         assertTrue(order.domainEvents.last() is ServiceOrderApproved)
 
-        order.complete()
+        order.finish()
         assertEquals(
-            expected = ServiceOrderStatus.COMPLETED,
+            expected = ServiceOrderStatus.FINISHED,
             actual = order.status,
         )
         assertTrue(order.domainEvents.last() is ServiceOrderCompleted)
@@ -78,57 +69,15 @@ class ServiceOrderTest {
     }
 
     @Test
-    fun `records a timestamp for every transition`() {
-        val order = ServiceOrderFixtures.received()
-        order.startDiagnosis(at = at(hour = 1))
-        order.addItem(item = ServiceOrderFixtures.item())
-        order.finishDiagnosis(at = at(hour = 2))
-        order.approve(at = at(hour = 3))
-        order.complete(at = at(hour = 5))
-        order.deliver(at = at(hour = 6))
-
-        assertEquals(
-            expected = at(hour = 1),
-            actual = order.timeline.diagnosisStartedAt,
-        )
-        assertEquals(
-            expected = at(hour = 2),
-            actual = order.timeline.diagnosisFinishedAt,
-        )
-        assertEquals(
-            expected = at(hour = 3),
-            actual = order.timeline.approvedAt,
-        )
-        assertEquals(
-            expected = at(hour = 5),
-            actual = order.timeline.completedAt,
-        )
-        assertEquals(
-            expected = at(hour = 6),
-            actual = order.timeline.deliveredAt,
-        )
-        assertEquals(
-            expected = 2.hours,
-            actual = order.executionDuration(),
-        )
-    }
-
-    @Test
-    fun `execution duration is unknown until the order is completed`() {
-        assertNull(ServiceOrderFixtures.received().executionDuration())
-        assertNull(ServiceOrderFixtures.inExecution().executionDuration())
-    }
-
-    @Test
     fun `rejects transitions from the wrong status`() {
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
-            ServiceOrderFixtures.received().finishDiagnosis()
+            ServiceOrderFixtures.received().finishDiagnosis(hasServices = true)
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             ServiceOrderFixtures.received().approve()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
-            ServiceOrderFixtures.received().complete()
+            ServiceOrderFixtures.received().finish()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             ServiceOrderFixtures.received().deliver()
@@ -137,7 +86,7 @@ class ServiceOrderTest {
             ServiceOrderFixtures.inDiagnosis().startDiagnosis()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
-            ServiceOrderFixtures.waitingApproval().complete()
+            ServiceOrderFixtures.waitingApproval().finish()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             ServiceOrderFixtures.inExecution().approve()
@@ -148,25 +97,21 @@ class ServiceOrderTest {
     }
 
     @Test
-    fun `rehydrate restores items and timeline without domain events`() {
+    fun `rehydrate restores status without domain events`() {
         val original = ServiceOrderFixtures.completed()
         val restored = ServiceOrder.rehydrate(
             id = original.id,
             customerId = original.customerId,
             vehicleId = original.vehicleId,
             status = original.status,
+            registeredAt = original.registeredAt,
             openedAt = original.openedAt,
-            items = original.items,
-            timeline = original.timeline,
+            finishedAt = original.finishedAt,
         )
 
         assertEquals(
-            expected = ServiceOrderStatus.COMPLETED,
+            expected = ServiceOrderStatus.FINISHED,
             actual = restored.status,
-        )
-        assertEquals(
-            expected = original.total().toString(),
-            actual = restored.total().toString(),
         )
         assertTrue(restored.domainEvents.isEmpty())
         restored.deliver()
@@ -175,6 +120,4 @@ class ServiceOrderTest {
             actual = restored.status,
         )
     }
-
-    private fun at(hour: Int): Instant = Instant.fromEpochSeconds(epochSeconds = hour.toLong() * 3600)
 }

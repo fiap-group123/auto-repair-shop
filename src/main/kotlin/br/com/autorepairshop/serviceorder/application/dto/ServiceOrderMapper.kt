@@ -1,23 +1,21 @@
 package br.com.autorepairshop.serviceorder.application.dto
 
+import br.com.autorepairshop.catalog.domain.aggregate.Service
 import br.com.autorepairshop.serviceorder.domain.aggregate.ServiceOrder
-import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderItem
-import kotlin.time.toJavaInstant
+import br.com.autorepairshop.shared.domain.Money
 
-fun ServiceOrder.toResponse() = ServiceOrderResponse(
+fun ServiceOrder.toResponse(catalog: List<Service> = emptyList()) = ServiceOrderResponse(
     id = id.value,
     customerId = customerId,
     vehicleId = vehicleId,
+    serviceIds = catalog.map { it.id.value },
     status = status.name,
-    openedAt = openedAt.toJavaInstant(),
-    items = items.map { it.toResponse() },
-    total = total().amount,
+    registeredAt = registeredAt,
+    openedAt = openedAt,
+    finishedAt = finishedAt,
+    total = catalogTotal(catalog = catalog).amount,
 )
 
-fun ServiceOrderItem.toResponse() = ServiceOrderItemResponse(
-    offeredServiceId = offeredServiceId,
-    description = description,
-    unitPrice = unitPrice.amount,
-    quantity = quantity,
-    subtotal = subtotal().amount,
-)
+private fun catalogTotal(catalog: List<Service>): Money = catalog.fold(initial = Money.ZERO) { acc, service ->
+    acc.plus(other = service.basePrice)
+}

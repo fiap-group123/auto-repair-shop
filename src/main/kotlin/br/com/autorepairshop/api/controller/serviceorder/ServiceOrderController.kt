@@ -5,16 +5,16 @@ import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.api.security.CurrentUser
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
 import br.com.autorepairshop.authentication.domain.valueobject.Role
-import br.com.autorepairshop.serviceorder.application.dto.OpenServiceOrderCommand
+import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
 import br.com.autorepairshop.serviceorder.application.usecase.ApproveServiceOrderUseCase
-import br.com.autorepairshop.serviceorder.application.usecase.CompleteServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.DeliverServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FindServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FinishDiagnosisUseCase
+import br.com.autorepairshop.serviceorder.application.usecase.FinishServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.ListServiceOrdersByCustomerIdUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.ListServiceOrdersUseCase
-import br.com.autorepairshop.serviceorder.application.usecase.OpenServiceOrderUseCase
+import br.com.autorepairshop.serviceorder.application.usecase.RegisterServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.StartDiagnosisUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -32,14 +32,14 @@ import java.util.UUID
 @RequestMapping("/service-orders")
 @Tag(name = "ServiceOrder", description = "Service order lifecycle (bounded context Service Order)")
 class ServiceOrderController(
-    private val openOrder: OpenServiceOrderUseCase,
+    private val openOrder: RegisterServiceOrderUseCase,
     private val findOrder: FindServiceOrderUseCase,
     private val listOrders: ListServiceOrdersUseCase,
     private val listOrdersByCustomerId: ListServiceOrdersByCustomerIdUseCase,
     private val startDiagnosisUseCase: StartDiagnosisUseCase,
     private val finishDiagnosisUseCase: FinishDiagnosisUseCase,
     private val approveOrder: ApproveServiceOrderUseCase,
-    private val completeOrder: CompleteServiceOrderUseCase,
+    private val completeOrder: FinishServiceOrderUseCase,
     private val deliverOrder: DeliverServiceOrderUseCase,
     private val authorization: AuthorizationSupport,
     private val currentUser: CurrentUser,
@@ -49,7 +49,7 @@ class ServiceOrderController(
     @Operation(summary = "Open a service order")
     fun open(@RequestBody request: OpenServiceOrderRequest): ResponseEntity<ServiceOrderResponse> {
         val order = openOrder.execute(
-            input = OpenServiceOrderCommand(
+            input = RegisterServiceOrderCommand(
                 customerId = request.customerId,
                 vehicleId = request.vehicleId,
             ),

@@ -6,7 +6,7 @@ import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
-import br.com.autorepairshop.serviceorder.application.dto.OpenServiceOrderCommand
+import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
 import br.com.autorepairshop.serviceorder.application.dto.toResponse
 import br.com.autorepairshop.serviceorder.domain.aggregate.ServiceOrder
@@ -18,15 +18,15 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class OpenServiceOrderUseCase(
+class RegisterServiceOrderUseCase(
     private val customers: CustomerRepository,
     private val vehicles: VehicleRepository,
     private val orders: ServiceOrderRepository,
     private val events: EventPublisher,
-) : UseCase<OpenServiceOrderCommand, ServiceOrderResponse> {
+) : UseCase<RegisterServiceOrderCommand, ServiceOrderResponse> {
 
     @Transactional
-    override fun execute(input: OpenServiceOrderCommand): ServiceOrderResponse {
+    override fun execute(input: RegisterServiceOrderCommand): ServiceOrderResponse {
         val customer = customers.findById(id = CustomerId(value = input.customerId))
             ?: throw CustomerException.CustomerNotFound(
                 message = "Customer ${input.customerId} was not found.",
