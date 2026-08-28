@@ -18,6 +18,10 @@ object CustomerFixtures {
     const val NAME = "John Doe"
     const val EMAIL = "john.doe@email.com"
     const val PHONE = "11987654321"
+    const val PLATE = MERCOSUL_PLATE
+    const val BRAND = "Fiat"
+    const val MODEL = "Argo"
+    const val YEAR = 2024
 
     fun activeCustomer(
         documentId: String = VALID_CPF,
@@ -35,13 +39,14 @@ object CustomerFixtures {
 
     fun inactiveCustomer(): Customer = activeCustomer().apply { deactivate() }
 
+    fun inactiveVehicle(): Vehicle = vehicle().apply { deactivate() }
+
     fun vehicle(
         owner: Customer = activeCustomer(),
-        plate: String = MERCOSUL_PLATE,
-        brand: String = "Fiat",
-        model: String = "Argo",
-        year: Int = 2024,
-        active: Boolean = true
+        plate: String = PLATE,
+        brand: String = BRAND,
+        model: String = MODEL,
+        year: Int = YEAR,
     ): Vehicle = Vehicle.register(
         ownerId = owner.id,
         plate = LicensePlate.of(raw = plate),

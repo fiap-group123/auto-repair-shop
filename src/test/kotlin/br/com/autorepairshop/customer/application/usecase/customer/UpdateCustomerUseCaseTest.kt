@@ -39,12 +39,12 @@ class UpdateCustomerUseCaseTest {
         val customer = CustomerFixtures.inactiveCustomer()
         every { customers.findById(id = customer.id) } returns customer
 
-        assertFailsWith<CustomerException.InvalidDocument> {
+        assertFailsWith<CustomerException.CustomerInactive> {
             useCase.execute(
-                input = UpdateCustomerCommand(
-                    customerId = customer.id.value,
-                    name = "Jane Doe",
-                ),
+                    input = UpdateCustomerCommand(
+                        customerId = customer.id.value,
+                        name = "Jane Doe",
+                    ),
             )
         }
     }
