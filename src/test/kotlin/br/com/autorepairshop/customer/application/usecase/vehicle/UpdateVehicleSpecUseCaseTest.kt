@@ -1,9 +1,13 @@
 package br.com.autorepairshop.customer.application.usecase.vehicle
 
 import br.com.autorepairshop.customer.CustomerFixtures
+import br.com.autorepairshop.customer.application.dto.customer.UpdateCustomerCommand
+import br.com.autorepairshop.customer.application.dto.vehicle.ChangeVehiclePlateCommand
 import br.com.autorepairshop.customer.application.dto.vehicle.UpdateVehicleSpecCommand
+import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
+import br.com.autorepairshop.customer.domain.valueobject.vehicle.ModelYear
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
 import io.mockk.every
 import io.mockk.mockk
@@ -46,6 +50,21 @@ class UpdateVehicleSpecUseCaseTest {
                     brand = "A",
                 ),
             )
+        }
+    }
+
+    @Test
+    fun `throws when vehicle is inactive`() {
+        val vehicle = CustomerFixtures.inactiveVehicle()
+        every { vehicles.findById(id = vehicle.id) } returns vehicle
+
+        assertFailsWith<VehicleException.VehicleInactive> {
+            useCase.execute(input = UpdateVehicleSpecCommand(
+                vehicleId = vehicle.id.value,
+                brand = "Honda",
+                model = "Civic",
+                year = 2026
+            ))
         }
     }
 
