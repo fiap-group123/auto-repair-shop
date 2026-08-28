@@ -11,7 +11,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @Tag("unit")
-class DocumentIdTest {
+class DocumentTest {
 
     @Test
     fun `accepts masked and digits-only CPF`() {

@@ -5,7 +5,6 @@ import br.com.autorepairshop.shared.domain.exception.DomainException
 sealed class CatalogException(message: String) : DomainException(message = message) {
     class ServiceNotFound(message: String) : CatalogException(message = message)
     class ServiceAlreadyExists(message: String) : CatalogException(message = message)
-    class ServiceAlreadyActive(message: String) : CatalogException(message = message)
     class InvalidServiceName(message: String) : CatalogException(message = message)
     class InvalidStatusTransition(message: String) : CatalogException(message = message)
     class InvalidDuration(message: String) : CatalogException(message = message)

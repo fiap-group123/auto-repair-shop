@@ -21,7 +21,6 @@ class CatalogApiExceptionHandler {
         is CatalogException.ServiceAlreadyExists ->
             problem(status = HttpStatus.CONFLICT, ex = ex)
 
-        is CatalogException.ServiceAlreadyActive,
         is CatalogException.InvalidServiceName,
         is CatalogException.InvalidStatusTransition,
         is CatalogException.InvalidDuration,
