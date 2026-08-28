@@ -1,6 +1,6 @@
 package br.com.autorepairshop.api.controller.serviceorder
 
-import br.com.autorepairshop.api.dto.serviceorder.OpenServiceOrderRequest
+import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
 import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.api.security.CurrentUser
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
@@ -32,7 +32,7 @@ import java.util.UUID
 @RequestMapping("/service-orders")
 @Tag(name = "ServiceOrder", description = "Service order lifecycle (bounded context Service Order)")
 class ServiceOrderController(
-    private val openOrder: RegisterServiceOrderUseCase,
+    private val registerOrder: RegisterServiceOrderUseCase,
     private val findOrder: FindServiceOrderUseCase,
     private val listOrders: ListServiceOrdersUseCase,
     private val listOrdersByCustomerId: ListServiceOrdersByCustomerIdUseCase,
@@ -47,8 +47,8 @@ class ServiceOrderController(
 
     @PostMapping
     @Operation(summary = "Open a service order")
-    fun open(@RequestBody request: OpenServiceOrderRequest): ResponseEntity<ServiceOrderResponse> {
-        val order = openOrder.execute(
+    fun register(@RequestBody request: RegisterServiceOrderRequest): ResponseEntity<ServiceOrderResponse> {
+        val order = registerOrder.execute(
             input = RegisterServiceOrderCommand(
                 customerId = request.customerId,
                 vehicleId = request.vehicleId,
