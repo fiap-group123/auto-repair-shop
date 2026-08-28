@@ -1,6 +1,5 @@
 package br.com.autorepairshop.serviceorder.application.usecase
 
-import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
@@ -20,11 +19,9 @@ import kotlin.test.assertFailsWith
 @Tag("unit")
 class FinishDiagnosisUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
-    private val services = mockk<ServiceRepository>()
     private val events = mockk<EventPublisher>()
     private val useCase = FinishDiagnosisUseCase(
         orders = orders,
-        services = services,
         events = events,
         responses = serviceOrderAssembler(),
     )
@@ -43,7 +40,6 @@ class FinishDiagnosisUseCaseTest {
     fun `throws when the order is not in diagnosis`() {
         val order = ServiceOrderFixtures.received()
         every { orders.findById(id = order.id) } returns order
-        every { services.existsByServiceOrderId(serviceOrderId = order.id.value) } returns true
 
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             useCase.execute(input = order.id.value)
@@ -52,10 +48,9 @@ class FinishDiagnosisUseCaseTest {
     }
 
     @Test
-    fun `throws when the budget is empty`() {
+    fun `throws when no service has priced the budget yet`() {
         val order = ServiceOrderFixtures.inDiagnosis()
         every { orders.findById(id = order.id) } returns order
-        every { services.existsByServiceOrderId(serviceOrderId = order.id.value) } returns false
 
         assertFailsWith<ServiceOrderException.EmptyBudget> {
             useCase.execute(input = order.id.value)
@@ -65,9 +60,8 @@ class FinishDiagnosisUseCaseTest {
 
     @Test
     fun `finishes diagnosis and waits for approval`() {
-        val order = ServiceOrderFixtures.inDiagnosis()
+        val order = ServiceOrderFixtures.inDiagnosisWithBudget()
         every { orders.findById(id = order.id) } returns order
-        every { services.existsByServiceOrderId(serviceOrderId = order.id.value) } returns true
         every { orders.save(order = order) } returns Unit
         every { events.publish(aggregate = order) } returns Unit
 
@@ -76,6 +70,10 @@ class FinishDiagnosisUseCaseTest {
         assertEquals(
             expected = ServiceOrderStatus.WAITING_APPROVAL.name,
             actual = response.status,
+        )
+        assertEquals(
+            expected = ServiceOrderFixtures.TOTAL.amount,
+            actual = response.total,
         )
         verify { orders.save(order = order) }
         verify { events.publish(aggregate = order) }

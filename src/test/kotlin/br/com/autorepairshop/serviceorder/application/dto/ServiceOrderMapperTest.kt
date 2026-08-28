@@ -11,10 +11,10 @@ import kotlin.test.assertNull
 class ServiceOrderMapperTest {
 
     @Test
-    fun `total sums catalog prices of the order services`() {
+    fun `lists the ids of the order services and reports the stored total`() {
         val first = CatalogFixtures.activeService(price = "10.00")
         val second = CatalogFixtures.activeService(price = "20.50")
-        val order = ServiceOrderFixtures.received()
+        val order = ServiceOrderFixtures.inDiagnosisWithBudget()
 
         val response = order.toResponse(
             catalog = listOf(element = first).plus(element = second),
@@ -25,8 +25,8 @@ class ServiceOrderMapperTest {
             actual = response.serviceIds,
         )
         assertEquals(
-            expected = "30.50",
-            actual = response.total.toPlainString(),
+            expected = ServiceOrderFixtures.TOTAL.amount,
+            actual = response.total,
         )
     }
 
@@ -40,6 +40,10 @@ class ServiceOrderMapperTest {
         assertEquals(
             expected = order.registeredAt,
             actual = response.registeredAt,
+        )
+        assertEquals(
+            expected = "0.00",
+            actual = response.total.toPlainString(),
         )
     }
 }

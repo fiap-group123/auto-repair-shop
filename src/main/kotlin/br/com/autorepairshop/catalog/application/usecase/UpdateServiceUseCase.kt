@@ -8,13 +8,16 @@ import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
 import br.com.autorepairshop.shared.application.UseCase
+import br.com.autorepairshop.shared.application.event.EventPublisher
 import br.com.autorepairshop.shared.domain.Money
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class UpdateServiceUseCase(private val services: ServiceRepository) :
-    UseCase<UpdateServiceCommand, ServiceResponse> {
+class UpdateServiceUseCase(
+    private val services: ServiceRepository,
+    private val events: EventPublisher,
+) : UseCase<UpdateServiceCommand, ServiceResponse> {
 
     @Transactional
     override fun execute(input: UpdateServiceCommand): ServiceResponse {
@@ -37,6 +40,7 @@ class UpdateServiceUseCase(private val services: ServiceRepository) :
         input.basePrice?.let { service.changeBasePrice(newBasePrice = Money.of(raw = it)) }
 
         services.save(service = service)
+        events.publish(aggregate = service)
         return service.toResponse()
     }
 }

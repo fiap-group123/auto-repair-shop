@@ -39,7 +39,8 @@ class ServiceOrderTest {
         )
         assertTrue(order.domainEvents.last() is DiagnosisStarted)
 
-        order.finishDiagnosis(hasServices = true)
+        order.updateBudgetTotal(total = ServiceOrderFixtures.TOTAL)
+        order.finishDiagnosis()
         assertEquals(
             expected = ServiceOrderStatus.WAITING_APPROVAL,
             actual = order.status,
@@ -71,7 +72,7 @@ class ServiceOrderTest {
     @Test
     fun `rejects transitions from the wrong status`() {
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
-            ServiceOrderFixtures.received().finishDiagnosis(hasServices = true)
+            ServiceOrderFixtures.received().finishDiagnosis()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             ServiceOrderFixtures.received().approve()
@@ -104,6 +105,7 @@ class ServiceOrderTest {
             customerId = original.customerId,
             vehicleId = original.vehicleId,
             status = original.status,
+            total = original.total,
             registeredAt = original.registeredAt,
             openedAt = original.openedAt,
             finishedAt = original.finishedAt,

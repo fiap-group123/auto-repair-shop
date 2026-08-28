@@ -10,6 +10,7 @@ import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
 import br.com.autorepairshop.shared.domain.AggregateRoot
+import br.com.autorepairshop.shared.domain.Money
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -20,6 +21,7 @@ class ServiceOrder private constructor(
     val customerId: UUID,
     val vehicleId: UUID,
     status: ServiceOrderStatus,
+    total: Money,
     val registeredAt: Instant,
     openedAt: Instant?,
     finishedAt: Instant?,
@@ -28,19 +30,17 @@ class ServiceOrder private constructor(
     var status: ServiceOrderStatus = status
         private set
 
+    var total: Money = total
+        private set
+
     var openedAt: Instant? = openedAt
         private set
 
     var finishedAt: Instant? = finishedAt
         private set
 
-    fun requireItemsEditable() {
-        val editable = status == ServiceOrderStatus.RECEIVED || status == ServiceOrderStatus.IN_DIAGNOSIS
-        if (!editable) {
-            throw ServiceOrderException.ItemsLocked(
-                message = "Items cannot change in status ${status.name}.",
-            )
-        }
+    fun updateBudgetTotal(total: Money) {
+        this.total = total
     }
 
     fun startDiagnosis(at: Instant = Clock.System.now()) {
@@ -55,12 +55,9 @@ class ServiceOrder private constructor(
         )
     }
 
-    fun finishDiagnosis(
-        hasServices: Boolean,
-        at: Instant = Clock.System.now(),
-    ) {
+    fun finishDiagnosis(at: Instant = Clock.System.now()) {
         requireStatus(expected = ServiceOrderStatus.IN_DIAGNOSIS)
-        if (!hasServices) {
+        if (total <= Money.ZERO) {
             throw ServiceOrderException.EmptyBudget(
                 message = "Cannot send an empty budget for approval.",
             )
@@ -130,6 +127,7 @@ class ServiceOrder private constructor(
             customerId: UUID,
             vehicleId: UUID,
             status: ServiceOrderStatus = ServiceOrderStatus.RECEIVED,
+            total: Money = Money.ZERO,
             registeredAt: Instant = Clock.System.now(),
             openedAt: Instant? = null,
             finishedAt: Instant? = null,
@@ -139,6 +137,7 @@ class ServiceOrder private constructor(
                 customerId = customerId,
                 vehicleId = vehicleId,
                 status = status,
+                total = total,
                 registeredAt = registeredAt,
                 openedAt = openedAt,
                 finishedAt = finishedAt,
@@ -152,6 +151,7 @@ class ServiceOrder private constructor(
             customerId: UUID,
             vehicleId: UUID,
             status: ServiceOrderStatus,
+            total: Money,
             registeredAt: Instant,
             openedAt: Instant?,
             finishedAt: Instant?,
@@ -160,6 +160,7 @@ class ServiceOrder private constructor(
             customerId = customerId,
             vehicleId = vehicleId,
             status = status,
+            total = total,
             registeredAt = registeredAt,
             openedAt = openedAt,
             finishedAt = finishedAt,

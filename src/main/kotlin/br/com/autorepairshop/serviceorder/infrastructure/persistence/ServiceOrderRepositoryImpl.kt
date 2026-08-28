@@ -4,6 +4,7 @@ import br.com.autorepairshop.serviceorder.domain.aggregate.ServiceOrder
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
+import br.com.autorepairshop.shared.domain.Money
 import org.springframework.stereotype.Repository
 import java.util.UUID
 import kotlin.time.toJavaInstant
@@ -33,6 +34,7 @@ class ServiceOrderRepositoryImpl(private val jpa: ServiceOrderJpaRepository) : S
         customerId = customerId,
         vehicleId = vehicleId,
         status = ServiceOrderStatusColumn.valueOf(value = status.name),
+        total = total.amount,
         registeredAt = registeredAt.toJavaInstant(),
         openedAt = openedAt?.toJavaInstant(),
         finishedAt = finishedAt?.toJavaInstant(),
@@ -43,6 +45,7 @@ class ServiceOrderRepositoryImpl(private val jpa: ServiceOrderJpaRepository) : S
         customerId = customerId,
         vehicleId = vehicleId,
         status = ServiceOrderStatus.valueOf(value = status.name),
+        total = Money.of(raw = total),
         registeredAt = registeredAt.toKotlinInstant(),
         openedAt = openedAt?.toKotlinInstant(),
         finishedAt = finishedAt?.toKotlinInstant(),

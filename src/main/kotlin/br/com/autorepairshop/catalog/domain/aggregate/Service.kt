@@ -1,5 +1,7 @@
 package br.com.autorepairshop.catalog.domain.aggregate
 
+import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
+import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
@@ -10,6 +12,7 @@ import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 class Service private constructor(
     id: ServiceId,
@@ -45,8 +48,18 @@ class Service private constructor(
         name = newName
     }
 
-    fun changeBasePrice(newBasePrice: Money) {
+    fun changeBasePrice(
+        newBasePrice: Money,
+        at: Instant = Clock.System.now(),
+    ) {
         basePrice = newBasePrice
+        registerEvent(
+            event = ServicePriceChanged(
+                serviceId = id,
+                serviceOrderId = serviceOrderId,
+                occurredOn = at.toJavaInstant(),
+            ),
+        )
     }
 
     fun inProgress(at: Instant = Clock.System.now()) {
@@ -81,6 +94,16 @@ class Service private constructor(
         }
     }
 
+    private fun recordRegistered() {
+        registerEvent(
+            event = ServiceRegistered(
+                serviceId = id,
+                serviceOrderId = serviceOrderId,
+                occurredOn = registeredAt.toJavaInstant(),
+            ),
+        )
+    }
+
     companion object {
         fun register(
             serviceOrderId: UUID,
@@ -91,17 +114,21 @@ class Service private constructor(
             openedAt: Instant? = null,
             finishedAt: Instant? = null,
             estimatedTime: Duration? = null,
-        ) = Service(
-            id = ServiceId.generate(),
-            serviceOrderId = serviceOrderId,
-            name = name,
-            basePrice = price,
-            status = status,
-            registeredAt = registeredAt,
-            openedAt = openedAt,
-            finishedAt = finishedAt,
-            estimatedTime = estimatedTime,
-        )
+        ): Service {
+            val service = Service(
+                id = ServiceId.generate(),
+                serviceOrderId = serviceOrderId,
+                name = name,
+                basePrice = price,
+                status = status,
+                registeredAt = registeredAt,
+                openedAt = openedAt,
+                finishedAt = finishedAt,
+                estimatedTime = estimatedTime,
+            )
+            service.recordRegistered()
+            return service
+        }
 
         internal fun rehydrate(
             id: ServiceId,

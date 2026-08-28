@@ -11,6 +11,7 @@ import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.shared.application.UseCase
+import br.com.autorepairshop.shared.application.event.EventPublisher
 import br.com.autorepairshop.shared.domain.Money
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional
 class RegisterServiceUseCase(
     private val serviceOrders: ServiceOrderRepository,
     private val services: ServiceRepository,
+    private val events: EventPublisher,
 ) : UseCase<RegisterServiceCommand, ServiceResponse> {
 
     @Transactional
@@ -27,7 +29,6 @@ class RegisterServiceUseCase(
             ?: throw ServiceOrderException.ServiceOrderNotFound(
                 message = "Service order ${input.serviceOrderId} was not found.",
             )
-        order.requireItemsEditable()
         if (services.existsByName(name = name, serviceOrderId = order.id.value)) {
             throw CatalogException.ServiceAlreadyExists(
                 message = "Service ${name.value} already exists.",
@@ -39,6 +40,7 @@ class RegisterServiceUseCase(
             price = Money.of(raw = input.basePrice),
         )
         services.save(service = service)
+        events.publish(aggregate = service)
         return service.toResponse()
     }
 }
