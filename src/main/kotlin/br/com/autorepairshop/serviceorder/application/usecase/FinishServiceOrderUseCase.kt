@@ -1,7 +1,7 @@
 package br.com.autorepairshop.serviceorder.application.usecase
 
+import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderAssembler
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
-import br.com.autorepairshop.serviceorder.application.dto.toResponse
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
@@ -15,6 +15,7 @@ import java.util.UUID
 class CompleteServiceOrderUseCase(
     private val orders: ServiceOrderRepository,
     private val events: EventPublisher,
+    private val responses: ServiceOrderAssembler,
 ) : UseCase<UUID, ServiceOrderResponse> {
 
     @Transactional
@@ -23,9 +24,9 @@ class CompleteServiceOrderUseCase(
             ?: throw ServiceOrderException.ServiceOrderNotFound(
                 message = "Service order $input was not found.",
             )
-        order.complete()
+        order.finish()
         orders.save(order = order)
         events.publish(aggregate = order)
-        return order.toResponse()
+        return responses.toResponse(order = order)
     }
 }

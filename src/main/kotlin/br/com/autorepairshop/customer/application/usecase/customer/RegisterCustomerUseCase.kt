@@ -8,7 +8,7 @@ import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
-import br.com.autorepairshop.customer.domain.valueobject.document.DocumentId
+import br.com.autorepairshop.customer.domain.valueobject.document.Document
 import br.com.autorepairshop.shared.application.UseCase
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -19,7 +19,7 @@ class RegisterCustomerUseCase(private val customers: CustomerRepository) :
 
     @Transactional
     override fun execute(input: RegisterCustomerCommand): CustomerResponse {
-        val documentId = DocumentId.of(raw = input.documentId)
+        val documentId = Document.of(raw = input.documentId)
         if (customers.existsByDocumentId(id = documentId)) {
             throw CustomerException.CustomerAlreadyExists(
                 message = "Customer with document ${documentId.masked()} already exists.",

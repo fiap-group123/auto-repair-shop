@@ -33,7 +33,7 @@ class OpenServiceOrderUseCase(
             )
         if (!customer.active) {
             throw CustomerException.InvalidDocument(
-                message = "Customer ${customer.documentId.masked()} is inactive.",
+                message = "Customer ${customer.document.masked()} is inactive.",
             )
         }
         val vehicle = vehicles.findById(id = VehicleId(value = input.vehicleId))

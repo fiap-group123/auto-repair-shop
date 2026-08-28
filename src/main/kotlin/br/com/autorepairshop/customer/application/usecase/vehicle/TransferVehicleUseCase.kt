@@ -33,7 +33,7 @@ class TransferVehicleUseCase(
             )
         if (!newOwner.active) {
             throw CustomerException.InvalidDocument(
-                message = "Customer ${newOwner.documentId.masked()} is inactive.",
+                message = "Customer ${newOwner.document.masked()} is inactive.",
             )
         }
 

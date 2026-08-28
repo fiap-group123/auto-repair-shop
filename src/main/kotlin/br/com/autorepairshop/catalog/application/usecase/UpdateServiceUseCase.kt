@@ -5,7 +5,7 @@ import br.com.autorepairshop.catalog.application.dto.UpdateOfferedServiceCommand
 import br.com.autorepairshop.catalog.application.dto.toResponse
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.repository.OfferedServiceRepository
-import br.com.autorepairshop.catalog.domain.valueobject.OfferedServiceId
+import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
 import br.com.autorepairshop.shared.application.UseCase
 import br.com.autorepairshop.shared.domain.Money
@@ -18,7 +18,7 @@ class UpdateOfferedServiceUseCase(private val services: OfferedServiceRepository
 
     @Transactional
     override fun execute(input: UpdateOfferedServiceCommand): OfferedServiceResponse {
-        val service = services.findById(id = OfferedServiceId(value = input.serviceId))
+        val service = services.findById(id = ServiceId(value = input.serviceId))
             ?: throw CatalogException.ServiceNotFound(
                 message = "Service ${input.serviceId} was not found.",
             )
@@ -32,7 +32,7 @@ class UpdateOfferedServiceUseCase(private val services: OfferedServiceRepository
             }
             service.rename(newName = newName)
         }
-        input.price?.let { service.changePrice(newPrice = Money.of(raw = it)) }
+        input.price?.let { service.changeBasePrice(newBasePrice = Money.of(raw = it)) }
 
         services.save(service = service)
         return service.toResponse()

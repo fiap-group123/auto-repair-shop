@@ -3,7 +3,7 @@ package br.com.autorepairshop.catalog.application.usecase
 import br.com.autorepairshop.catalog.application.dto.OfferedServiceResponse
 import br.com.autorepairshop.catalog.application.dto.RegisterOfferedServiceCommand
 import br.com.autorepairshop.catalog.application.dto.toResponse
-import br.com.autorepairshop.catalog.domain.aggregate.OfferedService
+import br.com.autorepairshop.catalog.domain.aggregate.Service
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.repository.OfferedServiceRepository
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
@@ -24,7 +24,7 @@ class RegisterOfferedServiceUseCase(private val services: OfferedServiceReposito
                 message = "Service ${name.value} already exists.",
             )
         }
-        val service = OfferedService.register(
+        val service = Service.register(
             name = name,
             price = Money.of(raw = input.price),
         )
