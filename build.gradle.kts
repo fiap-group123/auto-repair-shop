@@ -117,18 +117,20 @@ kover {
         filters {
             includes {
                 packages(
-                    "br.com.autorepairshop.customer.domain.aggregate",
-                    "br.com.autorepairshop.customer.domain.valueobject",
-                    "br.com.autorepairshop.customer.application.usecase",
-                    "br.com.autorepairshop.authentication.domain.aggregate",
-                    "br.com.autorepairshop.authentication.domain.valueobject",
-                    "br.com.autorepairshop.authentication.application.usecase",
-                    "br.com.autorepairshop.serviceorder.domain.aggregate",
-                    "br.com.autorepairshop.serviceorder.domain.valueobject",
-                    "br.com.autorepairshop.serviceorder.application.usecase",
-                    "br.com.autorepairshop.catalog.domain.aggregate",
-                    "br.com.autorepairshop.catalog.domain.valueobject",
-                    "br.com.autorepairshop.catalog.application.usecase",
+                    "br.com.autorepairshop.customer.domain",
+                    "br.com.autorepairshop.customer.application",
+                    "br.com.autorepairshop.customer.infrastructure.persistence",
+                    "br.com.autorepairshop.authentication.domain",
+                    "br.com.autorepairshop.authentication.application",
+                    "br.com.autorepairshop.authentication.infrastructure.persistence",
+                    "br.com.autorepairshop.serviceorder.domain",
+                    "br.com.autorepairshop.serviceorder.application",
+                    "br.com.autorepairshop.serviceorder.infrastructure",
+                    "br.com.autorepairshop.catalog.domain",
+                    "br.com.autorepairshop.catalog.application",
+                    "br.com.autorepairshop.catalog.infrastructure.persistence",
+                    "br.com.autorepairshop.shared.domain",
+                    "br.com.autorepairshop.api.controller",
                 )
             }
             excludes {
@@ -138,14 +140,15 @@ kover {
                     "*CustomerId",
                     "*VehicleId",
                     "*ServiceOrderId",
-                    "*OfferedServiceId",
+                    "*ServiceId",
                     "*DocumentType",
                     "*LicensePlateType",
                     "*Role",
                     "*ServiceOrderStatus",
+                    "*ServiceStatus",
                     "*ContactInfo",
-                    "*ServiceOrderItem",
-                    "*ServiceOrderTimeline",
+                    "*Entity",
+                    "*JpaRepository",
                 )
             }
         }
