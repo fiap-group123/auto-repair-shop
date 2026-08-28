@@ -31,10 +31,10 @@ class CustomerTest {
         customer.deactivate()
 
         assertFalse(customer.active)
-        assertFailsWith<CustomerException.InvalidDocument> {
+        assertFailsWith<CustomerException.CustomerInactive> {
             customer.rename(newName = PersonName.of(raw = "Jane Doe"))
         }
-        assertFailsWith<CustomerException.InvalidDocument> {
+        assertFailsWith<CustomerException.CustomerInactive> {
             customer.updateContact(
                 newContact = ContactInfo.of(
                     email = "jane.doe@email.com",
@@ -48,7 +48,7 @@ class CustomerTest {
     fun `second deactivate fails`() {
         val customer = CustomerFixtures.inactiveCustomer()
 
-        assertFailsWith<CustomerException.InvalidDocument> {
+        assertFailsWith<CustomerException.CustomerInactive> {
             customer.deactivate()
         }
     }
