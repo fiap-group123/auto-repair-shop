@@ -2,9 +2,6 @@ package br.com.autorepairshop.api.controller.serviceorder
 
 import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
 import br.com.autorepairshop.api.security.AuthorizationSupport
-import br.com.autorepairshop.api.security.CurrentUser
-import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
-import br.com.autorepairshop.authentication.domain.valueobject.Role
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
 import br.com.autorepairshop.serviceorder.application.usecase.ApproveServiceOrderUseCase
@@ -42,7 +39,6 @@ class ServiceOrderController(
     private val completeOrder: FinishServiceOrderUseCase,
     private val deliverOrder: DeliverServiceOrderUseCase,
     private val authorization: AuthorizationSupport,
-    private val currentUser: CurrentUser,
 ) {
 
     @PostMapping
