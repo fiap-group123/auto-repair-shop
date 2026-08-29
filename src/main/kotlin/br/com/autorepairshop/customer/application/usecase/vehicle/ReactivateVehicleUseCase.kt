@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class ReactivateVehicleUseCase(private val vehicles: VehicleRepository): UseCase<UUID, Unit> {
+class ReactivateVehicleUseCase(private val vehicles: VehicleRepository) : UseCase<UUID, Unit> {
 
     @Transactional
     override fun execute(input: UUID) {

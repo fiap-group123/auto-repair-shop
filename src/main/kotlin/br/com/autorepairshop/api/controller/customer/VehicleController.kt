@@ -14,8 +14,8 @@ import br.com.autorepairshop.customer.application.usecase.vehicle.ChangeVehicleP
 import br.com.autorepairshop.customer.application.usecase.vehicle.DeactivateVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.FindVehicleByPlateUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.FindVehicleUseCase
-import br.com.autorepairshop.customer.application.usecase.vehicle.ReactivateVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.ListVehiclesByOwnerUseCase
+import br.com.autorepairshop.customer.application.usecase.vehicle.ReactivateVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.RegisterVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.TransferVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.UpdateVehicleSpecUseCase

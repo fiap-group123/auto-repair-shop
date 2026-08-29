@@ -1,6 +1,5 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
-import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
@@ -9,7 +8,6 @@ import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
 import br.com.autorepairshop.shared.domain.Entity
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlin.time.toJavaInstant
 
 class Vehicle private constructor(
     id: VehicleId,
@@ -79,7 +77,7 @@ class Vehicle private constructor(
     private fun requireActive() {
         if (!active) {
             throw VehicleException.VehicleInactive(
-                message = "Vehicle with plate ${plate} is inactive.",
+                message = "Vehicle with plate $plate is inactive.",
             )
         }
     }
@@ -91,7 +89,7 @@ class Vehicle private constructor(
             brand: String,
             model: String,
             year: ModelYear,
-            at: Instant = Clock.System.now()
+            at: Instant = Clock.System.now(),
         ) = Vehicle(
             id = VehicleId.generate(),
             ownerId = ownerId,
@@ -100,7 +98,7 @@ class Vehicle private constructor(
             model = normalizeName(raw = model, field = "model"),
             year = year,
             active = true,
-            registeredAt = at
+            registeredAt = at,
         )
 
         internal fun rehydrate(
@@ -111,7 +109,7 @@ class Vehicle private constructor(
             model: String,
             year: ModelYear,
             active: Boolean,
-            registeredAt: Instant
+            registeredAt: Instant,
         ) = Vehicle(
             id = id,
             ownerId = ownerId,
@@ -120,7 +118,7 @@ class Vehicle private constructor(
             model = model,
             year = year,
             active = active,
-            registeredAt = registeredAt
+            registeredAt = registeredAt,
         )
 
         private fun normalizeName(
