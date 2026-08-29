@@ -12,5 +12,6 @@ fun ServiceOrder.toResponse(catalog: List<Service> = emptyList()) = ServiceOrder
     registeredAt = registeredAt,
     openedAt = openedAt,
     finishedAt = finishedAt,
+    estimateTime = estimateTime,
     total = total.amount,
 )

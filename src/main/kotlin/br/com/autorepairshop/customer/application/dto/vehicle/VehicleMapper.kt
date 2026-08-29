@@ -11,4 +11,5 @@ fun Vehicle.toResponse() = VehicleResponse(
     model = model,
     color = color,
     year = year.value,
+    active = active,
 )

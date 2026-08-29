@@ -13,6 +13,7 @@ import br.com.autorepairshop.shared.domain.AggregateRoot
 import br.com.autorepairshop.shared.domain.Money
 import java.util.UUID
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 
@@ -25,6 +26,7 @@ class ServiceOrder private constructor(
     val registeredAt: Instant,
     openedAt: Instant?,
     finishedAt: Instant?,
+    estimateTime: Duration?,
 ) : AggregateRoot<ServiceOrderId>(id = id) {
 
     var status: ServiceOrderStatus = status
@@ -37,6 +39,9 @@ class ServiceOrder private constructor(
         private set
 
     var finishedAt: Instant? = finishedAt
+        private set
+
+    var estimateTime: Duration? = estimateTime
         private set
 
     fun updateBudgetTotal(total: Money) {
@@ -86,6 +91,7 @@ class ServiceOrder private constructor(
         requireStatus(expected = ServiceOrderStatus.IN_EXECUTION)
         status = ServiceOrderStatus.FINISHED
         finishedAt = at
+        estimateTime(at = at)
         registerEvent(
             event = ServiceOrderCompleted(
                 serviceOrderId = id,
@@ -103,6 +109,12 @@ class ServiceOrder private constructor(
                 occurredOn = at.toJavaInstant(),
             ),
         )
+    }
+
+    fun estimateTime(at: Instant) {
+        openedAt?.let { opened ->
+            estimateTime = at - opened
+        }
     }
 
     private fun requireStatus(expected: ServiceOrderStatus) {
@@ -131,6 +143,7 @@ class ServiceOrder private constructor(
             registeredAt: Instant = Clock.System.now(),
             openedAt: Instant? = null,
             finishedAt: Instant? = null,
+            estimateTime: Duration? = null,
         ): ServiceOrder {
             val order = ServiceOrder(
                 id = ServiceOrderId.generate(),
@@ -141,6 +154,7 @@ class ServiceOrder private constructor(
                 registeredAt = registeredAt,
                 openedAt = openedAt,
                 finishedAt = finishedAt,
+                estimateTime = estimateTime,
             )
             order.recordOpened(at = registeredAt)
             return order
@@ -155,6 +169,7 @@ class ServiceOrder private constructor(
             registeredAt: Instant,
             openedAt: Instant?,
             finishedAt: Instant?,
+            estimateTime: Duration?,
         ) = ServiceOrder(
             id = id,
             customerId = customerId,
@@ -164,6 +179,7 @@ class ServiceOrder private constructor(
             registeredAt = registeredAt,
             openedAt = openedAt,
             finishedAt = finishedAt,
+            estimateTime = estimateTime,
         )
     }
 }

@@ -30,4 +30,6 @@ class ServiceOrderEntity(
     var openedAt: Instant?,
     @Column(name = "finished_at")
     var finishedAt: Instant?,
+    @Column(name = "estimate_time_seconds")
+    var estimateTimeSeconds: Long?,
 )

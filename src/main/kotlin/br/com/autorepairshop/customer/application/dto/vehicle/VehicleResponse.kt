@@ -11,4 +11,5 @@ data class VehicleResponse(
     val model: String,
     val year: Int,
     val color: String,
+    val active: Boolean,
 )

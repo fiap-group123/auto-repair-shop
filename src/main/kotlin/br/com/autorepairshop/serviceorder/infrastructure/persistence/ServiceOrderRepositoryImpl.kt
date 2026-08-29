@@ -7,6 +7,7 @@ import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
 import br.com.autorepairshop.shared.domain.Money
 import org.springframework.stereotype.Repository
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
@@ -38,6 +39,7 @@ class ServiceOrderRepositoryImpl(private val jpa: ServiceOrderJpaRepository) : S
         registeredAt = registeredAt.toJavaInstant(),
         openedAt = openedAt?.toJavaInstant(),
         finishedAt = finishedAt?.toJavaInstant(),
+        estimateTimeSeconds = estimateTime?.inWholeSeconds,
     )
 
     private fun ServiceOrderEntity.toDomain() = ServiceOrder.rehydrate(
@@ -49,5 +51,6 @@ class ServiceOrderRepositoryImpl(private val jpa: ServiceOrderJpaRepository) : S
         registeredAt = registeredAt.toKotlinInstant(),
         openedAt = openedAt?.toKotlinInstant(),
         finishedAt = finishedAt?.toKotlinInstant(),
+        estimateTime = estimateTimeSeconds?.seconds,
     )
 }

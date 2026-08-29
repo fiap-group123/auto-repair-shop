@@ -106,6 +106,7 @@ class VehicleController(
                 brand = request.brand,
                 model = request.model,
                 year = request.year,
+                color = request.color,
             ),
         ),
     )
