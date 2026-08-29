@@ -4,7 +4,7 @@ import br.com.autorepairshop.customer.domain.aggregate.Customer
 import br.com.autorepairshop.customer.domain.aggregate.Vehicle
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
-import br.com.autorepairshop.customer.domain.valueobject.document.DocumentId
+import br.com.autorepairshop.customer.domain.valueobject.document.Document
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.ModelYear
 
@@ -29,7 +29,7 @@ object CustomerFixtures {
         email: String = EMAIL,
         phone: String = PHONE,
     ): Customer = Customer.register(
-        documentId = DocumentId.of(raw = documentId),
+        documentId = Document.of(raw = documentId),
         name = PersonName.of(raw = name),
         contact = ContactInfo.of(
             email = email,

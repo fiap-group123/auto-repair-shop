@@ -1,0 +1,2 @@
+ALTER TABLE service_orders
+    ADD COLUMN total NUMERIC(10,2) NOT NULL DEFAULT 0;

@@ -5,7 +5,4 @@ enum class Role {
     RECEPTIONIST,
     MECHANIC,
     MANAGER,
-    ;
-
-    val authority: String get() = "ROLE_$name"
 }

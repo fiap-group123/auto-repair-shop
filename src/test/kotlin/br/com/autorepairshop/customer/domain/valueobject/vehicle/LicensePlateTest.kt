@@ -19,7 +19,7 @@ class LicensePlateTest {
             actual = plate.value,
         )
         assertEquals(
-            expected = LicensePlateType.NATIONAl,
+            expected = LicensePlateType.NATIONAL,
             actual = plate.type,
         )
         assertEquals(

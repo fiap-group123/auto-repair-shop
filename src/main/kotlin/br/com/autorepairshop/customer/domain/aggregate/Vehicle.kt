@@ -6,7 +6,7 @@ import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.ModelYear
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
-import br.com.autorepairshop.shared.domain.AggregateRoot
+import br.com.autorepairshop.shared.domain.Entity
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
@@ -20,7 +20,7 @@ class Vehicle private constructor(
     year: ModelYear,
     active: Boolean,
     val registeredAt: Instant,
-) : AggregateRoot<VehicleId>(id = id) {
+) : Entity<VehicleId>(id = id) {
 
     var ownerId: CustomerId = ownerId
         private set

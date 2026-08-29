@@ -11,12 +11,12 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @Tag("unit")
-class DocumentIdTest {
+class DocumentTest {
 
     @Test
     fun `accepts masked and digits-only CPF`() {
-        val masked = DocumentId.of(raw = CustomerFixtures.VALID_CPF)
-        val digits = DocumentId.of(raw = "52998224725")
+        val masked = Document.of(raw = CustomerFixtures.VALID_CPF)
+        val digits = Document.of(raw = "52998224725")
 
         assertEquals(
             expected = "52998224725",
@@ -34,7 +34,7 @@ class DocumentIdTest {
 
     @Test
     fun `formats and masks CPF`() {
-        val document = DocumentId.of(raw = CustomerFixtures.VALID_CPF)
+        val document = Document.of(raw = CustomerFixtures.VALID_CPF)
 
         assertEquals(
             expected = "529.982.247-25",
@@ -53,16 +53,16 @@ class DocumentIdTest {
     @Test
     fun `rejects uniform and wrong-digit CPF`() {
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = CustomerFixtures.INVALID_CPF)
+            Document.of(raw = CustomerFixtures.INVALID_CPF)
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "529.982.247-26")
+            Document.of(raw = "529.982.247-26")
         }
     }
 
     @Test
     fun `accepts numeric CNPJ and formats it`() {
-        val document = DocumentId.of(raw = CustomerFixtures.VALID_CNPJ)
+        val document = Document.of(raw = CustomerFixtures.VALID_CNPJ)
 
         assertEquals(
             expected = DocumentType.CNPJ,
@@ -85,38 +85,38 @@ class DocumentIdTest {
     @Test
     fun `rejects CNPJ with uniform root`() {
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "11.111.111/1111-11")
+            Document.of(raw = "11.111.111/1111-11")
         }
     }
 
     @Test
     fun `ofOrNull and isValid cover invalid input`() {
-        assertNull(DocumentId.ofOrNull(raw = CustomerFixtures.INVALID_CPF))
-        assertFalse(DocumentId.isValid(raw = CustomerFixtures.INVALID_CPF))
-        assertTrue(DocumentId.isValid(raw = CustomerFixtures.VALID_CPF))
+        assertNull(Document.ofOrNull(raw = CustomerFixtures.INVALID_CPF))
+        assertFalse(Document.isValid(raw = CustomerFixtures.INVALID_CPF))
+        assertTrue(Document.isValid(raw = CustomerFixtures.VALID_CPF))
         assertEquals(
-            expected = DocumentId.of(raw = CustomerFixtures.VALID_CPF),
-            actual = DocumentId.ofOrNull(raw = CustomerFixtures.VALID_CPF),
+            expected = Document.of(raw = CustomerFixtures.VALID_CPF),
+            actual = Document.ofOrNull(raw = CustomerFixtures.VALID_CPF),
         )
     }
 
     @Test
     fun `rejects incomplete letters and wrong check digits`() {
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "12")
+            Document.of(raw = "12")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "5299822472A")
+            Document.of(raw = "5299822472A")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "529.982.247-15")
+            Document.of(raw = "529.982.247-15")
         }
-        assertTrue(DocumentId.isValid(raw = "123.456.789-09"))
+        assertTrue(Document.isValid(raw = "123.456.789-09"))
     }
 
     @Test
     fun `accepts alphanumeric CNPJ and rejects invalid roots`() {
-        val document = DocumentId.of(raw = "12.ABC.345/01DE-35")
+        val document = Document.of(raw = "12.ABC.345/01DE-35")
 
         assertEquals(
             expected = DocumentType.CNPJ,
@@ -135,25 +135,25 @@ class DocumentIdTest {
             actual = document.masked(),
         )
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "11222333000!81")
+            Document.of(raw = "11222333000!81")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "112223330001AB")
+            Document.of(raw = "112223330001AB")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "11222333000171")
+            Document.of(raw = "11222333000171")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "11222333000182")
+            Document.of(raw = "11222333000182")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "12ABC34501DÇ35")
+            Document.of(raw = "12ABC34501DÇ35")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "1234567890123")
+            Document.of(raw = "1234567890123")
         }
         assertFailsWith<CustomerException.InvalidDocument> {
-            DocumentId.of(raw = "123456789012")
+            Document.of(raw = "123456789012")
         }
     }
 }

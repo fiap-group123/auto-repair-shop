@@ -1,6 +1,8 @@
 name: Pull Request Checks
 
 on:
+  workflow_call:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
@@ -33,6 +35,9 @@ jobs:
           gradle-version: ${{ vars.GRADLE_VERSION }}
 
       - name: Run tests
+        env:
+          JWT_SECRET: ci-test-jwt-secret-key-of-32-bytes-min
+          DATABASE_PASSWORD: postgres
         run: ./gradlew koverVerify koverXmlReport koverHtmlReport
 
       - name: Extract coverage percentage

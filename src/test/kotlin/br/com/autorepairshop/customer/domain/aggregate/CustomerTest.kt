@@ -75,7 +75,7 @@ class CustomerTest {
         val original = CustomerFixtures.inactiveCustomer()
         val restored = Customer.rehydrate(
             id = original.id,
-            documentId = original.documentId,
+            documentId = original.document,
             name = original.name,
             contact = original.contact,
             active = false,
