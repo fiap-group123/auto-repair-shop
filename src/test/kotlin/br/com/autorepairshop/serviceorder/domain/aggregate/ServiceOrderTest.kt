@@ -109,6 +109,7 @@ class ServiceOrderTest {
             registeredAt = original.registeredAt,
             openedAt = original.openedAt,
             finishedAt = original.finishedAt,
+            estimateTime = original.estimateTime,
         )
 
         assertEquals(
