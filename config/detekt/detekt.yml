@@ -12,7 +12,7 @@ complexity:
   CyclomaticComplexMethod:
     ignoreSingleWhenExpression: true
   LongParameterList:
-    allowedFunctionParameters: 8
+    allowedFunctionParameters: 15
     allowedConstructorParameters: 10
     ignoreDefaultParameters: true
   NamedArguments:

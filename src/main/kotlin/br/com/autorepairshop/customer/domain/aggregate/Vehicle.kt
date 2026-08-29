@@ -1,6 +1,5 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
-import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
@@ -9,7 +8,6 @@ import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
 import br.com.autorepairshop.shared.domain.AggregateRoot
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlin.time.toJavaInstant
 
 class Vehicle private constructor(
     id: VehicleId,
@@ -68,7 +66,7 @@ class Vehicle private constructor(
         requireActive()
         brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
         model?.let { this.model = normalizeName(raw = it, field = "model") }
-        color?.let { this.color = it}
+        color?.let { this.color = it }
         year?.let { this.year = it }
     }
 
@@ -85,7 +83,7 @@ class Vehicle private constructor(
     private fun requireActive() {
         if (!active) {
             throw VehicleException.VehicleInactive(
-                message = "Vehicle with plate ${plate} is inactive.",
+                message = "Vehicle with plate $plate is inactive.",
             )
         }
     }
@@ -98,7 +96,7 @@ class Vehicle private constructor(
             model: String,
             color: String,
             year: ModelYear,
-            at: Instant = Clock.System.now()
+            at: Instant = Clock.System.now(),
         ) = Vehicle(
             id = VehicleId.generate(),
             ownerId = ownerId,
@@ -108,7 +106,7 @@ class Vehicle private constructor(
             color = color,
             year = year,
             active = true,
-            registeredAt = at
+            registeredAt = at,
         )
 
         internal fun rehydrate(
@@ -120,7 +118,7 @@ class Vehicle private constructor(
             color: String,
             year: ModelYear,
             active: Boolean,
-            registeredAt: Instant
+            registeredAt: Instant,
         ) = Vehicle(
             id = id,
             ownerId = ownerId,
@@ -130,7 +128,7 @@ class Vehicle private constructor(
             color = color,
             year = year,
             active = active,
-            registeredAt = registeredAt
+            registeredAt = registeredAt,
         )
 
         private fun normalizeName(

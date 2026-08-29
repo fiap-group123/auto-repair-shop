@@ -41,10 +41,10 @@ class UpdateCustomerUseCaseTest {
 
         assertFailsWith<CustomerException.CustomerInactive> {
             useCase.execute(
-                    input = UpdateCustomerCommand(
-                        customerId = customer.id.value,
-                        name = "Jane Doe",
-                    ),
+                input = UpdateCustomerCommand(
+                    customerId = customer.id.value,
+                    name = "Jane Doe",
+                ),
             )
         }
     }
