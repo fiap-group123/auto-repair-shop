@@ -7,10 +7,10 @@ import br.com.autorepairshop.shared.domain.ValueObject
 value class LicensePlate private constructor(val value: String) : ValueObject {
 
     val type: LicensePlateType
-        get() = if (value[4].isLetter()) LicensePlateType.MERCOSUL else LicensePlateType.NATIONAl
+        get() = if (value[4].isLetter()) LicensePlateType.MERCOSUL else LicensePlateType.NATIONAL
 
     fun formatted(): String = when (type) {
-        LicensePlateType.NATIONAl ->
+        LicensePlateType.NATIONAL ->
             "${value.substring(startIndex = 0, endIndex = 3)}-${value.substring(startIndex = 3)}"
 
         LicensePlateType.MERCOSUL -> value

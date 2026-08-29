@@ -61,10 +61,11 @@ Content-Type: application/json
 
 ###
 # Cadastrar veículo do cliente A (Mercosul)
-POST {{baseUrl}}/customers/{{customerId}}/vehicles
+POST {{baseUrl}}/vehicles
 Content-Type: application/json
 
 {
+  "ownerId": "{{customerId}}",
   "plate": "ABC1D23",
   "brand": "Toyota",
   "model": "Corolla",
@@ -75,10 +76,11 @@ Content-Type: application/json
 
 ###
 # Cadastrar segundo veículo (placa antiga)
-POST {{baseUrl}}/customers/{{customerId}}/vehicles
+POST {{baseUrl}}/vehicles
 Content-Type: application/json
 
 {
+  "ownerId": "{{customerId}}",
   "plate": "ABC-1234",
   "brand": "Honda",
   "model": "Civic",
@@ -87,7 +89,7 @@ Content-Type: application/json
 
 ###
 # Listar veículos do cliente A
-GET {{baseUrl}}/customers/{{customerId}}/vehicles
+GET {{baseUrl}}/vehicles/owner/{{customerId}}
 
 ###
 # Buscar veículo por id
@@ -169,10 +171,11 @@ Content-Type: application/json
 
 ###
 # Placa inválida — espera 422
-POST {{baseUrl}}/customers/{{customerId}}/vehicles
+POST {{baseUrl}}/vehicles
 Content-Type: application/json
 
 {
+  "ownerId": "{{customerId}}",
   "plate": "XXXX",
   "brand": "Fiat",
   "model": "Uno",
@@ -181,10 +184,11 @@ Content-Type: application/json
 
 ###
 # Placa duplicada — espera 409
-POST {{baseUrl}}/customers/{{customerId}}/vehicles
+POST {{baseUrl}}/vehicles
 Content-Type: application/json
 
 {
+  "ownerId": "{{customerId}}",
   "plate": "ABC-1234",
   "brand": "VW",
   "model": "Gol",
@@ -197,10 +201,11 @@ DELETE {{baseUrl}}/customers/{{customerId}}
 
 ###
 # Cadastrar veículo em cliente inativo — espera 422
-POST {{baseUrl}}/customers/{{customerId}}/vehicles
+POST {{baseUrl}}/vehicles
 Content-Type: application/json
 
 {
+  "ownerId": "{{customerId}}",
   "plate": "DEF2B34",
   "brand": "Ford",
   "model": "Ka",

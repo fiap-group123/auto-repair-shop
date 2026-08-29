@@ -4,7 +4,7 @@ import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.shared.domain.ValueObject
 
 @JvmInline
-value class DocumentId private constructor(val value: String) : ValueObject {
+value class Document private constructor(val value: String) : ValueObject {
 
     val type: DocumentType
         get() = if (value.length == CPF_LENGTH) DocumentType.CPF else DocumentType.CNPJ
@@ -46,19 +46,19 @@ value class DocumentId private constructor(val value: String) : ValueObject {
         private val CNPJ_FIRST_WEIGHTS = listOf(5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)
         private val CNPJ_SECOND_WEIGHTS = listOf(element = 6).plus(elements = CNPJ_FIRST_WEIGHTS)
 
-        fun of(raw: String): DocumentId {
+        fun of(raw: String): Document {
             val normalized = normalize(raw = raw)
             if (!isValidNormalized(candidate = normalized)) {
                 throw CustomerException.InvalidDocument(
                     message = "Invalid document id: ${redact(candidate = normalized)}",
                 )
             }
-            return DocumentId(value = normalized)
+            return Document(value = normalized)
         }
 
-        fun ofOrNull(raw: String): DocumentId? = normalize(raw = raw)
+        fun ofOrNull(raw: String): Document? = normalize(raw = raw)
             .takeIf { isValidNormalized(candidate = it) }
-            ?.let { DocumentId(value = it) }
+            ?.let { Document(value = it) }
 
         fun isValid(raw: String): Boolean = isValidNormalized(candidate = normalize(raw = raw))
 

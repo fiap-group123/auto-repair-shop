@@ -18,4 +18,8 @@ class AuthorizationSupport(private val currentUser: CurrentUser) {
     fun requireCanAccessVehicleOwner(ownerId: UUID) {
         requireCanAccessCustomer(customerId = ownerId)
     }
+
+    fun requireCanAccessServiceOrder(customerId: UUID) {
+        requireCanAccessCustomer(customerId = customerId)
+    }
 }

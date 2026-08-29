@@ -5,7 +5,7 @@ import br.com.autorepairshop.authentication.domain.valueobject.HashedPassword
 import br.com.autorepairshop.authentication.domain.valueobject.LoginEmail
 import br.com.autorepairshop.authentication.domain.valueobject.Role
 import br.com.autorepairshop.authentication.domain.valueobject.UserId
-import br.com.autorepairshop.shared.domain.AggregateRoot
+import br.com.autorepairshop.shared.domain.Entity
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -18,7 +18,7 @@ class User private constructor(
     active: Boolean,
     val customerId: UUID?,
     val registeredAt: Instant,
-) : AggregateRoot<UserId>(id = id) {
+) : Entity<UserId>(id = id) {
 
     var hashedPassword: HashedPassword = hashedPassword
         private set

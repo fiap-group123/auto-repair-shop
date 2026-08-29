@@ -27,7 +27,7 @@ Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API
 | Auth | JWT (OAuth2 resource server), BCrypt passwords |
 | Database | PostgreSQL 16, Flyway migrations, Hibernate `validate` |
 | API docs | SpringDoc OpenAPI / Swagger UI |
-| Tests | JUnit 5, MockK, Testcontainers, Kover (min. 98% line coverage on domain/use cases) |
+| Tests | JUnit 5, MockK, Testcontainers, Kover (min. 98% line coverage on domain, application, persistence, and HTTP adapters) |
 | Quality | Detekt + ktlint, Git pre-commit hook |
 | Build | Gradle 9.5 (wrapper included) |
 
@@ -66,7 +66,7 @@ From the repository root:
 docker compose up -d
 ```
 
-This starts PostgreSQL on `localhost:5432` (database `autorepairshop`, user/password `postgres`). Wait until the container is healthy (`docker compose ps`).
+This starts PostgreSQL on `localhost:5432` (database `autorepairshop`, user/password from `DATABASE_USERNAME` / `DATABASE_PASSWORD`, default `postgres`). Wait until the container is healthy (`docker compose ps`).
 
 Then start the API:
 
@@ -165,8 +165,6 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 | `PUT` | `/customers/{id}` | `RECEPTIONIST`, `MANAGER` | `200` | Update name and/or contact (`email`, `phone`). |
 | `DELETE` | `/customers/{id}` | `MANAGER` | `204` | Deactivate (soft delete; history is kept). |
 | `POST` | `/customers/{id}` | `MANAGER` | `204` | Reactivate a customer. |
-| `POST` | `/customers/{id}/vehicles` | `RECEPTIONIST`, `MANAGER` | `201` | Register a vehicle for that customer. |
-| `GET` | `/customers/{id}/vehicles` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List vehicles owned by the customer. |
 
 **`POST /customers` body**
 
@@ -189,10 +187,23 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 }
 ```
 
-**`POST /customers/{id}/vehicles` body**
+### Vehicles
+
+| Method | Path | Roles | Status | Description |
+|---|---|---|---|---|
+| `POST` | `/vehicles` | `RECEPTIONIST`, `MANAGER` | `201` | Register a vehicle for a customer. |
+| `GET` | `/vehicles/owner/{ownerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List vehicles owned by the customer. |
+| `GET` | `/vehicles/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find vehicle by id. |
+| `GET` | `/vehicles?plate={plate}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find vehicle by license plate. |
+| `PUT` | `/vehicles/{id}` | `RECEPTIONIST`, `MANAGER` | `200` | Update brand, model, and/or year. |
+| `PATCH` | `/vehicles/{id}/plate` | `RECEPTIONIST`, `MANAGER` | `200` | Change license plate. |
+| `PATCH` | `/vehicles/{id}/owner` | `RECEPTIONIST`, `MANAGER` | `200` | Transfer the vehicle to another customer. |
+
+**`POST /vehicles` body**
 
 ```json
 {
+  "ownerId": "00000000-0000-0000-0000-000000000000",
   "plate": "ABC1D23",
   "brand": "Toyota",
   "model": "Corolla",
@@ -201,16 +212,6 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 ```
 
 `plate` accepts Mercosul (`ABC1D23`) or the old format (`ABC-1234`).
-
-### Vehicles
-
-| Method | Path | Roles | Status | Description |
-|---|---|---|---|---|
-| `GET` | `/vehicles/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find vehicle by id. |
-| `GET` | `/vehicles?plate={plate}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find vehicle by license plate. |
-| `PUT` | `/vehicles/{id}` | `RECEPTIONIST`, `MANAGER` | `200` | Update brand, model, and/or year. |
-| `PATCH` | `/vehicles/{id}/plate` | `RECEPTIONIST`, `MANAGER` | `200` | Change license plate. |
-| `PATCH` | `/vehicles/{id}/owner` | `RECEPTIONIST`, `MANAGER` | `200` | Transfer the vehicle to another customer. |
 
 **`PUT /vehicles/{id}` body** (all fields optional)
 
@@ -257,7 +258,7 @@ Domain rules: valid Brazilian CPF/CNPJ, unique document and plate, no new vehicl
 ./gradlew check             # tests + Detekt
 ```
 
-Kover HTML report: `build/reports/kover/html`. Verification fails if line coverage on the configured domain/use-case packages drops below **98%**.
+Kover HTML report: `build/reports/kover/html`. Verification fails if line coverage on domain, application (use cases, mappers, assemblers), persistence adapters, event listeners, and HTTP controllers drops below **98%**.
 
 Integration tests (`@Tag("integration")`) boot the Spring context against Postgres via Testcontainers.
 
@@ -282,16 +283,17 @@ On pull request (and `workflow_dispatch`), [`.github/workflows/unit-tests.yml`](
 
 ## Configuration
 
-Defaults in [`src/main/resources/application.properties`](src/main/resources/application.properties):
+Values in [`src/main/resources/application.properties`](src/main/resources/application.properties) are read from the environment. Copy [`.env.example`](.env.example) and export the variables (or set them in the shell) before a shared or production deploy.
 
-| Property | Default | Notes |
-|---|---|---|
-| `spring.datasource.url` | `jdbc:postgresql://localhost:5432/autorepairshop` | Match `docker-compose.yml` |
-| `spring.datasource.username` / `password` | `postgres` | Local only |
-| `app.security.jwt.secret` | placeholder | Use a secret of **at least 32 bytes** outside local dev |
-| `app.security.jwt.ttl-seconds` | `3600` | Access token lifetime |
+| Property | Environment variable | Local default | Notes |
+|---|---|---|---|
+| `spring.datasource.url` | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/autorepairshop` | Match `docker-compose.yml` |
+| `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Local only |
+| `spring.datasource.password` | `DATABASE_PASSWORD` | `postgres` | Override outside local Docker |
+| `app.security.jwt.secret` | `JWT_SECRET` | placeholder | Must be **at least 32 bytes** outside local dev |
+| `app.security.jwt.ttl-seconds` | `JWT_TTL_SECONDS` | `3600` | Access token lifetime |
 
-Do not commit real secrets. Change the JWT secret before any shared or production deploy.
+Tests use `src/test/resources/application.properties` (a dedicated JWT secret). Do not commit real secrets; `.env` and `application-local.properties` are gitignored.
 
 ## Troubleshooting
 

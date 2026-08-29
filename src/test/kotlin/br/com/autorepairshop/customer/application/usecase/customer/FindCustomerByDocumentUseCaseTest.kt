@@ -27,7 +27,7 @@ class FindCustomerByDocumentUseCaseTest {
     @Test
     fun `returns the customer when the document matches`() {
         val customer = CustomerFixtures.activeCustomer()
-        every { customers.findByDocumentId(id = customer.documentId) } returns customer
+        every { customers.findByDocumentId(id = customer.document) } returns customer
 
         val response = useCase.execute(input = CustomerFixtures.VALID_CPF)
 

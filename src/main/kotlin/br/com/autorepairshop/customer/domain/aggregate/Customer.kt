@@ -4,19 +4,19 @@ import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
-import br.com.autorepairshop.customer.domain.valueobject.document.DocumentId
-import br.com.autorepairshop.shared.domain.AggregateRoot
+import br.com.autorepairshop.customer.domain.valueobject.document.Document
+import br.com.autorepairshop.shared.domain.Entity
 import kotlin.time.Clock
 import kotlin.time.Instant
 
 class Customer private constructor(
     id: CustomerId,
-    val documentId: DocumentId,
+    val document: Document,
     name: PersonName,
     contact: ContactInfo,
     active: Boolean,
     val registeredAt: Instant,
-) : AggregateRoot<CustomerId>(id = id) {
+) : Entity<CustomerId>(id = id) {
 
     var name: PersonName = name
         private set
@@ -50,20 +50,20 @@ class Customer private constructor(
     private fun requireActive() {
         if (!active) {
             throw CustomerException.InvalidDocument(
-                message = "Customer ${documentId.masked()} is inactive.",
+                message = "Customer ${document.masked()} is inactive.",
             )
         }
     }
 
     companion object {
         fun register(
-            documentId: DocumentId,
+            documentId: Document,
             name: PersonName,
             contact: ContactInfo,
             at: Instant = Clock.System.now(),
         ) = Customer(
             id = CustomerId.generate(),
-            documentId = documentId,
+            document = documentId,
             name = name,
             contact = contact,
             active = true,
@@ -72,14 +72,14 @@ class Customer private constructor(
 
         internal fun rehydrate(
             id: CustomerId,
-            documentId: DocumentId,
+            documentId: Document,
             name: PersonName,
             contact: ContactInfo,
             active: Boolean,
             registeredAt: Instant,
         ) = Customer(
             id = id,
-            documentId = documentId,
+            document = documentId,
             name = name,
             contact = contact,
             active = active,
