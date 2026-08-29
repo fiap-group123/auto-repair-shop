@@ -3,6 +3,7 @@ package br.com.autorepairshop.catalog.domain.aggregate
 import br.com.autorepairshop.catalog.CatalogFixtures
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
+import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceStatus
@@ -125,6 +126,21 @@ class ServiceTest {
         assertFailsWith<CatalogException.InvalidStatusTransition> {
             service.inProgress()
         }
+        assertFailsWith<CatalogException.InvalidStatusTransition> {
+            service.remove()
+        }
+    }
+
+    @Test
+    fun `remove is allowed only while waiting`() {
+        val service = CatalogFixtures.activeService()
+
+        service.remove()
+
+        assertEquals(
+            expected = 1,
+            actual = service.domainEvents.filterIsInstance<ServiceRemoved>().size,
+        )
     }
 
     @Test

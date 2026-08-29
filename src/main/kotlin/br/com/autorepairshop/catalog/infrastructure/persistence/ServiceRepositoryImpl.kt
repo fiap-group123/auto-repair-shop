@@ -41,6 +41,10 @@ class ServiceRepositoryImpl(private val jpa: ServiceJpaRepository) : ServiceRepo
 
     override fun existsByServiceOrderId(serviceOrderId: UUID): Boolean = jpa.existsByServiceOrderId(serviceOrderId)
 
+    override fun delete(service: Service) {
+        jpa.deleteById(service.id.value)
+    }
+
     private fun Service.toEntity() = ServiceEntity(
         id = id.value,
         serviceOrderId = serviceOrderId,
