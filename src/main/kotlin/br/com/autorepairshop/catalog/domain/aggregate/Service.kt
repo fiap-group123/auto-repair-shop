@@ -2,6 +2,7 @@ package br.com.autorepairshop.catalog.domain.aggregate
 
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
+import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
@@ -75,6 +76,17 @@ class Service private constructor(
         startedAt?.let { started ->
             estimateTime(duration = at - started)
         }
+    }
+
+    fun remove(at: Instant = Clock.System.now()) {
+        requireStatus(ServiceStatus.WAITING)
+        registerEvent(
+            event = ServiceRemoved(
+                serviceId = id,
+                serviceOrderId = serviceOrderId,
+                occurredOn = at.toJavaInstant(),
+            ),
+        )
     }
 
     private fun estimateTime(duration: Duration) {

@@ -16,4 +16,5 @@ interface ServiceRepository {
     fun findByServiceOrderId(serviceOrderId: UUID): List<Service>
     fun findByServiceOrderIds(serviceOrderIds: Collection<UUID>): List<Service>
     fun existsByServiceOrderId(serviceOrderId: UUID): Boolean
+    fun delete(service: Service)
 }
