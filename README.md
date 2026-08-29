@@ -30,6 +30,7 @@ Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API
 | Tests | JUnit 5, MockK, Testcontainers, Kover (min. 98% line coverage on domain, application, persistence, and HTTP adapters) |
 | Quality | Detekt + ktlint, Git pre-commit hook |
 | Build | Gradle 9.5 (wrapper included) |
+| Runtime | Dockerfile + docker-compose (API and PostgreSQL) |
 
 ## Architecture
 
@@ -60,17 +61,20 @@ The Gradle Wrapper is in the repo (`gradlew` / `gradlew.bat`). You do not need a
 
 ## Getting started
 
-From the repository root:
+From the repository root, the full stack (API + PostgreSQL) is:
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
-This starts PostgreSQL on `localhost:5432` (database `autorepairshop`, user/password from `DATABASE_USERNAME` / `DATABASE_PASSWORD`, default `postgres`). Wait until the container is healthy (`docker compose ps`).
+This builds the `Dockerfile` and starts the API on `http://localhost:8080` and Postgres on `localhost:5432`. Wait until `api` is up (`docker compose ps`). Swagger: http://localhost:8080/swagger-ui.html
 
-Then start the API:
+Copy [`.env.example`](.env.example) to `.env` to override credentials and `JWT_SECRET`. Compose reads it automatically.
+
+### API only (Gradle on the host)
 
 ```bash
+docker compose up -d postgres
 ./gradlew bootRun
 ```
 
@@ -78,7 +82,7 @@ On Windows CMD/PowerShell use `gradlew.bat bootRun`. When you see `Tomcat starte
 
 ### IDE
 
-1. `docker compose up -d`
+1. `docker compose up -d postgres`
 2. Run `src/main/kotlin/br/com/autorepairshop/AutoRepairShopApplication.kt`
 
 Do not use `bootTestRun` unless Docker is running: that profile starts Postgres via Testcontainers and fails if the engine is down.
@@ -86,8 +90,6 @@ Do not use `bootTestRun` unless Docker is running: that profile starts Postgres 
 ### Stop
 
 ```bash
-# API: Ctrl+C in the bootRun terminal
-
 docker compose down
 ```
 
@@ -287,7 +289,7 @@ Values in [`src/main/resources/application.properties`](src/main/resources/appli
 
 | Property | Environment variable | Local default | Notes |
 |---|---|---|---|
-| `spring.datasource.url` | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/autorepairshop` | Match `docker-compose.yml` |
+| `spring.datasource.url` | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/autorepairshop` | In Compose the API uses `jdbc:postgresql://postgres:5432/autorepairshop` |
 | `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Local only |
 | `spring.datasource.password` | `DATABASE_PASSWORD` | `postgres` | Override outside local Docker |
 | `app.security.jwt.secret` | `JWT_SECRET` | placeholder | Must be **at least 32 bytes** outside local dev |
@@ -304,7 +306,7 @@ Start Docker Desktop and wait until it is healthy, then run `docker compose up -
 Another Postgres or API is bound to that port. Stop it, or change the port in `docker-compose.yml` / `application.properties`.
 
 **Flyway / connection refused**  
-Compose is not ready yet. Run `docker compose ps` and only then `bootRun`.
+Postgres is not ready yet. Run `docker compose ps` and wait until it is healthy. If you started only the database, run `bootRun` after that.
 
 **401 on customer/vehicle requests**  
 Login first (`POST /auth/login`) and send `Authorization: Bearer <accessToken>`. Staff vs client permissions are listed under [Roles](#roles).
