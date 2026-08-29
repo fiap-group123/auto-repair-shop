@@ -2,12 +2,13 @@
 
 Backend API for an auto repair shop MVP (FIAP Tech Challenge — Phase 1).
 
-Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API covers workshop users (JWT auth), customers (CPF/CNPJ), and vehicles (Brazilian plates, ownership transfer).
+Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API covers workshop users (JWT auth), customers (CPF/CNPJ), vehicles (Brazilian plates), service orders, and the services attached to each order.
 
 ## Contents
 
 - [Tech stack](#tech-stack)
 - [Architecture](#architecture)
+- [Why PostgreSQL](#why-postgresql)
 - [Prerequisites](#prerequisites)
 - [Getting started](#getting-started)
 - [API](#api)
@@ -34,10 +35,12 @@ Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API
 
 ## Architecture
 
-Two bounded contexts in a single deployable:
+Four bounded contexts in a single deployable:
 
 - **Authentication** — users, roles, login, JWT issuance
-- **Customer** — customers and vehicles (aggregates, value objects, use cases)
+- **Customer** — customers and vehicles
+- **Service Order** — OS lifecycle (received → delivered) and budget total
+- **Catalog** — services requested on an OS (line items, duration, average time)
 
 Each context follows `domain` → `application` → `infrastructure`. HTTP adapters, JWT security, and OpenAPI live under `api`.
 
@@ -46,10 +49,16 @@ src/main/kotlin/br/com/autorepairshop/
 ├── api/                  # Controllers, security, exception handlers, OpenAPI
 ├── authentication/       # Users, roles, login
 ├── customer/             # Customers and vehicles
+├── catalog/              # Services on a service order
+├── serviceorder/         # Service order lifecycle and budget
 └── shared/               # AggregateRoot, UseCase, domain events
 ```
 
-Schema is owned by Flyway (`src/main/resources/db/migration/`): customers, vehicles, then users.
+Schema is owned by Flyway (`src/main/resources/db/migration/`).
+
+## Why PostgreSQL
+
+The MVP is a relational domain: customers own vehicles, a service order belongs to one customer and one vehicle, and services (and later parts) hang off that order with money and timestamps. PostgreSQL 16 gives ACID transactions for the budget recalculation that runs in the same commit as a service change, constraints (unique plate/document, foreign keys), and `TIMESTAMPTZ` for the OS timeline. Flyway owns the schema; Hibernate only validates it. A document store would push those invariants into application code.
 
 ## Prerequisites
 
@@ -103,6 +112,7 @@ docker compose down
 | OpenAPI JSON | http://localhost:8080/v3/api-docs |
 | Auth requests | [`http/auth.http`](http/auth.http) |
 | Customer / vehicle requests | [`http/customer.http`](http/customer.http) |
+| Service order / catalog requests | [`http/service-order.http`](http/service-order.http) |
 
 Authorize Swagger (or `.http` files) with `Authorization: Bearer <accessToken>` after login. Swagger UI, OpenAPI, and `/error` are public; everything else requires a JWT except user registration and login.
 
@@ -121,7 +131,7 @@ Ready-made flow: run [`http/auth.http`](http/auth.http) in order. The first requ
 | `MANAGER` | Full customer/vehicle management, including deactivate/reactivate |
 | `RECEPTIONIST` | Register and update customers and vehicles; cannot deactivate |
 | `MECHANIC` | Read customers (by document/id) and vehicles |
-| `CLIENT` | Read **their own** customer record and vehicles only |
+| `CLIENT` | Read **their own** customer, vehicles, and service orders; approve their budget |
 
 ## Endpoints
 
@@ -209,7 +219,8 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
   "plate": "ABC1D23",
   "brand": "Toyota",
   "model": "Corolla",
-  "year": 2024
+  "year": 2024,
+  "color": "Prata"
 }
 ```
 
@@ -240,6 +251,60 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
   "newOwnerId": "00000000-0000-0000-0000-000000000000"
 }
 ```
+
+### Service orders
+
+| Method | Path | Roles | Status | Description |
+|---|---|---|---|---|
+| `POST` | `/service-orders` | `RECEPTIONIST`, `MANAGER` | `201` | Open an OS (`customerId` + `vehicleId`). Status `RECEIVED`. |
+| `GET` | `/service-orders` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List all orders. |
+| `GET` | `/service-orders/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List by customer. `CLIENT` must be the owner. |
+| `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detail (status, total, timestamps, `serviceIds`). |
+| `POST` | `/service-orders/{id}/diagnosis` | `MECHANIC`, `MANAGER` | `200` | Start diagnosis. |
+| `POST` | `/service-orders/{id}/diagnosis/complete` | `MECHANIC`, `MANAGER` | `200` | Finish diagnosis and wait for approval (budget must be > 0). |
+| `POST` | `/service-orders/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Approve the budget. |
+| `POST` | `/service-orders/{id}/complete` | `MECHANIC`, `MANAGER` | `200` | Finish execution. |
+| `POST` | `/service-orders/{id}/deliver` | `RECEPTIONIST`, `MANAGER` | `200` | Deliver the vehicle. |
+
+**`POST /service-orders` body**
+
+```json
+{
+  "customerId": "00000000-0000-0000-0000-000000000000",
+  "vehicleId": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+Look up the customer first with `GET /customers/document/{document}` (CPF/CNPJ).
+
+### Catalog (services on an OS)
+
+Services are line items of a service order (name, price, status, duration), not a shop-wide catalog.
+
+| Method | Path | Roles | Status | Description |
+|---|---|---|---|---|
+| `POST` | `/services` | `RECEPTIONIST`, `MANAGER` | `201` | Add a service to an OS. Recalculates the budget. |
+| `GET` | `/services` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List all services. |
+| `GET` | `/services/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List services of a customer. `CLIENT` must be the owner. |
+| `GET` | `/services/service-order/{serviceOrderId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List services of an OS. `CLIENT` must own the order. |
+| `GET` | `/services/average-execution-time` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Average duration of finished services (`sampleSize`, `averageSeconds`). |
+| `GET` | `/services/{id}` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find a service. |
+| `PUT` | `/services/{id}` | `MANAGER` | `200` | Update name and/or price. |
+| `DELETE` | `/services/{id}` | `RECEPTIONIST`, `MANAGER` | `204` | Remove a service still `WAITING`. |
+| `POST` | `/services/{id}/in-progress` | `MECHANIC`, `MANAGER` | `200` | Start execution. |
+| `POST` | `/services/{id}/finish` | `MECHANIC`, `MANAGER` | `200` | Finish and record duration. |
+
+**`POST /services` body**
+
+```json
+{
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000",
+  "name": "Troca de oleo",
+  "basePrice": 150.00
+}
+```
+
+A `CLIENT` lists line items with `GET /services/customer/{customerId}` or `GET /services/service-order/{serviceOrderId}`. The OS detail only returns `serviceIds`.
 
 ### Docs and errors (public)
 

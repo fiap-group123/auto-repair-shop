@@ -1,0 +1,59 @@
+@baseUrl = http://localhost:8080
+@token = {{loginToken}}
+
+###
+# Abrir OS (depois de cadastrar cliente e veiculo)
+POST {{baseUrl}}/service-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "vehicleId": "{{vehicleId}}"
+}
+
+> {% client.global.set("serviceOrderId", response.body.id); %}
+
+###
+# Incluir servico
+POST {{baseUrl}}/services
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "name": "Troca de oleo",
+  "basePrice": 150.00
+}
+
+> {% client.global.set("serviceId", response.body.id); %}
+
+###
+# Consultar OS (ids dos servicos em serviceIds)
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}
+Authorization: Bearer {{token}}
+
+###
+# Servicos da OS
+GET {{baseUrl}}/services/service-order/{{serviceOrderId}}
+Authorization: Bearer {{token}}
+
+###
+# Servicos do cliente
+GET {{baseUrl}}/services/customer/{{customerId}}
+Authorization: Bearer {{token}}
+
+###
+# Listar OS do cliente
+GET {{baseUrl}}/service-orders/customer/{{customerId}}
+Authorization: Bearer {{token}}
+
+###
+# Tempo medio de execucao
+GET {{baseUrl}}/services/average-execution-time
+Authorization: Bearer {{token}}
+
+###
+# Remover servico ainda WAITING
+DELETE {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{token}}
