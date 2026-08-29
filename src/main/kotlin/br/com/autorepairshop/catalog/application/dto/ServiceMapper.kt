@@ -1,6 +1,7 @@
 package br.com.autorepairshop.catalog.application.dto
 
 import br.com.autorepairshop.catalog.domain.aggregate.Service
+import kotlin.time.toJavaInstant
 
 fun Service.toResponse() = ServiceResponse(
     id = id.value,
@@ -8,8 +9,8 @@ fun Service.toResponse() = ServiceResponse(
     name = name.value,
     basePrice = basePrice.amount,
     status = status.name,
-    registeredAt = registeredAt,
-    openedAt = openedAt,
-    finishedAt = finishedAt,
-    estimatedTime = estimatedTime,
+    createdAt = createdAt.toJavaInstant(),
+    startedAt = startedAt?.toJavaInstant(),
+    finishedAt = finishedAt?.toJavaInstant(),
+    estimatedTime = estimatedTime?.inWholeSeconds,
 )

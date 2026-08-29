@@ -24,6 +24,7 @@ class ServiceOrderApiExceptionHandler {
 
         is ServiceOrderException.InvalidStatusTransition,
         is ServiceOrderException.EmptyBudget,
+        is ServiceOrderException.InvalidDuration,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
 }

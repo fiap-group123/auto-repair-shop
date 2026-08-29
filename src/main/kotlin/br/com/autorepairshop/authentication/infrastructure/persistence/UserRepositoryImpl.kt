@@ -35,7 +35,7 @@ class UserRepositoryImpl(private val jpa: UserJpaRepository) : UserRepository {
         role = UserRoleColumn.valueOf(value = role.name),
         active = active,
         customerId = customerId,
-        registeredAt = registeredAt.toJavaInstant(),
+        createdAt = createdAt.toJavaInstant(),
     )
 
     private fun UserEntity.toDomain() = User.rehydrate(
@@ -45,6 +45,6 @@ class UserRepositoryImpl(private val jpa: UserJpaRepository) : UserRepository {
         role = Role.valueOf(value = role.name),
         active = active,
         customerId = customerId,
-        registeredAt = registeredAt.toKotlinInstant(),
+        createdAt = createdAt.toKotlinInstant(),
     )
 }

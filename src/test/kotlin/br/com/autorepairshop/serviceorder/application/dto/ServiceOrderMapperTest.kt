@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.toJavaInstant
 
 @Tag("unit")
 class ServiceOrderMapperTest {
@@ -31,15 +32,15 @@ class ServiceOrderMapperTest {
     }
 
     @Test
-    fun `openedAt stays null until diagnosis starts`() {
+    fun `startedAt stays null until diagnosis starts`() {
         val order = ServiceOrderFixtures.received()
 
         val response = order.toResponse()
 
-        assertNull(response.openedAt)
+        assertNull(response.startedAt)
         assertEquals(
-            expected = order.registeredAt,
-            actual = response.registeredAt,
+            expected = order.createdAt.toJavaInstant(),
+            actual = response.createdAt,
         )
         assertEquals(
             expected = "0.00",

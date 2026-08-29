@@ -54,7 +54,7 @@ class StartServiceUseCaseTest {
             expected = ServiceStatus.IN_PROGRESS.name,
             actual = response.status,
         )
-        assertNotNull(response.openedAt)
+        assertNotNull(response.startedAt)
         verify { services.save(service = service) }
     }
 }

@@ -142,6 +142,7 @@ class VehicleControllerTest {
                     plate = CustomerFixtures.MERCOSUL_PLATE,
                     brand = "Fiat",
                     model = "Argo",
+                    color = "Black",
                     year = 2024,
                 ),
             )
@@ -159,6 +160,7 @@ class VehicleControllerTest {
                     plate = CustomerFixtures.MERCOSUL_PLATE,
                     brand = "Fiat",
                     model = "Argo",
+                    color = "Black",
                     year = 2024,
                 ),
             )

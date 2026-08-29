@@ -74,7 +74,7 @@ class ServiceTest {
         )
         assertEquals(
             expected = opened,
-            actual = service.openedAt,
+            actual = service.startedAt,
         )
     }
 
@@ -102,7 +102,7 @@ class ServiceTest {
     }
 
     @Test
-    fun `finish before openedAt is rejected`() {
+    fun `finish before startedAt is rejected`() {
         val service = CatalogFixtures.activeService()
         val opened = Instant.fromEpochSeconds(epochSeconds = 1_700_000_000)
 
@@ -136,9 +136,9 @@ class ServiceTest {
             serviceOrderId = original.serviceOrderId,
             name = original.name,
             price = original.basePrice,
-            registeredAt = original.registeredAt,
+            createdAt = original.createdAt,
             status = original.status,
-            openedAt = original.openedAt,
+            startedAt = original.startedAt,
             finishedAt = original.finishedAt,
             estimatedTime = original.estimatedTime,
         )

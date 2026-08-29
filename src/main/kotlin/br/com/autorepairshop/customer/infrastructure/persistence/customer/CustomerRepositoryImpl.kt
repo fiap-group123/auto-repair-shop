@@ -32,7 +32,7 @@ class CustomerRepositoryImpl(private val jpa: CustomerJpaRepository) : CustomerR
         email = contact.email.value,
         phone = contact.phone.value,
         active = active,
-        registeredAt = registeredAt.toJavaInstant(),
+        createdAt = createdAt.toJavaInstant(),
     )
 
     private fun CustomerEntity.toDomain() = Customer.rehydrate(
@@ -44,6 +44,6 @@ class CustomerRepositoryImpl(private val jpa: CustomerJpaRepository) : CustomerR
             phone = phone,
         ),
         active = active,
-        registeredAt = registeredAt.toKotlinInstant(),
+        createdAt = createdAt.toKotlinInstant(),
     )
 }

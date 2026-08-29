@@ -42,6 +42,7 @@ class VehicleTest {
         vehicle.updateSpec(
             brand = "  Fiat  Power  ",
             model = null,
+            color = null,
             year = null,
         )
 
@@ -53,6 +54,7 @@ class VehicleTest {
             vehicle.updateSpec(
                 brand = "A",
                 model = null,
+                color = null,
                 year = null,
             )
         }
@@ -60,6 +62,7 @@ class VehicleTest {
             vehicle.updateSpec(
                 brand = null,
                 model = "M".repeat(n = 41),
+                color = null,
                 year = null,
             )
         }
@@ -89,6 +92,7 @@ class VehicleTest {
         vehicle.updateSpec(
             brand = null,
             model = "Pulse",
+            color = null,
             year = year,
         )
 
@@ -111,9 +115,10 @@ class VehicleTest {
             plate = original.plate,
             brand = original.brand,
             model = original.model,
+            color = original.color,
             year = original.year,
             active = original.active,
-            registeredAt = original.registeredAt,
+            createdAt = original.createdAt,
         )
 
         assertEquals(

@@ -61,6 +61,7 @@ class VehicleController(
                 brand = request.brand,
                 model = request.model,
                 year = request.year,
+                color = request.color,
             ),
         )
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -105,6 +106,7 @@ class VehicleController(
                 brand = request.brand,
                 model = request.model,
                 year = request.year,
+                color = request.color,
             ),
         ),
     )

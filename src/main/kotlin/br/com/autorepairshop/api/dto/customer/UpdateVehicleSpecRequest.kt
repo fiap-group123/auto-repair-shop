@@ -4,4 +4,5 @@ data class UpdateVehicleSpecRequest(
     val brand: String? = null,
     val model: String? = null,
     val year: Int? = null,
+    val color: String? = null,
 )

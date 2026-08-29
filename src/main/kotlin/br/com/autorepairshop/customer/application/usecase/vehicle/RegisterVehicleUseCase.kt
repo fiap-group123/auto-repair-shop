@@ -46,6 +46,7 @@ class RegisterVehicleUseCase(
             plate = plate,
             brand = input.brand,
             model = input.model,
+            color = input.color,
             year = ModelYear.of(year = input.year),
         )
         vehicles.save(vehicle = vehicle)

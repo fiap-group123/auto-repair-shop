@@ -17,7 +17,7 @@ class User private constructor(
     val role: Role,
     active: Boolean,
     val customerId: UUID?,
-    val registeredAt: Instant,
+    val createdAt: Instant,
 ) : Entity<UserId>(id = id) {
 
     var hashedPassword: HashedPassword = hashedPassword
@@ -51,7 +51,7 @@ class User private constructor(
                 role = role,
                 active = true,
                 customerId = customerId,
-                registeredAt = at,
+                createdAt = at,
             )
         }
 
@@ -62,7 +62,7 @@ class User private constructor(
             role: Role,
             active: Boolean,
             customerId: UUID?,
-            registeredAt: Instant,
+            createdAt: Instant,
         ) = User(
             id = id,
             email = email,
@@ -70,7 +70,7 @@ class User private constructor(
             role = role,
             active = active,
             customerId = customerId,
-            registeredAt = registeredAt,
+            createdAt = createdAt,
         )
     }
 }
