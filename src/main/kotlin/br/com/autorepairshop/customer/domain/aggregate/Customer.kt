@@ -5,7 +5,7 @@ import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
 import br.com.autorepairshop.customer.domain.valueobject.document.Document
-import br.com.autorepairshop.shared.domain.Entity
+import br.com.autorepairshop.shared.domain.AggregateRoot
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -16,7 +16,7 @@ class Customer private constructor(
     contact: ContactInfo,
     active: Boolean,
     val registeredAt: Instant,
-) : Entity<CustomerId>(id = id) {
+) : AggregateRoot<CustomerId>(id = id) {
 
     var name: PersonName = name
         private set
@@ -49,7 +49,7 @@ class Customer private constructor(
 
     private fun requireActive() {
         if (!active) {
-            throw CustomerException.InvalidDocument(
+            throw CustomerException.CustomerInactive(
                 message = "Customer ${document.masked()} is inactive.",
             )
         }

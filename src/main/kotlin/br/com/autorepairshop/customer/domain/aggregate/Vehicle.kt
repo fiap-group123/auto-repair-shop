@@ -16,6 +16,7 @@ class Vehicle private constructor(
     brand: String,
     model: String,
     year: ModelYear,
+    active: Boolean,
     val registeredAt: Instant,
 ) : Entity<VehicleId>(id = id) {
 
@@ -34,7 +35,11 @@ class Vehicle private constructor(
     var year: ModelYear = year
         private set
 
+    var active: Boolean = active
+        private set
+
     fun transferTo(newOwnerId: CustomerId) {
+        requireActive()
         if (newOwnerId == ownerId) {
             throw VehicleException.AlreadyOwnedByCustomer(
                 message = "Vehicle ${plate.formatted()} already belongs to this customer.",
@@ -44,6 +49,7 @@ class Vehicle private constructor(
     }
 
     fun changePlate(newPlate: LicensePlate) {
+        requireActive()
         plate = newPlate
     }
 
@@ -52,9 +58,28 @@ class Vehicle private constructor(
         model: String?,
         year: ModelYear?,
     ) {
+        requireActive()
         brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
         model?.let { this.model = normalizeName(raw = it, field = "model") }
         year?.let { this.year = it }
+    }
+
+    fun reactivate() {
+        if (active) throw VehicleException.VehicleAlreadyActive(message = "Vehicle is already active.")
+        active = true
+    }
+
+    fun deactivate() {
+        requireActive()
+        active = false
+    }
+
+    private fun requireActive() {
+        if (!active) {
+            throw VehicleException.VehicleInactive(
+                message = "Vehicle with plate $plate is inactive.",
+            )
+        }
     }
 
     companion object {
@@ -72,6 +97,7 @@ class Vehicle private constructor(
             brand = normalizeName(raw = brand, field = "brand"),
             model = normalizeName(raw = model, field = "model"),
             year = year,
+            active = true,
             registeredAt = at,
         )
 
@@ -82,6 +108,7 @@ class Vehicle private constructor(
             brand: String,
             model: String,
             year: ModelYear,
+            active: Boolean,
             registeredAt: Instant,
         ) = Vehicle(
             id = id,
@@ -90,6 +117,7 @@ class Vehicle private constructor(
             brand = brand,
             model = model,
             year = year,
+            active = active,
             registeredAt = registeredAt,
         )
 

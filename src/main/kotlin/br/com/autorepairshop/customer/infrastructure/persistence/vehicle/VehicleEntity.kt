@@ -22,6 +22,8 @@ class VehicleEntity(
     var model: String,
     @Column(nullable = false)
     var year: Int,
+    @Column(nullable = false)
+    var active: Boolean,
     @Column(name = "registered_at", nullable = false)
     val registeredAt: Instant,
 )

@@ -9,4 +9,6 @@ sealed class VehicleException(message: String) : DomainException(message = messa
     class InvalidModelYear(message: String) : VehicleException(message = message)
     class InvalidVehicleName(message: String) : VehicleException(message = message)
     class AlreadyOwnedByCustomer(message: String) : VehicleException(message = message)
+    class VehicleInactive(message: String) : VehicleException(message = message)
+    class VehicleAlreadyActive(message: String) : VehicleException(message = message)
 }

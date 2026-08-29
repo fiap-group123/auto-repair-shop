@@ -27,6 +27,7 @@ class CustomerApiExceptionHandler {
         is CustomerException.InvalidPersonName,
         is CustomerException.InvalidPhoneNumber,
         is CustomerException.InvalidEmailAddress,
+        is CustomerException.CustomerInactive,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
 
@@ -42,6 +43,8 @@ class CustomerApiExceptionHandler {
         is VehicleException.InvalidLicensePlate,
         is VehicleException.InvalidModelYear,
         is VehicleException.InvalidVehicleName,
+        is VehicleException.VehicleAlreadyActive,
+        is VehicleException.VehicleInactive,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
 }

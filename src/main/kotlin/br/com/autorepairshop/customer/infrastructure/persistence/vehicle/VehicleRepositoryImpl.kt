@@ -33,6 +33,7 @@ class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepo
         brand = brand,
         model = model,
         year = year.value,
+        active = active,
         registeredAt = registeredAt.toJavaInstant(),
     )
 
@@ -43,6 +44,7 @@ class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepo
         brand = brand,
         model = model,
         year = ModelYear.of(year = year),
+        active = active,
         registeredAt = registeredAt.toKotlinInstant(),
     )
 }

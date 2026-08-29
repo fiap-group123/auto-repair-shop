@@ -10,4 +10,5 @@ sealed class CustomerException(message: String) : DomainException(message = mess
     class InvalidPersonName(message: String) : CustomerException(message = message)
     class InvalidPhoneNumber(message: String) : CustomerException(message = message)
     class InvalidEmailAddress(message: String) : CustomerException(message = message)
+    class CustomerInactive(message: String) : CustomerException(message = message)
 }

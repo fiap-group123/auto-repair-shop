@@ -112,6 +112,7 @@ class VehicleTest {
             brand = original.brand,
             model = original.model,
             year = original.year,
+            active = original.active,
             registeredAt = original.registeredAt,
         )
 

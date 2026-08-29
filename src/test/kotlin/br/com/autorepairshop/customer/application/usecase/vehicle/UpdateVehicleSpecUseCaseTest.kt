@@ -50,6 +50,23 @@ class UpdateVehicleSpecUseCaseTest {
     }
 
     @Test
+    fun `throws when vehicle is inactive`() {
+        val vehicle = CustomerFixtures.inactiveVehicle()
+        every { vehicles.findById(id = vehicle.id) } returns vehicle
+
+        assertFailsWith<VehicleException.VehicleInactive> {
+            useCase.execute(
+                input = UpdateVehicleSpecCommand(
+                    vehicleId = vehicle.id.value,
+                    brand = "Honda",
+                    model = "Civic",
+                    year = 2026,
+                ),
+            )
+        }
+    }
+
+    @Test
     fun `updates brand model and year`() {
         val vehicle = CustomerFixtures.vehicle()
         every { vehicles.findById(id = vehicle.id) } returns vehicle
