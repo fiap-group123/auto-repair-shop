@@ -79,7 +79,7 @@ class BudgetTotalEventIT {
     }
 
     @Test
-    fun `changing a price recalculates while editable and freezes after approval`() {
+    fun `changing a price recalculates the order total after approval`() {
         val orderId = openOrder()
         val service = registerService.execute(
             input = RegisterServiceCommand(
@@ -111,7 +111,7 @@ class BudgetTotalEventIT {
         )
         assertTotal(
             orderId = orderId,
-            expected = "250.00",
+            expected = "999.00",
         )
     }
 

@@ -73,18 +73,21 @@ class RecalculateBudgetTotalUseCaseTest {
     }
 
     @Test
-    fun `leaves the total untouched once the budget was sent for approval`() {
+    fun `recalculates even after the budget was sent for approval`() {
         val order = ServiceOrderFixtures.waitingApproval()
         every { orders.findById(id = order.id) } returns order
+        every { services.findByServiceOrderId(serviceOrderId = order.id.value) } returns listOf(
+            element = CatalogFixtures.activeService(price = "80.00"),
+        )
+        every { orders.save(order = order) } returns Unit
 
         useCase.execute(input = order.id.value)
 
         assertEquals(
-            expected = ServiceOrderFixtures.TOTAL,
-            actual = order.total,
+            expected = "80.00",
+            actual = order.total.amount.toPlainString(),
         )
-        verify(exactly = 0) { orders.save(order = any()) }
-        verify(exactly = 0) { services.findByServiceOrderId(serviceOrderId = any()) }
+        verify { orders.save(order = order) }
     }
 
     @Test

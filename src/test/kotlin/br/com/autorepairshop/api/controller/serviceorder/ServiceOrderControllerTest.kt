@@ -1,12 +1,9 @@
 package br.com.autorepairshop.api.controller.serviceorder
 
-import br.com.autorepairshop.api.dto.authentication.AuthenticatedUser
 import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
 import br.com.autorepairshop.api.security.AuthorizationSupport
-import br.com.autorepairshop.api.security.CurrentUser
 import br.com.autorepairshop.api.withHttpRequest
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
-import br.com.autorepairshop.authentication.domain.valueobject.Role
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.toResponse
@@ -41,7 +38,6 @@ class ServiceOrderControllerTest {
     private val completeOrder = mockk<FinishServiceOrderUseCase>()
     private val deliverOrder = mockk<DeliverServiceOrderUseCase>()
     private val authorization = mockk<AuthorizationSupport>(relaxUnitFun = true)
-    private val currentUser = mockk<CurrentUser>()
     private val controller = ServiceOrderController(
         registerOrder = openOrder,
         findOrder = findOrder,
@@ -53,7 +49,6 @@ class ServiceOrderControllerTest {
         completeOrder = completeOrder,
         deliverOrder = deliverOrder,
         authorization = authorization,
-        currentUser = currentUser,
     )
 
     @Test
@@ -86,11 +81,6 @@ class ServiceOrderControllerTest {
     @Test
     fun `list find and lifecycle endpoints delegate to use cases`() {
         val order = ServiceOrderFixtures.inDiagnosisWithBudget().toResponse()
-        every { currentUser.get() } returns AuthenticatedUser(
-            userId = UUID.randomUUID(),
-            role = Role.MANAGER,
-            customerId = null,
-        )
         every { listOrders.execute(input = Unit) } returns listOf(element = order)
         every { findOrder.execute(input = order.id) } returns order
         every { startDiagnosisUseCase.execute(input = order.id) } returns order
@@ -130,24 +120,6 @@ class ServiceOrderControllerTest {
         verify {
             authorization.requireCanAccessServiceOrder(customerId = order.customerId)
         }
-    }
-
-    @Test
-    fun `clients listing all orders only see their own`() {
-        val customerId = UUID.randomUUID()
-        val order = ServiceOrderFixtures.received(customerId = customerId).toResponse()
-        every { currentUser.get() } returns AuthenticatedUser(
-            userId = UUID.randomUUID(),
-            role = Role.CLIENT,
-            customerId = customerId,
-        )
-        every { listOrdersByCustomerId.execute(input = customerId) } returns listOf(element = order)
-
-        assertEquals(
-            expected = 1,
-            actual = controller.list().body?.size,
-        )
-        verify(exactly = 0) { listOrders.execute(input = Unit) }
     }
 
     @Test

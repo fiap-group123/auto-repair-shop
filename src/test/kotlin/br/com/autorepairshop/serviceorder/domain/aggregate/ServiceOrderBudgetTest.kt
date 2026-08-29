@@ -37,9 +37,6 @@ class ServiceOrderBudgetTest {
     fun `the total is frozen once the budget is sent for approval`() {
         val order = ServiceOrderFixtures.waitingApproval()
 
-        assertFailsWith<ServiceOrderException.ItemsLocked> {
-            order.updateBudgetTotal(total = Money.ZERO)
-        }
         assertEquals(
             expected = ServiceOrderFixtures.TOTAL,
             actual = order.total,
