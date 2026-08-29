@@ -1,2 +1,0 @@
-ALTER TABLE vehicles
-    ADD COLUMN active BOOLEAN NOT NULL;

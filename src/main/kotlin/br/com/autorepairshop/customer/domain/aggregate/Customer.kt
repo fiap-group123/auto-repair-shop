@@ -49,7 +49,7 @@ class Customer private constructor(
 
     private fun requireActive() {
         if (!active) {
-            throw CustomerException.InvalidDocument(
+            throw CustomerException.CustomerInactive(
                 message = "Customer ${document.masked()} is inactive.",
             )
         }

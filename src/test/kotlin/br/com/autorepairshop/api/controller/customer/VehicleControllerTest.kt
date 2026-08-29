@@ -13,9 +13,11 @@ import br.com.autorepairshop.customer.application.dto.vehicle.TransferVehicleCom
 import br.com.autorepairshop.customer.application.dto.vehicle.UpdateVehicleSpecCommand
 import br.com.autorepairshop.customer.application.dto.vehicle.toResponse
 import br.com.autorepairshop.customer.application.usecase.vehicle.ChangeVehiclePlateUseCase
+import br.com.autorepairshop.customer.application.usecase.vehicle.DeactivateVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.FindVehicleByPlateUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.FindVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.ListVehiclesByOwnerUseCase
+import br.com.autorepairshop.customer.application.usecase.vehicle.ReactivateVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.RegisterVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.TransferVehicleUseCase
 import br.com.autorepairshop.customer.application.usecase.vehicle.UpdateVehicleSpecUseCase
@@ -38,6 +40,8 @@ class VehicleControllerTest {
     private val updateVehicleSpec = mockk<UpdateVehicleSpecUseCase>()
     private val changeVehiclePlate = mockk<ChangeVehiclePlateUseCase>()
     private val transferVehicle = mockk<TransferVehicleUseCase>()
+    private val deactivateVehicle = mockk<DeactivateVehicleUseCase>()
+    private val reactivateVehicle = mockk<ReactivateVehicleUseCase>()
     private val authorization = mockk<AuthorizationSupport>(relaxUnitFun = true)
     private val controller = VehicleController(
         registerVehicle = registerVehicle,
@@ -47,6 +51,8 @@ class VehicleControllerTest {
         updateVehicleSpec = updateVehicleSpec,
         changeVehiclePlate = changeVehiclePlate,
         transferVehicle = transferVehicle,
+        deactivateVehicle = deactivateVehicle,
+        reactivateVehicle = reactivateVehicle,
         authorization = authorization,
     )
 
@@ -157,6 +163,26 @@ class VehicleControllerTest {
                 ),
             )
             authorization.requireCanAccessCustomer(customerId = ownerId)
+        }
+    }
+
+    @Test
+    fun `deactivate and reactivate delegate to use cases`() {
+        val vehicleId = UUID.randomUUID()
+        every { deactivateVehicle.execute(input = vehicleId) } returns Unit
+        every { reactivateVehicle.execute(input = vehicleId) } returns Unit
+
+        assertEquals(
+            expected = HttpStatus.NO_CONTENT,
+            actual = controller.deactivate(id = vehicleId).statusCode,
+        )
+        assertEquals(
+            expected = HttpStatus.NO_CONTENT,
+            actual = controller.reactivate(id = vehicleId).statusCode,
+        )
+        verify {
+            deactivateVehicle.execute(input = vehicleId)
+            reactivateVehicle.execute(input = vehicleId)
         }
     }
 }
