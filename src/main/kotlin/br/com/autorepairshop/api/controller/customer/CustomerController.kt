@@ -1,13 +1,11 @@
 package br.com.autorepairshop.api.controller.customer
 
-import br.com.autorepairshop.api.dto.customer.RegisterVehicleRequest
+import br.com.autorepairshop.api.dto.customer.RegisterCustomerRequest
 import br.com.autorepairshop.api.dto.customer.UpdateCustomerRequest
 import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.customer.application.dto.customer.CustomerResponse
 import br.com.autorepairshop.customer.application.dto.customer.RegisterCustomerCommand
 import br.com.autorepairshop.customer.application.dto.customer.UpdateCustomerCommand
-import br.com.autorepairshop.customer.application.dto.vehicle.RegisterVehicleCommand
-import br.com.autorepairshop.customer.application.dto.vehicle.VehicleResponse
 import br.com.autorepairshop.customer.application.usecase.customer.DeactivateCustomerUseCase
 import br.com.autorepairshop.customer.application.usecase.customer.FindCustomerByDocumentUseCase
 import br.com.autorepairshop.customer.application.usecase.customer.FindCustomerUseCase
@@ -15,8 +13,6 @@ import br.com.autorepairshop.customer.application.usecase.customer.ListCustomers
 import br.com.autorepairshop.customer.application.usecase.customer.ReactivateCustomerUseCase
 import br.com.autorepairshop.customer.application.usecase.customer.RegisterCustomerUseCase
 import br.com.autorepairshop.customer.application.usecase.customer.UpdateCustomerUseCase
-import br.com.autorepairshop.customer.application.usecase.vehicle.ListVehiclesByOwnerUseCase
-import br.com.autorepairshop.customer.application.usecase.vehicle.RegisterVehicleUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
@@ -42,15 +38,20 @@ class CustomerController(
     private val findCustomer: FindCustomerUseCase,
     private val findCustomerByDocument: FindCustomerByDocumentUseCase,
     private val listCustomers: ListCustomersUseCase,
-    private val registerVehicle: RegisterVehicleUseCase,
-    private val listVehiclesByOwner: ListVehiclesByOwnerUseCase,
     private val authorization: AuthorizationSupport,
 ) {
 
     @PostMapping
     @Operation(summary = "Register customer")
-    fun register(@RequestBody command: RegisterCustomerCommand): ResponseEntity<CustomerResponse> {
-        val customer = registerCustomer.execute(input = command)
+    fun register(@RequestBody request: RegisterCustomerRequest): ResponseEntity<CustomerResponse> {
+        val customer = registerCustomer.execute(
+            input = RegisterCustomerCommand(
+                documentId = request.documentId,
+                name = request.name,
+                email = request.email,
+                phone = request.phone,
+            ),
+        )
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(customer.id)
@@ -102,35 +103,5 @@ class CustomerController(
     fun reactivate(@PathVariable id: UUID): ResponseEntity<Void> {
         reactivateCustomer.execute(input = id)
         return ResponseEntity.noContent().build()
-    }
-
-    @PostMapping("/{id}/vehicles")
-    @Operation(summary = "Register customer vehicle\n")
-    open fun registerVehicle(
-        @PathVariable id: UUID,
-        @RequestBody request: RegisterVehicleRequest,
-    ): ResponseEntity<VehicleResponse> {
-        val vehicle = registerVehicle.execute(
-            input = RegisterVehicleCommand(
-                ownerId = id,
-                plate = request.plate,
-                brand = request.brand,
-                model = request.model,
-                color = request.color,
-                year = request.year,
-            ),
-        )
-        val location = ServletUriComponentsBuilder.fromCurrentContextPath()
-            .path("/vehicles/{id}")
-            .buildAndExpand(vehicle.id)
-            .toUri()
-        return ResponseEntity.created(location).body(vehicle)
-    }
-
-    @GetMapping("/{id}/vehicles")
-    @Operation(summary = "List customer vehicles")
-    open fun listVehicles(@PathVariable id: UUID): ResponseEntity<List<VehicleResponse>> {
-        authorization.requireCanAccessCustomer(customerId = id)
-        return ResponseEntity.ok(listVehiclesByOwner.execute(input = id))
     }
 }

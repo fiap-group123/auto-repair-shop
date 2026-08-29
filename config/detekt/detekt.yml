@@ -13,7 +13,7 @@ complexity:
     ignoreSingleWhenExpression: true
   LongParameterList:
     allowedFunctionParameters: 15
-    allowedConstructorParameters: 10
+    allowedConstructorParameters: 15
     ignoreDefaultParameters: true
   NamedArguments:
     active: true

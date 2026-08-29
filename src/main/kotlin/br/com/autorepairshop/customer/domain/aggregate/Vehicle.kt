@@ -96,6 +96,7 @@ class Vehicle private constructor(
             model: String,
             color: String,
             year: ModelYear,
+            active: Boolean = true,
             at: Instant = Clock.System.now(),
         ) = Vehicle(
             id = VehicleId.generate(),
@@ -105,7 +106,7 @@ class Vehicle private constructor(
             model = normalizeName(raw = model, field = "model"),
             color = color,
             year = year,
-            active = true,
+            active = active,
             registeredAt = at,
         )
 

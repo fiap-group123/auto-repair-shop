@@ -30,7 +30,7 @@ class RegisterVehicleUseCase(
             )
         if (!owner.active) {
             throw CustomerException.InvalidDocument(
-                message = "Customer ${owner.documentId.masked()} is inactive.",
+                message = "Customer ${owner.document.masked()} is inactive.",
             )
         }
 

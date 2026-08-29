@@ -9,5 +9,6 @@ fun Vehicle.toResponse() = VehicleResponse(
     plateType = plate.type.name,
     brand = brand,
     model = model,
+    color = color,
     year = year.value,
 )

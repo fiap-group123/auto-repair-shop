@@ -18,6 +18,9 @@ jobs:
           gradle-version: ${{ vars.GRADLE_VERSION }}
 
       - name: Run unit tests
+        env:
+          JWT_SECRET: ci-test-jwt-secret-key-of-32-bytes-min
+          DATABASE_PASSWORD: postgres
         run: ./gradlew koverVerify
 
       - name: Upload coverage report
