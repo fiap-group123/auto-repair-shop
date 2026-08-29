@@ -10,12 +10,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
-/**
- * Recomputes the budget total from the services the order owns.
- *
- * Recomputing instead of accumulating deltas keeps this idempotent: replaying an event, or losing one and
- * catching up on the next, always converges to the sum of the services.
- */
 @Service
 class RecalculateBudgetTotalUseCase(
     private val orders: ServiceOrderRepository,

@@ -68,10 +68,7 @@ class ServiceOrderController(
     @GetMapping("/customer/{customerId}")
     @Operation(summary = "List service orders by customer id")
     fun listByCustomerId(@PathVariable customerId: UUID): ResponseEntity<List<ServiceOrderResponse>> {
-        val user = currentUser.get()
-        if (user.role != Role.CLIENT) {
-            throw AuthenticationException.Forbidden(message = "Only clients can list service orders by customer id.")
-        }
+        authorization.requireCanAccessServiceOrder(customerId = customerId)
         return ResponseEntity.ok(listOrdersByCustomerId.execute(input = customerId))
     }
 

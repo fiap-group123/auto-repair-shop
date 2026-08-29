@@ -129,10 +129,10 @@ class VehicleControllerTest {
         every { registerVehicle.execute(input = any()) } returns vehicle
         every { listVehiclesByOwner.execute(input = ownerId) } returns listOf(element = vehicle)
 
-        withHttpRequest(requestUri = "/customers/$ownerId/vehicles") {
-            val created = controller.registerVehicle(
-                id = ownerId,
+        withHttpRequest(requestUri = "/vehicles") {
+            val created = controller.register(
                 request = RegisterVehicleRequest(
+                    ownerId = ownerId,
                     plate = CustomerFixtures.MERCOSUL_PLATE,
                     brand = "Fiat",
                     model = "Argo",
@@ -144,7 +144,7 @@ class VehicleControllerTest {
                 actual = created.statusCode,
             )
         }
-        val listed = controller.listVehicles(id = ownerId)
+        val listed = controller.listByOwner(ownerId = ownerId)
         assertTrue(listed.body!!.isNotEmpty())
         verify {
             registerVehicle.execute(

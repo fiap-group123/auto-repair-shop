@@ -86,6 +86,11 @@ class ServiceOrderControllerTest {
     @Test
     fun `list find and lifecycle endpoints delegate to use cases`() {
         val order = ServiceOrderFixtures.inDiagnosisWithBudget().toResponse()
+        every { currentUser.get() } returns AuthenticatedUser(
+            userId = UUID.randomUUID(),
+            role = Role.MANAGER,
+            customerId = null,
+        )
         every { listOrders.execute(input = Unit) } returns listOf(element = order)
         every { findOrder.execute(input = order.id) } returns order
         every { startDiagnosisUseCase.execute(input = order.id) } returns order
@@ -128,28 +133,43 @@ class ServiceOrderControllerTest {
     }
 
     @Test
-    fun `clients can list orders by customer id and staff cannot`() {
+    fun `clients listing all orders only see their own`() {
         val customerId = UUID.randomUUID()
         val order = ServiceOrderFixtures.received(customerId = customerId).toResponse()
-        every { listOrdersByCustomerId.execute(input = customerId) } returns listOf(element = order)
         every { currentUser.get() } returns AuthenticatedUser(
             userId = UUID.randomUUID(),
             role = Role.CLIENT,
             customerId = customerId,
         )
+        every { listOrdersByCustomerId.execute(input = customerId) } returns listOf(element = order)
 
         assertEquals(
             expected = 1,
-            actual = controller.listByCustomerId(customerId = customerId).body?.size,
+            actual = controller.list().body?.size,
         )
+        verify(exactly = 0) { listOrders.execute(input = Unit) }
+    }
 
-        every { currentUser.get() } returns AuthenticatedUser(
-            userId = UUID.randomUUID(),
-            role = Role.MANAGER,
-            customerId = null,
-        )
+    @Test
+    fun `listing by customer id checks ownership before loading`() {
+        val customerId = UUID.randomUUID()
+        every { listOrdersByCustomerId.execute(input = customerId) } returns emptyList()
+
+        controller.listByCustomerId(customerId = customerId)
+
+        verify { authorization.requireCanAccessServiceOrder(customerId = customerId) }
+    }
+
+    @Test
+    fun `a client cannot list another customer orders`() {
+        val otherCustomerId = UUID.randomUUID()
+        every {
+            authorization.requireCanAccessServiceOrder(customerId = otherCustomerId)
+        } throws AuthenticationException.Forbidden(message = "Cannot access another customer.")
+
         assertFailsWith<AuthenticationException.Forbidden> {
-            controller.listByCustomerId(customerId = customerId)
+            controller.listByCustomerId(customerId = otherCustomerId)
         }
+        verify(exactly = 0) { listOrdersByCustomerId.execute(input = any()) }
     }
 }

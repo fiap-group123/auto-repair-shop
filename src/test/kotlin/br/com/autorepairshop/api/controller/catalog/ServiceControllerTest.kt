@@ -56,6 +56,10 @@ class ServiceControllerTest {
                 expected = HttpStatus.CREATED,
                 actual = response.statusCode,
             )
+            assertEquals(
+                expected = service.id,
+                actual = response.body?.id,
+            )
         }
         verify {
             registerService.execute(

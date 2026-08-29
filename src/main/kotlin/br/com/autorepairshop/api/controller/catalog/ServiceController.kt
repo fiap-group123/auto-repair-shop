@@ -50,7 +50,7 @@ class ServiceController(
             .path("/{id}")
             .buildAndExpand(service.id)
             .toUri()
-        return ResponseEntity.created(location).build()
+        return ResponseEntity.created(location).body(service)
     }
 
     @GetMapping

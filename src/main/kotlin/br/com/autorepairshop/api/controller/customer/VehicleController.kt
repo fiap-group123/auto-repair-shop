@@ -46,26 +46,30 @@ class VehicleController(
     private val authorization: AuthorizationSupport,
 ) {
 
-    @PostMapping("/{id}/vehicles")
-    @Operation(summary = "Register customer vehicle\n")
-    open fun registerVehicle(
-        @PathVariable id: UUID,
-        @RequestBody request: RegisterVehicleRequest,
-    ): ResponseEntity<VehicleResponse> {
+    @PostMapping
+    @Operation(summary = "Register customer vehicle")
+    fun register(@RequestBody request: RegisterVehicleRequest): ResponseEntity<VehicleResponse> {
         val vehicle = registerVehicle.execute(
             input = RegisterVehicleCommand(
-                ownerId = id,
+                ownerId = request.ownerId,
                 plate = request.plate,
                 brand = request.brand,
                 model = request.model,
                 year = request.year,
             ),
         )
-        val location = ServletUriComponentsBuilder.fromCurrentContextPath()
-            .path("/vehicles/{id}")
+        val location = ServletUriComponentsBuilder.fromCurrentRequest()
+            .path("/{id}")
             .buildAndExpand(vehicle.id)
             .toUri()
         return ResponseEntity.created(location).body(vehicle)
+    }
+
+    @GetMapping("/owner/{ownerId}")
+    @Operation(summary = "List vehicles owned by a customer")
+    fun listByOwner(@PathVariable ownerId: UUID): ResponseEntity<List<VehicleResponse>> {
+        authorization.requireCanAccessCustomer(customerId = ownerId)
+        return ResponseEntity.ok(listVehiclesByOwner.execute(input = ownerId))
     }
 
     @GetMapping("/{id}")
@@ -82,13 +86,6 @@ class VehicleController(
         val vehicle = findVehicleByPlate.execute(input = plate)
         authorization.requireCanAccessVehicleOwner(ownerId = vehicle.ownerId)
         return ResponseEntity.ok(vehicle)
-    }
-
-    @GetMapping("/{id}/vehicles")
-    @Operation(summary = "List customer vehicles")
-    open fun listVehicles(@PathVariable id: UUID): ResponseEntity<List<VehicleResponse>> {
-        authorization.requireCanAccessCustomer(customerId = id)
-        return ResponseEntity.ok(listVehiclesByOwner.execute(input = id))
     }
 
     @PutMapping("/{id}")
