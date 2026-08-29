@@ -35,7 +35,7 @@ class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepo
         color = color,
         year = year.value,
         active = active,
-        registeredAt = registeredAt.toJavaInstant(),
+        createdAt = createdAt.toJavaInstant(),
     )
 
     private fun VehicleEntity.toDomain() = Vehicle.rehydrate(
@@ -47,6 +47,6 @@ class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepo
         color = color,
         year = ModelYear.of(year = year),
         active = active,
-        registeredAt = registeredAt.toKotlinInstant(),
+        createdAt = createdAt.toKotlinInstant(),
     )
 }

@@ -26,6 +26,6 @@ class VehicleEntity(
     var year: Int,
     @Column(nullable = false)
     var active: Boolean,
-    @Column(name = "registered_at", nullable = false)
-    val registeredAt: Instant,
+    @Column(name = "created_at", nullable = false)
+    val createdAt: Instant,
 )

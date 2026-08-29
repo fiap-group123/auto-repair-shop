@@ -35,6 +35,6 @@ object AuthFixtures {
         role = Role.MANAGER,
         active = false,
         customerId = null,
-        registeredAt = Clock.System.now(),
+        createdAt = Clock.System.now(),
     )
 }

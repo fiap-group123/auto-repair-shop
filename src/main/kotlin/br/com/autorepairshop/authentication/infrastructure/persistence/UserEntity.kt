@@ -25,6 +25,6 @@ class UserEntity(
     var active: Boolean,
     @Column(name = "customer_id")
     val customerId: UUID?,
-    @Column(name = "registered_at", nullable = false)
-    val registeredAt: Instant,
+    @Column(name = "created_at", nullable = false)
+    val createdAt: Instant,
 )

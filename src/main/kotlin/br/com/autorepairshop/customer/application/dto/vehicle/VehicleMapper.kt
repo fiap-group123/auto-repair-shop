@@ -1,6 +1,7 @@
 package br.com.autorepairshop.customer.application.dto.vehicle
 
 import br.com.autorepairshop.customer.domain.aggregate.Vehicle
+import kotlin.time.toJavaInstant
 
 fun Vehicle.toResponse() = VehicleResponse(
     id = id.value,
@@ -12,4 +13,5 @@ fun Vehicle.toResponse() = VehicleResponse(
     color = color,
     year = year.value,
     active = active,
+    createdAt = createdAt.toJavaInstant(),
 )

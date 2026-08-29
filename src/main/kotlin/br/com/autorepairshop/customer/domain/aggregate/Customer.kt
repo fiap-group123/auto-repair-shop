@@ -15,7 +15,7 @@ class Customer private constructor(
     name: PersonName,
     contact: ContactInfo,
     active: Boolean,
-    val registeredAt: Instant,
+    val createdAt: Instant,
 ) : AggregateRoot<CustomerId>(id = id) {
 
     var name: PersonName = name
@@ -67,7 +67,7 @@ class Customer private constructor(
             name = name,
             contact = contact,
             active = true,
-            registeredAt = at,
+            createdAt = at,
         )
 
         internal fun rehydrate(
@@ -76,14 +76,14 @@ class Customer private constructor(
             name: PersonName,
             contact: ContactInfo,
             active: Boolean,
-            registeredAt: Instant,
+            createdAt: Instant,
         ) = Customer(
             id = id,
             document = documentId,
             name = name,
             contact = contact,
             active = active,
-            registeredAt = registeredAt,
+            createdAt = createdAt,
         )
     }
 }

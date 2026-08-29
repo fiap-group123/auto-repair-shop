@@ -118,7 +118,7 @@ class VehicleTest {
             color = original.color,
             year = original.year,
             active = original.active,
-            registeredAt = original.registeredAt,
+            createdAt = original.createdAt,
         )
 
         assertEquals(

@@ -18,7 +18,7 @@ class Vehicle private constructor(
     year: ModelYear,
     color: String,
     active: Boolean,
-    val registeredAt: Instant,
+    val createdAt: Instant,
 ) : AggregateRoot<VehicleId>(id = id) {
 
     var ownerId: CustomerId = ownerId
@@ -107,7 +107,7 @@ class Vehicle private constructor(
             color = color,
             year = year,
             active = active,
-            registeredAt = at,
+            createdAt = at,
         )
 
         internal fun rehydrate(
@@ -119,7 +119,7 @@ class Vehicle private constructor(
             color: String,
             year: ModelYear,
             active: Boolean,
-            registeredAt: Instant,
+            createdAt: Instant,
         ) = Vehicle(
             id = id,
             ownerId = ownerId,
@@ -129,7 +129,7 @@ class Vehicle private constructor(
             color = color,
             year = year,
             active = active,
-            registeredAt = registeredAt,
+            createdAt = createdAt,
         )
 
         private fun normalizeName(

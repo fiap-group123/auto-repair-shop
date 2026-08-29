@@ -79,7 +79,7 @@ class CustomerTest {
             name = original.name,
             contact = original.contact,
             active = false,
-            registeredAt = original.registeredAt,
+            createdAt = original.createdAt,
         )
 
         assertFalse(restored.active)
