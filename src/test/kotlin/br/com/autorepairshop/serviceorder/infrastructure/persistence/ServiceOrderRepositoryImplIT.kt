@@ -52,7 +52,7 @@ class ServiceOrderRepositoryImplIT {
             order = order,
             expected = ServiceOrderStatus.IN_DIAGNOSIS,
         )
-        assertNotNull(orders.findById(id = order.id)?.openedAt)
+        assertNotNull(orders.findById(id = order.id)?.startedAt)
 
         order.updateBudgetTotal(total = ServiceOrderFixtures.TOTAL)
         order.finishDiagnosis()

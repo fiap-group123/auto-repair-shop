@@ -23,10 +23,10 @@ class ServiceOrder private constructor(
     val vehicleId: UUID,
     status: ServiceOrderStatus,
     total: Money,
-    val registeredAt: Instant,
-    openedAt: Instant?,
+    val createdAt: Instant,
+    startedAt: Instant?,
     finishedAt: Instant?,
-    estimateTime: Duration?,
+    estimatedTime: Duration?,
 ) : AggregateRoot<ServiceOrderId>(id = id) {
 
     var status: ServiceOrderStatus = status
@@ -35,13 +35,13 @@ class ServiceOrder private constructor(
     var total: Money = total
         private set
 
-    var openedAt: Instant? = openedAt
+    var startedAt: Instant? = startedAt
         private set
 
     var finishedAt: Instant? = finishedAt
         private set
 
-    var estimateTime: Duration? = estimateTime
+    var estimatedTime: Duration? = estimatedTime
         private set
 
     fun updateBudgetTotal(total: Money) {
@@ -51,7 +51,7 @@ class ServiceOrder private constructor(
     fun startDiagnosis(at: Instant = Clock.System.now()) {
         requireStatus(expected = ServiceOrderStatus.RECEIVED)
         status = ServiceOrderStatus.IN_DIAGNOSIS
-        openedAt = at
+        startedAt = at
         registerEvent(
             event = DiagnosisStarted(
                 serviceOrderId = id,
@@ -91,7 +91,9 @@ class ServiceOrder private constructor(
         requireStatus(expected = ServiceOrderStatus.IN_EXECUTION)
         status = ServiceOrderStatus.FINISHED
         finishedAt = at
-        estimateTime(at = at)
+        startedAt?.let { started ->
+            estimateTime(duration = at - started)
+        }
         registerEvent(
             event = ServiceOrderCompleted(
                 serviceOrderId = id,
@@ -111,10 +113,13 @@ class ServiceOrder private constructor(
         )
     }
 
-    fun estimateTime(at: Instant) {
-        openedAt?.let { opened ->
-            estimateTime = at - opened
+    private fun estimateTime(duration: Duration) {
+        if (duration.isNegative()) {
+            throw ServiceOrderException.InvalidDuration(
+                message = "Duration cannot be negative.",
+            )
         }
+        estimatedTime = duration
     }
 
     private fun requireStatus(expected: ServiceOrderStatus) {
@@ -140,10 +145,10 @@ class ServiceOrder private constructor(
             vehicleId: UUID,
             status: ServiceOrderStatus = ServiceOrderStatus.RECEIVED,
             total: Money = Money.ZERO,
-            registeredAt: Instant = Clock.System.now(),
-            openedAt: Instant? = null,
+            createdAt: Instant = Clock.System.now(),
+            startedAt: Instant? = null,
             finishedAt: Instant? = null,
-            estimateTime: Duration? = null,
+            estimatedTime: Duration? = null,
         ): ServiceOrder {
             val order = ServiceOrder(
                 id = ServiceOrderId.generate(),
@@ -151,12 +156,12 @@ class ServiceOrder private constructor(
                 vehicleId = vehicleId,
                 status = status,
                 total = total,
-                registeredAt = registeredAt,
-                openedAt = openedAt,
+                createdAt = createdAt,
+                startedAt = startedAt,
                 finishedAt = finishedAt,
-                estimateTime = estimateTime,
+                estimatedTime = estimatedTime,
             )
-            order.recordOpened(at = registeredAt)
+            order.recordOpened(at = createdAt)
             return order
         }
 
@@ -166,8 +171,8 @@ class ServiceOrder private constructor(
             vehicleId: UUID,
             status: ServiceOrderStatus,
             total: Money,
-            registeredAt: Instant,
-            openedAt: Instant?,
+            createdAt: Instant,
+            startedAt: Instant?,
             finishedAt: Instant?,
             estimateTime: Duration?,
         ) = ServiceOrder(
@@ -176,10 +181,10 @@ class ServiceOrder private constructor(
             vehicleId = vehicleId,
             status = status,
             total = total,
-            registeredAt = registeredAt,
-            openedAt = openedAt,
+            createdAt = createdAt,
+            startedAt = startedAt,
             finishedAt = finishedAt,
-            estimateTime = estimateTime,
+            estimatedTime = estimateTime,
         )
     }
 }

@@ -36,10 +36,10 @@ class ServiceOrderRepositoryImpl(private val jpa: ServiceOrderJpaRepository) : S
         vehicleId = vehicleId,
         status = ServiceOrderStatusColumn.valueOf(value = status.name),
         total = total.amount,
-        registeredAt = registeredAt.toJavaInstant(),
-        openedAt = openedAt?.toJavaInstant(),
+        createdAt = createdAt.toJavaInstant(),
+        startedAt = startedAt?.toJavaInstant(),
         finishedAt = finishedAt?.toJavaInstant(),
-        estimateTimeSeconds = estimateTime?.inWholeSeconds,
+        estimatedTimeSeconds = estimatedTime?.inWholeSeconds,
     )
 
     private fun ServiceOrderEntity.toDomain() = ServiceOrder.rehydrate(
@@ -48,9 +48,9 @@ class ServiceOrderRepositoryImpl(private val jpa: ServiceOrderJpaRepository) : S
         vehicleId = vehicleId,
         status = ServiceOrderStatus.valueOf(value = status.name),
         total = Money.of(raw = total),
-        registeredAt = registeredAt.toKotlinInstant(),
-        openedAt = openedAt?.toKotlinInstant(),
+        createdAt = createdAt.toKotlinInstant(),
+        startedAt = startedAt?.toKotlinInstant(),
         finishedAt = finishedAt?.toKotlinInstant(),
-        estimateTime = estimateTimeSeconds?.seconds,
+        estimateTime = estimatedTimeSeconds?.seconds,
     )
 }

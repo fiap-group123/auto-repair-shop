@@ -106,10 +106,10 @@ class ServiceOrderTest {
             vehicleId = original.vehicleId,
             status = original.status,
             total = original.total,
-            registeredAt = original.registeredAt,
-            openedAt = original.openedAt,
+            createdAt = original.createdAt,
+            startedAt = original.startedAt,
             finishedAt = original.finishedAt,
-            estimateTime = original.estimateTime,
+            estimateTime = original.estimatedTime,
         )
 
         assertEquals(
