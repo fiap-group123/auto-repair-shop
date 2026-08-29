@@ -20,7 +20,7 @@ class VehicleEntity(
     var brand: String,
     @Column(nullable = false, length = 40)
     var model: String,
-    @Column(nullable = false)
+    @Column(nullable = false, length = 16)
     var color: String,
     @Column(nullable = false)
     var year: Int,
