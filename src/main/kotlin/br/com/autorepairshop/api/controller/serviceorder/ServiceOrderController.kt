@@ -44,8 +44,8 @@ class ServiceOrderController(
     fun register(@RequestBody request: RegisterServiceOrderRequest): ResponseEntity<ServiceOrderResponse> {
         val order = registerOrder.execute(
             input = RegisterServiceOrderCommand(
-                customerId = request.customerId,
-                vehicleId = request.vehicleId,
+                document = request.document,
+                vehiclePlate = request.vehiclePlate,
             ),
         )
         val location = ServletUriComponentsBuilder.fromCurrentRequest()

@@ -35,17 +35,17 @@ class AuthControllerTest {
     private val registerUser = mockk<RegisterUserUseCase>()
     private val findInvite = mockk<FindCustomerInviteUseCase>()
     private val completeInvite = mockk<CompleteInviteUseCase>()
-    private val issueInviteUseCase = mockk<IssueCustomerInviteUseCase>(relaxUnitFun = true)
+    private val issueInvite = mockk<IssueCustomerInviteUseCase>(relaxUnitFun = true)
     private val refreshToken = mockk<RefreshTokenUseCase>()
-    private val logoutUseCase = mockk<LogoutUseCase>(relaxUnitFun = true)
+    private val logout = mockk<LogoutUseCase>(relaxUnitFun = true)
     private val controller = AuthController(
         login = login,
         registerUser = registerUser,
         findInvite = findInvite,
         completeInvite = completeInvite,
-        issueInviteUseCase = issueInviteUseCase,
+        issueInvite = issueInvite,
         refreshToken = refreshToken,
-        logoutUseCase = logoutUseCase,
+        logout = logout,
     )
 
     @Test
@@ -167,7 +167,7 @@ class AuthControllerTest {
             expected = HttpStatus.NO_CONTENT,
             actual = controller.issueInvite(customerId = customerId).statusCode,
         )
-        verify { issueInviteUseCase.execute(input = customerId) }
+        verify { issueInvite.execute(input = customerId) }
     }
 
     @Test
@@ -191,6 +191,6 @@ class AuthControllerTest {
             expected = HttpStatus.NO_CONTENT,
             actual = controller.logout(request = RefreshTokenRequest(refreshToken = "refresh")).statusCode,
         )
-        verify { logoutUseCase.execute(input = any()) }
+        verify { logout.execute(input = any()) }
     }
 }

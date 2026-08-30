@@ -215,6 +215,8 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 | `PUT` | `/vehicles/{id}` | `RECEPTIONIST`, `MANAGER` | `200` | Update brand, model, and/or year. |
 | `PATCH` | `/vehicles/{id}/plate` | `RECEPTIONIST`, `MANAGER` | `200` | Change license plate. |
 | `PATCH` | `/vehicles/{id}/owner` | `RECEPTIONIST`, `MANAGER` | `200` | Transfer the vehicle to another customer. |
+| `DELETE` | `/vehicles/{id}` | `MANAGER` | `204` | Deactivate (soft delete; history is kept). |
+| `POST` | `/vehicles/{id}` | `MANAGER` | `204` | Reactivate a vehicle. |
 
 **`POST /vehicles` body**
 
@@ -261,7 +263,7 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 
 | Method | Path | Roles | Status | Description |
 |---|---|---|---|---|
-| `POST` | `/service-orders` | `RECEPTIONIST`, `MANAGER` | `201` | Open an OS (`customerId` + `vehicleId`). Status `RECEIVED`. |
+| `POST` | `/service-orders` | `RECEPTIONIST`, `MANAGER` | `201` | Open an OS (CPF/CNPJ + `vehiclePlate`). Status `RECEIVED`. |
 | `GET` | `/service-orders` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List all orders. |
 | `GET` | `/service-orders/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List by customer. `CLIENT` must be the owner. |
 | `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detail (status, total, timestamps, `serviceIds`). |
@@ -275,12 +277,12 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 
 ```json
 {
-  "customerId": "00000000-0000-0000-0000-000000000000",
-  "vehicleId": "00000000-0000-0000-0000-000000000000"
+  "documentId": "529.982.247-25",
+  "vehiclePlate": "ABC1D23"
 }
 ```
 
-Look up the customer first with `GET /customers/document/{document}` (CPF/CNPJ). Each status change emails the customer's contact address (Mailpit locally at `http://localhost:8025`):
+`document` accepts a formatted or digits-only CPF/CNPJ. `vehiclePlate` accepts Mercosul or the old format. Each status change emails the customer's contact address (Mailpit locally at `http://localhost:8025`):
 
 - `POST /service-orders/{id}/diagnosis` (`RECEIVED` → `IN_DIAGNOSIS`) — subject `Diagnostico iniciado`
 - `POST /service-orders/{id}/approve` (`WAITING_APPROVAL` → `IN_EXECUTION`) — subject `Orcamento aprovado`
