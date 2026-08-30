@@ -8,8 +8,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "customerId": "{{customerId}}",
-  "vehicleId": "{{vehicleId}}"
+  "document": "{{document}}",
+  "vehiclePlate": "{{vehiclePlate}}"
 }
 
 > {% client.global.set("serviceOrderId", response.body.id); %}

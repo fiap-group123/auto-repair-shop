@@ -4,8 +4,8 @@ import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
-import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
-import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
+import br.com.autorepairshop.customer.domain.valueobject.document.Document
+import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
 import br.com.autorepairshop.serviceorder.application.dto.toResponse
@@ -27,32 +27,34 @@ class RegisterServiceOrderUseCase(
 
     @Transactional
     override fun execute(input: RegisterServiceOrderCommand): ServiceOrderResponse {
-        val customer = customers.findById(id = CustomerId(value = input.customerId))
+        val document = Document.of(raw = input.document)
+        val customer = customers.findByDocumentId(id = document)
             ?: throw CustomerException.CustomerNotFound(
-                message = "Customer ${input.customerId} was not found.",
+                message = "Customer with document ${document.masked()} was not found.",
             )
         if (!customer.active) {
             throw CustomerException.InvalidDocument(
                 message = "Customer ${customer.document.masked()} is inactive.",
             )
         }
-        val vehicle = vehicles.findById(id = VehicleId(value = input.vehicleId))
+        val plate = LicensePlate.of(raw = input.vehiclePlate)
+        val vehicle = vehicles.findByPlate(plate = plate)
             ?: throw VehicleException.VehicleNotFound(
-                message = "Vehicle ${input.vehicleId} was not found.",
+                message = "Vehicle ${plate.formatted()} was not found.",
             )
         if (vehicle.ownerId != customer.id) {
             throw ServiceOrderException.VehicleNotOwnedByCustomer(
                 message = "Vehicle does not belong to this customer.",
             )
         }
-        if (orders.existsOpenByVehicleId(vehicleId = input.vehicleId)) {
+        if (orders.existsOpenByVehicleId(vehicleId = vehicle.id.value)) {
             throw ServiceOrderException.OpenOrderAlreadyExists(
                 message = "Vehicle already has an open service order.",
             )
         }
         val order = ServiceOrder.open(
-            customerId = input.customerId,
-            vehicleId = input.vehicleId,
+            customerId = customer.id.value,
+            vehicleId = vehicle.id.value,
         )
         orders.save(order = order)
         events.publish(aggregate = order)

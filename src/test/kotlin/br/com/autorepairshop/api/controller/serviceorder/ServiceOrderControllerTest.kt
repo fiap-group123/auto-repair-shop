@@ -2,6 +2,7 @@ package br.com.autorepairshop.api.controller.serviceorder
 
 import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
 import br.com.autorepairshop.api.withHttpRequest
+import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.toResponse
@@ -54,8 +55,8 @@ class ServiceOrderControllerTest {
         withHttpRequest(requestUri = "/service-orders") {
             val response = controller.register(
                 request = RegisterServiceOrderRequest(
-                    customerId = order.customerId,
-                    vehicleId = order.vehicleId,
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
                 ),
             )
             assertEquals(
@@ -66,8 +67,8 @@ class ServiceOrderControllerTest {
         verify {
             openOrder.execute(
                 input = RegisterServiceOrderCommand(
-                    customerId = order.customerId,
-                    vehicleId = order.vehicleId,
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
                 ),
             )
         }

@@ -111,6 +111,8 @@ class SecurityConfig {
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.PUT, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.PATCH, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.DELETE, "/vehicles/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/vehicles/**").hasRole("MANAGER")
     }
 
     private fun configureServiceRules(
@@ -132,8 +134,6 @@ class SecurityConfig {
     private fun configureOrderRules(
         requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
     ) {
-        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/services")
-            .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis/complete")
             .hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis")

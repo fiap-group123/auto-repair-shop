@@ -39,9 +39,9 @@ class AuthController(
     private val registerUser: RegisterUserUseCase,
     private val findInvite: FindCustomerInviteUseCase,
     private val completeInvite: CompleteInviteUseCase,
-    private val issueInviteUseCase: IssueCustomerInviteUseCase,
+    private val issueInvite: IssueCustomerInviteUseCase,
     private val refreshToken: RefreshTokenUseCase,
-    private val logoutUseCase: LogoutUseCase,
+    private val logout: LogoutUseCase,
 ) {
 
     @PostMapping("/login")
@@ -67,7 +67,7 @@ class AuthController(
     @SecurityRequirements
     @Operation(summary = "Revoke a refresh session")
     fun logout(@RequestBody request: RefreshTokenRequest): ResponseEntity<Void> {
-        logoutUseCase.execute(input = RefreshTokenCommand(refreshToken = request.refreshToken))
+        logout.execute(input = RefreshTokenCommand(refreshToken = request.refreshToken))
         return ResponseEntity.noContent().build()
     }
 
@@ -93,7 +93,7 @@ class AuthController(
     @PostMapping("/invites/customer/{customerId}")
     @Operation(summary = "Resend the customer login invite")
     fun issueInvite(@PathVariable customerId: UUID): ResponseEntity<Void> {
-        issueInviteUseCase.execute(input = customerId)
+        issueInvite.execute(input = customerId)
         return ResponseEntity.noContent().build()
     }
 

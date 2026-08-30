@@ -5,8 +5,6 @@ import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
-import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
-import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
@@ -17,7 +15,6 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -35,39 +32,49 @@ class OpenServiceOrderUseCaseTest {
     )
 
     @Test
+    fun `throws when the document is invalid`() {
+        assertFailsWith<CustomerException.InvalidDocument> {
+            useCase.execute(input = command(documentId = CustomerFixtures.INVALID_CPF))
+        }
+    }
+
+    @Test
     fun `throws when customer is missing`() {
-        val customerId = UUID.randomUUID()
-        every { customers.findById(id = CustomerId(value = customerId)) } returns null
+        every { customers.findByDocumentId(id = any()) } returns null
 
         assertFailsWith<CustomerException.CustomerNotFound> {
-            useCase.execute(input = command(customerId = customerId))
+            useCase.execute(input = command())
         }
     }
 
     @Test
     fun `throws when customer is inactive`() {
         val customer = CustomerFixtures.inactiveCustomer()
-        every { customers.findById(id = customer.id) } returns customer
+        every { customers.findByDocumentId(id = customer.document) } returns customer
 
         assertFailsWith<CustomerException.InvalidDocument> {
-            useCase.execute(input = command(customerId = customer.id.value))
+            useCase.execute(input = command(documentId = CustomerFixtures.VALID_CPF))
+        }
+    }
+
+    @Test
+    fun `throws when the plate is invalid`() {
+        val customer = CustomerFixtures.activeCustomer()
+        every { customers.findByDocumentId(id = customer.document) } returns customer
+
+        assertFailsWith<VehicleException.InvalidLicensePlate> {
+            useCase.execute(input = command(vehiclePlate = "INVALID"))
         }
     }
 
     @Test
     fun `throws when vehicle is missing`() {
         val customer = CustomerFixtures.activeCustomer()
-        val vehicleId = UUID.randomUUID()
-        every { customers.findById(id = customer.id) } returns customer
-        every { vehicles.findById(id = VehicleId(value = vehicleId)) } returns null
+        every { customers.findByDocumentId(id = customer.document) } returns customer
+        every { vehicles.findByPlate(plate = any()) } returns null
 
         assertFailsWith<VehicleException.VehicleNotFound> {
-            useCase.execute(
-                input = command(
-                    customerId = customer.id.value,
-                    vehicleId = vehicleId,
-                ),
-            )
+            useCase.execute(input = command())
         }
     }
 
@@ -76,16 +83,11 @@ class OpenServiceOrderUseCaseTest {
         val customer = CustomerFixtures.activeCustomer()
         val other = CustomerFixtures.activeCustomer(documentId = CustomerFixtures.OTHER_CPF)
         val vehicle = CustomerFixtures.vehicle(owner = other)
-        every { customers.findById(id = customer.id) } returns customer
-        every { vehicles.findById(id = vehicle.id) } returns vehicle
+        every { customers.findByDocumentId(id = customer.document) } returns customer
+        every { vehicles.findByPlate(plate = vehicle.plate) } returns vehicle
 
         assertFailsWith<ServiceOrderException.VehicleNotOwnedByCustomer> {
-            useCase.execute(
-                input = command(
-                    customerId = customer.id.value,
-                    vehicleId = vehicle.id.value,
-                ),
-            )
+            useCase.execute(input = command(vehiclePlate = CustomerFixtures.PLATE))
         }
         verify(exactly = 0) { orders.save(order = any()) }
     }
@@ -94,17 +96,12 @@ class OpenServiceOrderUseCaseTest {
     fun `throws when the vehicle already has an open order`() {
         val customer = CustomerFixtures.activeCustomer()
         val vehicle = CustomerFixtures.vehicle(owner = customer)
-        every { customers.findById(id = customer.id) } returns customer
-        every { vehicles.findById(id = vehicle.id) } returns vehicle
+        every { customers.findByDocumentId(id = customer.document) } returns customer
+        every { vehicles.findByPlate(plate = vehicle.plate) } returns vehicle
         every { orders.existsOpenByVehicleId(vehicleId = vehicle.id.value) } returns true
 
         assertFailsWith<ServiceOrderException.OpenOrderAlreadyExists> {
-            useCase.execute(
-                input = command(
-                    customerId = customer.id.value,
-                    vehicleId = vehicle.id.value,
-                ),
-            )
+            useCase.execute(input = command())
         }
         verify(exactly = 0) { orders.save(order = any()) }
     }
@@ -113,18 +110,13 @@ class OpenServiceOrderUseCaseTest {
     fun `opens a received order for an active owner`() {
         val customer = CustomerFixtures.activeCustomer()
         val vehicle = CustomerFixtures.vehicle(owner = customer)
-        every { customers.findById(id = customer.id) } returns customer
-        every { vehicles.findById(id = vehicle.id) } returns vehicle
+        every { customers.findByDocumentId(id = customer.document) } returns customer
+        every { vehicles.findByPlate(plate = vehicle.plate) } returns vehicle
         every { orders.existsOpenByVehicleId(vehicleId = vehicle.id.value) } returns false
         every { orders.save(order = any()) } returns Unit
         every { events.publish(aggregate = any()) } returns Unit
 
-        val response = useCase.execute(
-            input = command(
-                customerId = customer.id.value,
-                vehicleId = vehicle.id.value,
-            ),
-        )
+        val response = useCase.execute(input = command())
 
         assertEquals(
             expected = customer.id.value,
@@ -143,10 +135,10 @@ class OpenServiceOrderUseCaseTest {
     }
 
     private fun command(
-        customerId: UUID = UUID.randomUUID(),
-        vehicleId: UUID = UUID.randomUUID(),
+        documentId: String = CustomerFixtures.VALID_CPF,
+        vehiclePlate: String = CustomerFixtures.PLATE,
     ) = RegisterServiceOrderCommand(
-        customerId = customerId,
-        vehicleId = vehicleId,
+        document = documentId,
+        vehiclePlate = vehiclePlate,
     )
 }
