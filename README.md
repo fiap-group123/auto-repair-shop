@@ -277,7 +277,7 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 
 ```json
 {
-  "documentId": "529.982.247-25",
+  "document": "529.982.247-25",
   "vehiclePlate": "ABC1D23"
 }
 ```
