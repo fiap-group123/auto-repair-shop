@@ -2,6 +2,7 @@ package br.com.autorepairshop.api.controller.authentication
 
 import br.com.autorepairshop.api.dto.authentication.CompleteInviteRequest
 import br.com.autorepairshop.api.dto.authentication.LoginRequest
+import br.com.autorepairshop.api.dto.authentication.RefreshTokenRequest
 import br.com.autorepairshop.api.dto.authentication.RegisterUserRequest
 import br.com.autorepairshop.api.withHttpRequest
 import br.com.autorepairshop.authentication.AuthFixtures
@@ -13,7 +14,6 @@ import br.com.autorepairshop.authentication.application.dto.TokenResponse
 import br.com.autorepairshop.authentication.application.dto.toResponse
 import br.com.autorepairshop.authentication.application.usecase.CompleteInviteUseCase
 import br.com.autorepairshop.authentication.application.usecase.FindCustomerInviteUseCase
-import br.com.autorepairshop.api.dto.authentication.RefreshTokenRequest
 import br.com.autorepairshop.authentication.application.usecase.IssueCustomerInviteUseCase
 import br.com.autorepairshop.authentication.application.usecase.LoginUseCase
 import br.com.autorepairshop.authentication.application.usecase.LogoutUseCase

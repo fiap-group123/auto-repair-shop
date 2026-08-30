@@ -79,7 +79,10 @@ class ServiceOrderStatusMailListenerTest {
     fun `skips when the order or customer is missing or inactive`() {
         val customer = CustomerFixtures.inactiveCustomer()
         val order = ServiceOrderFixtures.received(customerId = customer.id.value)
-        every { orders.findById(id = order.id) } returnsMany listOf(element = null).plus(element = order).plus(element = order)
+        every { orders.findById(id = order.id) } returnsMany
+            listOf(element = null)
+                .plus(element = order)
+                .plus(element = order)
         every { customers.findById(id = customer.id) } returnsMany listOf(element = null).plus(element = customer)
         val event = ServiceOrderOpened(
             serviceOrderId = order.id,
