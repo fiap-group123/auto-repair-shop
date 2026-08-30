@@ -4,6 +4,7 @@ import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.application.dto.customer.RegisterCustomerCommand
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
+import br.com.autorepairshop.shared.application.event.EventPublisher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,7 +17,11 @@ import kotlin.test.assertTrue
 @Tag("unit")
 class RegisterCustomerUseCaseTest {
     private val customers = mockk<CustomerRepository>()
-    private val useCase = RegisterCustomerUseCase(customers = customers)
+    private val events = mockk<EventPublisher>(relaxUnitFun = true)
+    private val useCase = RegisterCustomerUseCase(
+        customers = customers,
+        events = events,
+    )
 
     @Test
     fun `saves a new customer`() {
@@ -31,6 +36,7 @@ class RegisterCustomerUseCaseTest {
         )
         assertTrue(response.active)
         verify { customers.save(customer = any()) }
+        verify { events.publish(aggregate = any()) }
     }
 
     @Test

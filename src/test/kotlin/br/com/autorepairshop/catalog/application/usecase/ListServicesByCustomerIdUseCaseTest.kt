@@ -1,5 +1,6 @@
 package br.com.autorepairshop.catalog.application.usecase
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.catalog.CatalogFixtures
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
@@ -16,9 +17,11 @@ import kotlin.test.assertTrue
 class ListServicesByCustomerIdUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
     private val services = mockk<ServiceRepository>()
+    private val access = mockk<AccessGuard>(relaxUnitFun = true)
     private val useCase = ListServicesByCustomerIdUseCase(
         orders = orders,
         services = services,
+        access = access,
     )
 
     @Test

@@ -9,6 +9,7 @@ interface UserRepository {
     fun save(user: User)
     fun findById(id: UserId): User?
     fun findByEmail(email: LoginEmail): User?
+    fun findByCustomerId(customerId: UUID): User?
     fun existsByEmail(email: LoginEmail): Boolean
     fun existsByCustomerId(customerId: UUID): Boolean
     fun existsAny(): Boolean

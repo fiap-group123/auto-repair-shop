@@ -2,9 +2,12 @@ package br.com.autorepairshop.authentication.application.usecase
 
 import br.com.autorepairshop.authentication.AuthFixtures
 import br.com.autorepairshop.authentication.application.dto.RegisterUserCommand
+import br.com.autorepairshop.authentication.application.security.Actor
+import br.com.autorepairshop.authentication.application.security.ActorProvider
 import br.com.autorepairshop.authentication.application.security.PasswordHasher
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
 import br.com.autorepairshop.authentication.domain.repository.UserRepository
+import br.com.autorepairshop.authentication.domain.valueobject.Role
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,9 +22,11 @@ import kotlin.test.assertNull
 class RegisterUserUseCaseTest {
     private val users = mockk<UserRepository>()
     private val passwords = mockk<PasswordHasher>()
+    private val actors = mockk<ActorProvider>()
     private val useCase = RegisterUserUseCase(
         users = users,
         passwords = passwords,
+        actors = actors,
     )
 
     @Test
@@ -94,8 +99,8 @@ class RegisterUserUseCaseTest {
     }
 
     @Test
-    fun `client without customer id fails`() {
-        stubOpenRegistration()
+    fun `rejects client registration`() {
+        stubManagerRegistration()
 
         assertFailsWith<AuthenticationException.InvalidRole> {
             useCase.execute(
@@ -103,45 +108,7 @@ class RegisterUserUseCaseTest {
                     email = AuthFixtures.CLIENT_EMAIL,
                     password = AuthFixtures.RAW_PASSWORD,
                     role = "CLIENT",
-                ),
-            )
-        }
-    }
-
-    @Test
-    fun `registers client with customer id`() {
-        stubOpenRegistration()
-        val customerId = UUID.randomUUID()
-
-        val response = useCase.execute(
-            input = RegisterUserCommand(
-                email = AuthFixtures.CLIENT_EMAIL,
-                password = AuthFixtures.RAW_PASSWORD,
-                role = "CLIENT",
-                customerId = customerId,
-            ),
-        )
-
-        assertEquals(
-            expected = customerId,
-            actual = response.customerId,
-        )
-        verify { users.save(user = any()) }
-    }
-
-    @Test
-    fun `rejects a second login for the same customer`() {
-        stubOpenRegistration()
-        val customerId = UUID.randomUUID()
-        every { users.existsByCustomerId(customerId = customerId) } returns true
-
-        assertFailsWith<AuthenticationException.CustomerAlreadyHasUser> {
-            useCase.execute(
-                input = RegisterUserCommand(
-                    email = AuthFixtures.CLIENT_EMAIL,
-                    password = AuthFixtures.RAW_PASSWORD,
-                    role = "CLIENT",
-                    customerId = customerId,
+                    customerId = UUID.randomUUID(),
                 ),
             )
         }
@@ -150,7 +117,7 @@ class RegisterUserUseCaseTest {
 
     @Test
     fun `registers receptionist after the first user exists`() {
-        stubOpenRegistration()
+        stubManagerRegistration()
 
         val response = useCase.execute(
             input = RegisterUserCommand(
@@ -169,10 +136,53 @@ class RegisterUserUseCaseTest {
         verify { users.save(user = any()) }
     }
 
-    private fun stubOpenRegistration() {
+    @Test
+    fun `staff registration without an actor fails`() {
+        every { users.existsByEmail(email = any()) } returns false
+        every { users.existsAny() } returns true
+        every { actors.current() } returns null
+
+        assertFailsWith<AuthenticationException.Unauthenticated> {
+            useCase.execute(
+                input = RegisterUserCommand(
+                    email = "recepcao@oficina.com",
+                    password = AuthFixtures.RAW_PASSWORD,
+                    role = "RECEPTIONIST",
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `non manager cannot register staff`() {
+        every { users.existsByEmail(email = any()) } returns false
+        every { users.existsAny() } returns true
+        every { actors.current() } returns Actor(
+            userId = UUID.randomUUID(),
+            role = Role.RECEPTIONIST,
+            customerId = null,
+        )
+
+        assertFailsWith<AuthenticationException.Forbidden> {
+            useCase.execute(
+                input = RegisterUserCommand(
+                    email = "mecanico@oficina.com",
+                    password = AuthFixtures.RAW_PASSWORD,
+                    role = "MECHANIC",
+                ),
+            )
+        }
+    }
+
+    private fun stubManagerRegistration() {
         every { users.existsByEmail(email = any()) } returns false
         every { users.existsAny() } returns true
         every { users.existsByCustomerId(customerId = any()) } returns false
+        every { actors.current() } returns Actor(
+            userId = UUID.randomUUID(),
+            role = Role.MANAGER,
+            customerId = null,
+        )
         every { passwords.hash(raw = any()) } returns AuthFixtures.hashedPassword()
         every { users.save(user = any()) } returns Unit
     }

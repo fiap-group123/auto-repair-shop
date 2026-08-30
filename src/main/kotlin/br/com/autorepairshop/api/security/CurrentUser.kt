@@ -1,29 +1,22 @@
 package br.com.autorepairshop.api.security
 
 import br.com.autorepairshop.api.dto.authentication.AuthenticatedUser
+import br.com.autorepairshop.authentication.application.security.Actor
+import br.com.autorepairshop.authentication.application.security.ActorProvider
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
-import br.com.autorepairshop.authentication.domain.valueobject.Role
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Component
-import java.util.UUID
 
 @Component
-class CurrentUser {
+class CurrentUser(private val actors: ActorProvider) {
     fun get(): AuthenticatedUser {
-        val jwt = SecurityContextHolder.getContext().authentication?.principal as? Jwt
+        val actor = actors.current()
             ?: throw AuthenticationException.Unauthenticated(message = "Authentication required.")
-        val subject = jwt.subject
-            ?: throw AuthenticationException.Unauthenticated(message = "JWT subject is missing.")
-        val roleClaim = jwt.getClaimAsString("role")
-            ?: throw AuthenticationException.Unauthenticated(message = "JWT role claim is missing.")
-        val role = runCatching { Role.valueOf(value = roleClaim) }.getOrElse {
-            throw AuthenticationException.InvalidRole(message = "Unknown role: $roleClaim")
-        }
-        return AuthenticatedUser(
-            userId = UUID.fromString(subject),
-            role = role,
-            customerId = jwt.getClaimAsString("customerId")?.let { UUID.fromString(it) },
-        )
+        return actor.toAuthenticatedUser()
     }
+
+    private fun Actor.toAuthenticatedUser() = AuthenticatedUser(
+        userId = userId,
+        role = role,
+        customerId = customerId,
+    )
 }

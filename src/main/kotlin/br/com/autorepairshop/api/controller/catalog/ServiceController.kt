@@ -2,7 +2,6 @@ package br.com.autorepairshop.api.controller.catalog
 
 import br.com.autorepairshop.api.dto.catalog.RegisterServiceRequest
 import br.com.autorepairshop.api.dto.catalog.UpdateServiceRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.catalog.application.dto.AverageExecutionTimeResponse
 import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
 import br.com.autorepairshop.catalog.application.dto.ServiceResponse
@@ -17,7 +16,6 @@ import br.com.autorepairshop.catalog.application.usecase.ListServicesByServiceOr
 import br.com.autorepairshop.catalog.application.usecase.ListServicesUseCase
 import br.com.autorepairshop.catalog.application.usecase.RegisterServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.UpdateServiceUseCase
-import br.com.autorepairshop.serviceorder.application.usecase.FindServiceOrderUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
@@ -45,9 +43,7 @@ class ServiceController(
     private val listServices: ListServicesUseCase,
     private val listServicesByCustomerId: ListServicesByCustomerIdUseCase,
     private val listServicesByServiceOrderId: ListServicesByServiceOrderIdUseCase,
-    private val findOrder: FindServiceOrderUseCase,
     private val averageExecutionTimeUseCase: AverageExecutionTimeUseCase,
-    private val authorization: AuthorizationSupport,
 ) {
 
     @PostMapping
@@ -73,18 +69,13 @@ class ServiceController(
 
     @GetMapping("/customer/{customerId}")
     @Operation(summary = "List services linked to a customer")
-    fun listByCustomerId(@PathVariable customerId: UUID): ResponseEntity<List<ServiceResponse>> {
-        authorization.requireCanAccessServiceOrder(customerId = customerId)
-        return ResponseEntity.ok(listServicesByCustomerId.execute(input = customerId))
-    }
+    fun listByCustomerId(@PathVariable customerId: UUID): ResponseEntity<List<ServiceResponse>> =
+        ResponseEntity.ok(listServicesByCustomerId.execute(input = customerId))
 
     @GetMapping("/service-order/{serviceOrderId}")
     @Operation(summary = "List services of a service order")
-    fun listByServiceOrderId(@PathVariable serviceOrderId: UUID): ResponseEntity<List<ServiceResponse>> {
-        val order = findOrder.execute(input = serviceOrderId)
-        authorization.requireCanAccessServiceOrder(customerId = order.customerId)
-        return ResponseEntity.ok(listServicesByServiceOrderId.execute(input = serviceOrderId))
-    }
+    fun listByServiceOrderId(@PathVariable serviceOrderId: UUID): ResponseEntity<List<ServiceResponse>> =
+        ResponseEntity.ok(listServicesByServiceOrderId.execute(input = serviceOrderId))
 
     @GetMapping("/average-execution-time")
     @Operation(summary = "Average execution time of finished services")

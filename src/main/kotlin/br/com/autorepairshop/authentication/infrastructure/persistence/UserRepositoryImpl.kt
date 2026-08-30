@@ -22,6 +22,8 @@ class UserRepositoryImpl(private val jpa: UserJpaRepository) : UserRepository {
 
     override fun findByEmail(email: LoginEmail): User? = jpa.findByEmail(email = email.value)?.toDomain()
 
+    override fun findByCustomerId(customerId: UUID): User? = jpa.findByCustomerId(customerId = customerId)?.toDomain()
+
     override fun existsByEmail(email: LoginEmail): Boolean = jpa.existsByEmail(email = email.value)
 
     override fun existsByCustomerId(customerId: UUID): Boolean = jpa.existsByCustomerId(customerId = customerId)

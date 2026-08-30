@@ -29,6 +29,7 @@ class UserRepositoryImplTest {
         every { jpa.findByEmail(email = user.email.value) } returns stored.captured
         every { jpa.existsByEmail(email = user.email.value) } returns true
         every { jpa.existsByCustomerId(customerId = user.customerId!!) } returns true
+        every { jpa.findByCustomerId(customerId = user.customerId!!) } returns stored.captured
         every { jpa.count() } returns 1
 
         assertEquals(
@@ -41,6 +42,10 @@ class UserRepositoryImplTest {
         )
         assertTrue(repo.existsByEmail(email = user.email))
         assertTrue(repo.existsByCustomerId(customerId = user.customerId!!))
+        assertEquals(
+            expected = user.id,
+            actual = repo.findByCustomerId(customerId = user.customerId!!)?.id,
+        )
         assertTrue(repo.existsAny())
     }
 
@@ -51,12 +56,14 @@ class UserRepositoryImplTest {
         every { jpa.findByEmail(email = any()) } returns null
         every { jpa.existsByEmail(email = any()) } returns false
         every { jpa.existsByCustomerId(customerId = any()) } returns false
+        every { jpa.findByCustomerId(customerId = any()) } returns null
         every { jpa.count() } returns 0
 
         assertNull(repo.findById(id = user.id))
         assertNull(repo.findByEmail(email = user.email))
         assertFalse(repo.existsByEmail(email = user.email))
         assertFalse(repo.existsByCustomerId(customerId = UUID.randomUUID()))
+        assertNull(repo.findByCustomerId(customerId = UUID.randomUUID()))
         assertFalse(repo.existsAny())
     }
 }

@@ -1,5 +1,6 @@
 package br.com.autorepairshop.catalog.application.usecase
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.catalog.application.dto.ServiceResponse
 import br.com.autorepairshop.catalog.application.dto.toResponse
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
@@ -13,10 +14,12 @@ import java.util.UUID
 class ListServicesByCustomerIdUseCase(
     private val orders: ServiceOrderRepository,
     private val services: ServiceRepository,
+    private val access: AccessGuard,
 ) : UseCase<UUID, List<ServiceResponse>> {
 
     @Transactional(readOnly = true)
     override fun execute(input: UUID): List<ServiceResponse> {
+        access.requireCustomer(customerId = input)
         val orderIds = orders.findByCustomerId(customerId = input).map { it.id.value }
         return services.findByServiceOrderIds(serviceOrderIds = orderIds).map { it.toResponse() }
     }

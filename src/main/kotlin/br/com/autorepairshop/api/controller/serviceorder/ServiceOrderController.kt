@@ -1,7 +1,6 @@
 package br.com.autorepairshop.api.controller.serviceorder
 
 import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
 import br.com.autorepairshop.serviceorder.application.usecase.ApproveServiceOrderUseCase
@@ -38,7 +37,6 @@ class ServiceOrderController(
     private val approveOrder: ApproveServiceOrderUseCase,
     private val completeOrder: FinishServiceOrderUseCase,
     private val deliverOrder: DeliverServiceOrderUseCase,
-    private val authorization: AuthorizationSupport,
 ) {
 
     @PostMapping
@@ -63,18 +61,13 @@ class ServiceOrderController(
 
     @GetMapping("/customer/{customerId}")
     @Operation(summary = "List service orders by customer id")
-    fun listByCustomerId(@PathVariable customerId: UUID): ResponseEntity<List<ServiceOrderResponse>> {
-        authorization.requireCanAccessServiceOrder(customerId = customerId)
-        return ResponseEntity.ok(listOrdersByCustomerId.execute(input = customerId))
-    }
+    fun listByCustomerId(@PathVariable customerId: UUID): ResponseEntity<List<ServiceOrderResponse>> =
+        ResponseEntity.ok(listOrdersByCustomerId.execute(input = customerId))
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a service order by id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> {
-        val order = findOrder.execute(input = id)
-        authorization.requireCanAccessServiceOrder(customerId = order.customerId)
-        return ResponseEntity.ok(order)
-    }
+    fun findById(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
+        ResponseEntity.ok(findOrder.execute(input = id))
 
     @PostMapping("/{id}/diagnosis")
     @Operation(summary = "Start diagnosis")
@@ -88,11 +81,8 @@ class ServiceOrderController(
 
     @PostMapping("/{id}/approve")
     @Operation(summary = "Approve service order")
-    fun approve(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> {
-        val order = findOrder.execute(input = id)
-        authorization.requireCanAccessServiceOrder(customerId = order.customerId)
-        return ResponseEntity.ok(approveOrder.execute(input = id))
-    }
+    fun approve(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
+        ResponseEntity.ok(approveOrder.execute(input = id))
 
     @PostMapping("/{id}/complete")
     @Operation(summary = "Complete execution")

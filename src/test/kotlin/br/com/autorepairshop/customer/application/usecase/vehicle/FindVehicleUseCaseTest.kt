@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.usecase.vehicle
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
@@ -15,7 +16,11 @@ import kotlin.test.assertFailsWith
 @Tag("unit")
 class FindVehicleUseCaseTest {
     private val vehicles = mockk<VehicleRepository>()
-    private val useCase = FindVehicleUseCase(vehicles = vehicles)
+    private val access = mockk<AccessGuard>(relaxUnitFun = true)
+    private val useCase = FindVehicleUseCase(
+        vehicles = vehicles,
+        access = access,
+    )
 
     @Test
     fun `throws when vehicle is missing`() {

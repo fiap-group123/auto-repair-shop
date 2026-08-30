@@ -1,9 +1,12 @@
 package br.com.autorepairshop.api.security
 
 import br.com.autorepairshop.authentication.application.usecase.RequireActiveUserUseCase
+import br.com.autorepairshop.authentication.domain.repository.UserRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.security.authorization.AuthorizationDecision
+import org.springframework.security.authorization.AuthorizationManager
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -11,6 +14,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext
 
 @Configuration
 class SecurityConfig {
@@ -31,6 +35,7 @@ class SecurityConfig {
         jwtAuthenticationConverter: JwtAuthenticationConverter,
         securityProblemSupport: SecurityProblemSupport,
         requireActiveUser: RequireActiveUserUseCase,
+        users: UserRepository,
     ): SecurityFilterChain {
         val activeUserFilter = ActiveUserFilter(
             requireActiveUser = requireActiveUser,
@@ -51,12 +56,18 @@ class SecurityConfig {
                 resourceServer.accessDeniedHandler(securityProblemSupport)
             }
             .addFilterAfter(activeUserFilter, BearerTokenAuthenticationFilter::class.java)
-            .authorizeHttpRequests { requests -> configureAuthorization(requests = requests) }
+            .authorizeHttpRequests { requests ->
+                configureAuthorization(
+                    requests = requests,
+                    users = users,
+                )
+            }
         return http.build()
     }
 
     private fun configureAuthorization(
         requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+        users: UserRepository,
     ) {
         requests.requestMatchers(
             "/error",
@@ -65,8 +76,20 @@ class SecurityConfig {
             "/swagger-ui.html",
             "/v3/api-docs/**",
         ).permitAll()
-        requests.requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-        requests.requestMatchers(HttpMethod.POST, "/auth/users").permitAll()
+        requests.requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
+        requests.requestMatchers(HttpMethod.POST, "/auth/users").access(bootstrapOrManager(users = users))
+        requests.requestMatchers(HttpMethod.POST, "/auth/invites/customer/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers("/auth/invites/**").permitAll()
+        configureCustomerRules(requests = requests)
+        configureVehicleRules(requests = requests)
+        configureServiceRules(requests = requests)
+        configureOrderRules(requests = requests)
+        requests.anyRequest().authenticated()
+    }
+
+    private fun configureCustomerRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
         requests.requestMatchers(HttpMethod.POST, "/customers").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/customers").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/customers/document/**")
@@ -76,6 +99,11 @@ class SecurityConfig {
         requests.requestMatchers(HttpMethod.PUT, "/customers/**").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.DELETE, "/customers/**").hasRole("MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/customers/**").hasRole("MANAGER")
+    }
+
+    private fun configureVehicleRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
         requests.requestMatchers(HttpMethod.POST, "/vehicles").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/vehicles/owner/**")
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
@@ -83,6 +111,11 @@ class SecurityConfig {
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.PUT, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.PATCH, "/vehicles/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+    }
+
+    private fun configureServiceRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
         requests.requestMatchers(HttpMethod.POST, "/services").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/services/customer/**", "/services/service-order/**")
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
@@ -94,6 +127,11 @@ class SecurityConfig {
             .hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.PUT, "/services/**").hasRole("MANAGER")
         requests.requestMatchers(HttpMethod.DELETE, "/services/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+    }
+
+    private fun configureOrderRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/services")
             .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis/complete")
@@ -106,14 +144,26 @@ class SecurityConfig {
             .hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/deliver")
             .hasAnyRole("RECEPTIONIST", "MANAGER")
-        requests.requestMatchers(HttpMethod.POST, "/service-orders")
-            .hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders").hasAnyRole("RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/service-orders/customer/**")
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/service-orders")
             .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/service-orders/**")
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
-        requests.anyRequest().authenticated()
     }
+
+    private fun bootstrapOrManager(users: UserRepository): AuthorizationManager<RequestAuthorizationContext> =
+        AuthorizationManager { authentication, _ ->
+            if (!users.existsAny()) {
+                AuthorizationDecision(true)
+            } else {
+                val manager = (
+                    runCatching { authentication.get() }.getOrNull()
+                        ?.authorities
+                        ?.any { authority -> authority.authority == "ROLE_MANAGER" }
+                    ) == true
+                AuthorizationDecision(manager)
+            }
+        }
 }

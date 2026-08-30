@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.usecase.vehicle
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
@@ -13,7 +14,11 @@ import kotlin.test.assertFailsWith
 @Tag("unit")
 class FindVehicleByPlateUseCaseTest {
     private val vehicles = mockk<VehicleRepository>()
-    private val useCase = FindVehicleByPlateUseCase(vehicles = vehicles)
+    private val access = mockk<AccessGuard>(relaxUnitFun = true)
+    private val useCase = FindVehicleByPlateUseCase(
+        vehicles = vehicles,
+        access = access,
+    )
 
     @Test
     fun `throws when plate is not registered`() {

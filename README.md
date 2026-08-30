@@ -76,7 +76,7 @@ From the repository root, the full stack (API + PostgreSQL) is:
 docker compose up --build
 ```
 
-This builds the `Dockerfile` and starts the API on `http://localhost:8080` and Postgres on `localhost:5432`. Wait until `api` is up (`docker compose ps`). Swagger: http://localhost:8080/swagger-ui.html
+This builds the `Dockerfile` and starts the API on `http://localhost:8080`, Postgres on `localhost:5432`, and Mailpit (SMTP UI) on `http://localhost:8025`. Wait until `api` is up (`docker compose ps`). Swagger: http://localhost:8080/swagger-ui.html
 
 Copy [`.env.example`](.env.example) to `.env` to override credentials and `JWT_SECRET`. Compose reads it automatically.
 
@@ -114,13 +114,13 @@ docker compose down
 | Customer / vehicle requests | [`http/customer.http`](http/customer.http) |
 | Service order / catalog requests | [`http/service-order.http`](http/service-order.http) |
 
-Authorize Swagger (or `.http` files) with `Authorization: Bearer <accessToken>` after login. Swagger UI, OpenAPI, and `/error` are public; everything else requires a JWT except user registration and login.
+Authorize Swagger (or `.http` files) with `Authorization: Bearer <accessToken>` after login. Swagger UI, OpenAPI, and `/error` are public; everything else requires a JWT except first-user registration, login, refresh, logout, and invite completion.
 
 ### Auth
 
-1. Register the **first** user as `MANAGER` (`POST /auth/users`). Later staff and clients can be created with other roles.
-2. `POST /auth/login` returns `{ "accessToken", "tokenType": "Bearer" }`. Tokens last **1 hour** by default.
-3. A `CLIENT` user **must** include `customerId` (the shop customer already registered). Staff roles must **not**.
+1. Register the **first** user as `MANAGER` (`POST /auth/users`, public). Later staff is created the same way with a **MANAGER** Bearer token. A `CLIENT` is created only from the invite email.
+2. `POST /auth/login` returns `{ "accessToken", "refreshToken", "tokenType": "Bearer", "expiresIn" }`. Access lasts **15 minutes** by default; refresh lasts **14 days**. Rotate with `POST /auth/refresh`; revoke with `POST /auth/logout`.
+3. The invite link uses `INVITE_BASE_URL`. If the base has no query string, the mailer appends `/{token}` (do not log the full URL). `GET /auth/invites/{token}` previews it; `POST /auth/invites/{token}` sets the login email and password.
 
 Ready-made flow: run [`http/auth.http`](http/auth.http) in order. The first requests persist tokens and ids for the rest.
 
@@ -141,8 +141,13 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 
 | Method | Path | Auth | Status | Description |
 |---|---|---|---|---|
-| `POST` | `/auth/users` | Public | `201` | Register a user. First user must be `MANAGER`. `CLIENT` requires `customerId`; staff must omit it. |
-| `POST` | `/auth/login` | Public | `200` | Issue a JWT (`accessToken`, `tokenType`). |
+| `POST` | `/auth/users` | Public (empty DB) or `MANAGER` | `201` | Register a staff user. First user must be `MANAGER`. `CLIENT` is rejected. |
+| `POST` | `/auth/login` | Public | `200` | Issue access + refresh tokens. |
+| `POST` | `/auth/refresh` | Public | `200` | Rotate the refresh token and issue a new access JWT. |
+| `POST` | `/auth/logout` | Public | `204` | Revoke the refresh session. |
+| `GET` | `/auth/invites/{token}` | Public | `200` | Preview a login invite (`customerName`, `expiresAt`). |
+| `POST` | `/auth/invites/{token}` | Public | `201` | Create a `CLIENT` login (`email` + `password`). |
+| `POST` | `/auth/invites/customer/{customerId}` | `RECEPTIONIST`, `MANAGER` | `204` | Resend the login invite if the customer has no user yet. |
 
 **`POST /auth/users` body**
 
@@ -155,7 +160,7 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 }
 ```
 
-`role`: `MANAGER` \| `RECEPTIONIST` \| `MECHANIC` \| `CLIENT`. `customerId` is required only for `CLIENT`.
+`role`: `MANAGER` \| `RECEPTIONIST` \| `MECHANIC`. Staff must omit `customerId`. `CLIENT` accounts come from `POST /auth/invites/{token}`.
 
 **`POST /auth/login` body**
 
@@ -170,7 +175,7 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 
 | Method | Path | Roles | Status | Description |
 |---|---|---|---|---|
-| `POST` | `/customers` | `RECEPTIONIST`, `MANAGER` | `201` | Register a customer (CPF or CNPJ). |
+| `POST` | `/customers` | `RECEPTIONIST`, `MANAGER` | `201` | Register a customer (CPF or CNPJ). Sends a login invite to the contact email. |
 | `GET` | `/customers` | `RECEPTIONIST`, `MANAGER` | `200` | List all customers. |
 | `GET` | `/customers/document/{document}` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find by CPF/CNPJ (formatted or digits only). |
 | `GET` | `/customers/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find by id. |
@@ -275,7 +280,11 @@ Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` un
 }
 ```
 
-Look up the customer first with `GET /customers/document/{document}` (CPF/CNPJ).
+Look up the customer first with `GET /customers/document/{document}` (CPF/CNPJ). Each status change emails the customer's contact address (Mailpit locally at `http://localhost:8025`):
+
+- `POST /service-orders/{id}/diagnosis` (`RECEIVED` → `IN_DIAGNOSIS`) — subject `Diagnostico iniciado`
+- `POST /service-orders/{id}/approve` (`WAITING_APPROVAL` → `IN_EXECUTION`) — subject `Orcamento aprovado`
+- `POST /service-orders/{id}/deliver` (`FINISHED` → `DELIVERED`) — subject `Veiculo entregue`
 
 ### Catalog (services on an OS)
 
@@ -358,7 +367,12 @@ Values in [`src/main/resources/application.properties`](src/main/resources/appli
 | `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Local only |
 | `spring.datasource.password` | `DATABASE_PASSWORD` | `postgres` | Override outside local Docker |
 | `app.security.jwt.secret` | `JWT_SECRET` | placeholder | Must be **at least 32 bytes** outside local dev |
-| `app.security.jwt.ttl-seconds` | `JWT_TTL_SECONDS` | `3600` | Access token lifetime |
+| `app.security.jwt.ttl-seconds` | `JWT_TTL_SECONDS` | `900` | Access token lifetime |
+| `app.security.refresh.ttl-seconds` | `REFRESH_TTL_SECONDS` | `1209600` | Refresh session lifetime (14 days) |
+| `spring.mail.host` | `MAIL_HOST` | `localhost` | Mailpit in Compose (`mailpit`) |
+| `spring.mail.port` | `MAIL_PORT` | `1025` | SMTP port |
+| `app.mail.from` | `MAIL_FROM` | `oficina@localhost` | Sender address |
+| `app.mail.invite-base-url` | `INVITE_BASE_URL` | `http://localhost:8080/invite` | Prefix of the invite link (`/{token}` when the base has no `?`) |
 
 Tests use `src/test/resources/application.properties` (a dedicated JWT secret). Do not commit real secrets; `.env` and `application-local.properties` are gitignored.
 

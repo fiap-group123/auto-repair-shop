@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.usecase.customer
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.customer.application.dto.customer.CustomerResponse
 import br.com.autorepairshop.customer.application.dto.customer.toResponse
 import br.com.autorepairshop.customer.domain.exception.CustomerException
@@ -11,10 +12,14 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class FindCustomerUseCase(private val customers: CustomerRepository) : UseCase<UUID, CustomerResponse> {
+class FindCustomerUseCase(
+    private val customers: CustomerRepository,
+    private val access: AccessGuard,
+) : UseCase<UUID, CustomerResponse> {
 
     @Transactional(readOnly = true)
     override fun execute(input: UUID): CustomerResponse {
+        access.requireCustomer(customerId = input)
         val customer = customers.findById(id = CustomerId(value = input))
             ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")
         return customer.toResponse()

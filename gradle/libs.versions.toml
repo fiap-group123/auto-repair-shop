@@ -28,6 +28,7 @@ boot-security = { module = "org.springframework.boot:spring-boot-starter-securit
 boot-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server" }
 boot-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 boot-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+boot-mail = { module = "org.springframework.boot:spring-boot-starter-mail" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
@@ -59,6 +60,7 @@ spring-runtime = [
     "boot-oauth2-resource-server",
     "boot-validation",
     "boot-webmvc",
+    "boot-mail",
 ]
 spring-test = [
     "boot-actuator-test",

@@ -5,6 +5,7 @@ import br.com.autorepairshop.authentication.application.dto.LoginCommand
 import br.com.autorepairshop.authentication.application.security.PasswordHasher
 import br.com.autorepairshop.authentication.application.security.TokenIssuer
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
+import br.com.autorepairshop.authentication.domain.repository.RefreshSessionRepository
 import br.com.autorepairshop.authentication.domain.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -13,16 +14,21 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 @Tag("unit")
 class LoginUseCaseTest {
     private val users = mockk<UserRepository>()
     private val passwords = mockk<PasswordHasher>()
     private val tokens = mockk<TokenIssuer>()
+    private val sessions = mockk<RefreshSessionRepository>(relaxUnitFun = true)
     private val useCase = LoginUseCase(
         users = users,
         passwords = passwords,
         tokens = tokens,
+        sessions = sessions,
+        accessTtlSeconds = 900,
+        refreshTtlSeconds = 1_209_600,
     )
 
     @Test
@@ -79,7 +85,13 @@ class LoginUseCaseTest {
             expected = "jwt-token",
             actual = response.accessToken,
         )
+        assertTrue(response.refreshToken.isNotBlank())
+        assertEquals(
+            expected = 900,
+            actual = response.expiresIn,
+        )
         verify { tokens.issue(user = user) }
+        verify { sessions.save(session = any()) }
     }
 
     private fun command() = LoginCommand(
