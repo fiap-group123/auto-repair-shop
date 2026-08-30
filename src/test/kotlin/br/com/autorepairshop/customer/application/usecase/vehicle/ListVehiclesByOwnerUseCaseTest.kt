@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.usecase.vehicle
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
@@ -17,9 +18,11 @@ import kotlin.test.assertFailsWith
 class ListVehiclesByOwnerUseCaseTest {
     private val customers = mockk<CustomerRepository>()
     private val vehicles = mockk<VehicleRepository>()
+    private val access = mockk<AccessGuard>(relaxUnitFun = true)
     private val useCase = ListVehiclesByOwnerUseCase(
         customers = customers,
         vehicles = vehicles,
+        access = access,
     )
 
     @Test

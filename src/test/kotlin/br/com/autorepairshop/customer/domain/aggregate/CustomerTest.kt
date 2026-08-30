@@ -1,6 +1,7 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
 import br.com.autorepairshop.customer.CustomerFixtures
+import br.com.autorepairshop.customer.domain.event.CustomerRegistered
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
@@ -23,6 +24,11 @@ class CustomerTest {
             expected = CustomerFixtures.NAME,
             actual = customer.name.value,
         )
+        assertEquals(
+            expected = 1,
+            actual = customer.domainEvents.size,
+        )
+        assertTrue(customer.domainEvents.single() is CustomerRegistered)
     }
 
     @Test

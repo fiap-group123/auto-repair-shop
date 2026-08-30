@@ -2,9 +2,7 @@ package br.com.autorepairshop.api.controller.catalog
 
 import br.com.autorepairshop.api.dto.catalog.RegisterServiceRequest
 import br.com.autorepairshop.api.dto.catalog.UpdateServiceRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.api.withHttpRequest
-import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
 import br.com.autorepairshop.catalog.CatalogFixtures
 import br.com.autorepairshop.catalog.application.dto.AverageExecutionTimeResponse
 import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
@@ -20,9 +18,6 @@ import br.com.autorepairshop.catalog.application.usecase.ListServicesByServiceOr
 import br.com.autorepairshop.catalog.application.usecase.ListServicesUseCase
 import br.com.autorepairshop.catalog.application.usecase.RegisterServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.UpdateServiceUseCase
-import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
-import br.com.autorepairshop.serviceorder.application.dto.toResponse
-import br.com.autorepairshop.serviceorder.application.usecase.FindServiceOrderUseCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -32,7 +27,6 @@ import org.springframework.http.HttpStatus
 import java.math.BigDecimal
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 @Tag("unit")
 class ServiceControllerTest {
@@ -45,9 +39,7 @@ class ServiceControllerTest {
     private val listServices = mockk<ListServicesUseCase>()
     private val listServicesByCustomerId = mockk<ListServicesByCustomerIdUseCase>()
     private val listServicesByServiceOrderId = mockk<ListServicesByServiceOrderIdUseCase>()
-    private val findOrder = mockk<FindServiceOrderUseCase>()
     private val averageExecutionTimeUseCase = mockk<AverageExecutionTimeUseCase>()
-    private val authorization = mockk<AuthorizationSupport>(relaxUnitFun = true)
     private val controller = ServiceController(
         registerService = registerService,
         updateService = updateService,
@@ -58,9 +50,7 @@ class ServiceControllerTest {
         listServices = listServices,
         listServicesByCustomerId = listServicesByCustomerId,
         listServicesByServiceOrderId = listServicesByServiceOrderId,
-        findOrder = findOrder,
         averageExecutionTimeUseCase = averageExecutionTimeUseCase,
-        authorization = authorization,
     )
 
     @Test
@@ -154,55 +144,25 @@ class ServiceControllerTest {
     }
 
     @Test
-    fun `listing by customer id checks ownership before loading`() {
+    fun `listing by customer id delegates to the use case`() {
         val customerId = UUID.randomUUID()
         every { listServicesByCustomerId.execute(input = customerId) } returns emptyList()
 
         controller.listByCustomerId(customerId = customerId)
 
-        verify { authorization.requireCanAccessServiceOrder(customerId = customerId) }
         verify { listServicesByCustomerId.execute(input = customerId) }
     }
 
     @Test
-    fun `a client cannot list another customer services`() {
-        val otherCustomerId = UUID.randomUUID()
-        every {
-            authorization.requireCanAccessServiceOrder(customerId = otherCustomerId)
-        } throws AuthenticationException.Forbidden(message = "Cannot access another customer.")
-
-        assertFailsWith<AuthenticationException.Forbidden> {
-            controller.listByCustomerId(customerId = otherCustomerId)
-        }
-        verify(exactly = 0) { listServicesByCustomerId.execute(input = any()) }
-    }
-
-    @Test
-    fun `listing by service order checks ownership of the order`() {
-        val order = ServiceOrderFixtures.received().toResponse()
-        val service = CatalogFixtures.activeService(serviceOrderId = order.id).toResponse()
-        every { findOrder.execute(input = order.id) } returns order
-        every { listServicesByServiceOrderId.execute(input = order.id) } returns listOf(element = service)
+    fun `listing by service order delegates to the use case`() {
+        val serviceOrderId = UUID.randomUUID()
+        val service = CatalogFixtures.activeService(serviceOrderId = serviceOrderId).toResponse()
+        every { listServicesByServiceOrderId.execute(input = serviceOrderId) } returns listOf(element = service)
 
         assertEquals(
             expected = service.id,
-            actual = controller.listByServiceOrderId(serviceOrderId = order.id).body?.single()?.id,
+            actual = controller.listByServiceOrderId(serviceOrderId = serviceOrderId).body?.single()?.id,
         )
-        verify { authorization.requireCanAccessServiceOrder(customerId = order.customerId) }
-        verify { listServicesByServiceOrderId.execute(input = order.id) }
-    }
-
-    @Test
-    fun `a client cannot list services of another customer order`() {
-        val order = ServiceOrderFixtures.received().toResponse()
-        every { findOrder.execute(input = order.id) } returns order
-        every {
-            authorization.requireCanAccessServiceOrder(customerId = order.customerId)
-        } throws AuthenticationException.Forbidden(message = "Cannot access another customer.")
-
-        assertFailsWith<AuthenticationException.Forbidden> {
-            controller.listByServiceOrderId(serviceOrderId = order.id)
-        }
-        verify(exactly = 0) { listServicesByServiceOrderId.execute(input = any()) }
+        verify { listServicesByServiceOrderId.execute(input = serviceOrderId) }
     }
 }

@@ -137,6 +137,7 @@ kover {
                 classes(
                     "*HashedPassword",
                     "*UserId",
+                    "*CustomerInviteId",
                     "*CustomerId",
                     "*VehicleId",
                     "*ServiceOrderId",

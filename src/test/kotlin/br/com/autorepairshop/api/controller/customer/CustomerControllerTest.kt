@@ -2,7 +2,6 @@ package br.com.autorepairshop.api.controller.customer
 
 import br.com.autorepairshop.api.dto.customer.RegisterCustomerRequest
 import br.com.autorepairshop.api.dto.customer.UpdateCustomerRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.api.withHttpRequest
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.application.dto.customer.RegisterCustomerCommand
@@ -32,7 +31,6 @@ class CustomerControllerTest {
     private val findCustomer = mockk<FindCustomerUseCase>()
     private val findCustomerByDocument = mockk<FindCustomerByDocumentUseCase>()
     private val listCustomers = mockk<ListCustomersUseCase>()
-    private val authorization = mockk<AuthorizationSupport>(relaxUnitFun = true)
     private val controller = CustomerController(
         registerCustomer = registerCustomer,
         updateCustomer = updateCustomer,
@@ -41,7 +39,6 @@ class CustomerControllerTest {
         findCustomer = findCustomer,
         findCustomerByDocument = findCustomerByDocument,
         listCustomers = listCustomers,
-        authorization = authorization,
     )
 
     @Test
@@ -113,7 +110,6 @@ class CustomerControllerTest {
             actual = controller.reactivate(id = customer.id).statusCode,
         )
         verify {
-            authorization.requireCanAccessCustomer(customerId = customer.id)
             updateCustomer.execute(
                 input = UpdateCustomerCommand(
                     customerId = customer.id,
