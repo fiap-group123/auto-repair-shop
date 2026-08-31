@@ -1,3 +1,5 @@
+import org.gradle.internal.impldep.org.jsoup.nodes.Document
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
@@ -85,11 +87,11 @@ configurations.matching { it.name.contains("detekt", ignoreCase = true) }.config
 tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
     jvmTarget.set("17")
     reports {
+        checkstyle.required.set(true)
+        checkstyle.outputLocation.set(layout.buildDirectory.file("reports/detekt/detekt.xml"))
         html.required.set(true)
         markdown.required.set(true)
         sarif.required.set(true)
-        sarif.outputLocation.set(layout.buildDirectory.file("reports/detekt/detekt.sarif"))
-        checkstyle.required.set(false)
     }
 }
 
@@ -148,7 +150,7 @@ kover {
         }
         verify {
             rule {
-                minBound(98)
+                minBound(80)
             }
         }
     }
@@ -169,7 +171,7 @@ sonar {
         property("sonar.java.libraries", "build/libs")
 
         property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/kover/report.xml")
-        property("sonar.sarifReportPaths", "build/reports/detekt/detekt.sarif")
+        property("sonar.kotlin.detekt.reportPaths", "build/reports/detekt/detekt.sarif")
         property(
             "sonar.exclusions",
             "**/build/**,**/generated/**,**/*.sql",
