@@ -1,7 +1,7 @@
 package br.com.autorepairshop.authentication.application.usecase
 
-import br.com.autorepairshop.authentication.application.directory.CustomerDirectory
-import br.com.autorepairshop.authentication.application.directory.CustomerRecord
+import br.com.autorepairshop.authentication.application.antilayer.CustomerAntiLayer
+import br.com.autorepairshop.authentication.application.antilayer.CustomerRecord
 import br.com.autorepairshop.authentication.domain.aggregate.CustomerInvite
 import br.com.autorepairshop.authentication.domain.event.CustomerInviteIssued
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
@@ -24,7 +24,7 @@ import kotlin.test.assertTrue
 
 @Tag("unit")
 class IssueCustomerInviteUseCaseTest {
-    private val customers = mockk<CustomerDirectory>()
+    private val customers = mockk<CustomerAntiLayer>()
     private val users = mockk<UserRepository>()
     private val invites = mockk<CustomerInviteRepository>(relaxUnitFun = true)
     private val events = mockk<EventPublisher>(relaxUnitFun = true)

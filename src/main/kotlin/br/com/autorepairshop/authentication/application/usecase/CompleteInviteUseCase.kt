@@ -1,6 +1,6 @@
 package br.com.autorepairshop.authentication.application.usecase
 
-import br.com.autorepairshop.authentication.application.directory.CustomerDirectory
+import br.com.autorepairshop.authentication.application.antilayer.CustomerAntiLayer
 import br.com.autorepairshop.authentication.application.dto.CompleteInviteCommand
 import br.com.autorepairshop.authentication.application.dto.UserResponse
 import br.com.autorepairshop.authentication.application.dto.toResponse
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional
 class CompleteInviteUseCase(
     private val invites: CustomerInviteRepository,
     private val users: UserRepository,
-    private val customers: CustomerDirectory,
+    private val customers: CustomerAntiLayer,
     private val passwords: PasswordHasher,
 ) : UseCase<CompleteInviteCommand, UserResponse> {
 

@@ -1,8 +1,8 @@
 package br.com.autorepairshop.authentication.application.usecase
 
 import br.com.autorepairshop.authentication.AuthFixtures
-import br.com.autorepairshop.authentication.application.directory.CustomerDirectory
-import br.com.autorepairshop.authentication.application.directory.CustomerRecord
+import br.com.autorepairshop.authentication.application.antilayer.CustomerAntiLayer
+import br.com.autorepairshop.authentication.application.antilayer.CustomerRecord
 import br.com.autorepairshop.authentication.application.dto.CompleteInviteCommand
 import br.com.autorepairshop.authentication.application.security.PasswordHasher
 import br.com.autorepairshop.authentication.domain.InviteToken
@@ -25,7 +25,7 @@ import kotlin.test.assertNotNull
 class CompleteInviteUseCaseTest {
     private val invites = mockk<CustomerInviteRepository>(relaxUnitFun = true)
     private val users = mockk<UserRepository>(relaxUnitFun = true)
-    private val customers = mockk<CustomerDirectory>()
+    private val customers = mockk<CustomerAntiLayer>()
     private val passwords = mockk<PasswordHasher>()
     private val useCase = CompleteInviteUseCase(
         invites = invites,

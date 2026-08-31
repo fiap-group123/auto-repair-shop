@@ -1,7 +1,7 @@
 package br.com.autorepairshop.authentication.application.usecase
 
-import br.com.autorepairshop.authentication.application.directory.CustomerDirectory
-import br.com.autorepairshop.authentication.application.directory.CustomerRecord
+import br.com.autorepairshop.authentication.application.antilayer.CustomerAntiLayer
+import br.com.autorepairshop.authentication.application.antilayer.CustomerRecord
 import br.com.autorepairshop.authentication.domain.InviteToken
 import br.com.autorepairshop.authentication.domain.aggregate.CustomerInvite
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
@@ -20,7 +20,7 @@ import kotlin.time.Instant
 @Tag("unit")
 class FindCustomerInviteUseCaseTest {
     private val invites = mockk<CustomerInviteRepository>()
-    private val customers = mockk<CustomerDirectory>()
+    private val customers = mockk<CustomerAntiLayer>()
     private val useCase = FindCustomerInviteUseCase(
         invites = invites,
         customers = customers,
