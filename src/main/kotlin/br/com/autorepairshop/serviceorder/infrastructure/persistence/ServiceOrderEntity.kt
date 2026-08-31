@@ -6,7 +6,6 @@ import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -22,8 +21,6 @@ class ServiceOrderEntity(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     var status: ServiceOrderStatusColumn,
-    @Column(nullable = false, precision = 10, scale = 2)
-    var total: BigDecimal,
     @Column(name = "created_at", nullable = false)
     val createdAt: Instant,
     @Column(name = "started_at")

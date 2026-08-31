@@ -3,6 +3,7 @@ package br.com.autorepairshop.serviceorder.domain.aggregate
 import br.com.autorepairshop.serviceorder.domain.event.DiagnosisFinished
 import br.com.autorepairshop.serviceorder.domain.event.DiagnosisStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderApproved
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderBudgetRejected
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderCompleted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderDelivered
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderOpened
@@ -10,7 +11,6 @@ import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
 import br.com.autorepairshop.shared.domain.AggregateRoot
-import br.com.autorepairshop.shared.domain.Money
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -22,7 +22,6 @@ class ServiceOrder private constructor(
     val customerId: UUID,
     val vehicleId: UUID,
     status: ServiceOrderStatus,
-    total: Money,
     val createdAt: Instant,
     startedAt: Instant?,
     finishedAt: Instant?,
@@ -30,9 +29,6 @@ class ServiceOrder private constructor(
 ) : AggregateRoot<ServiceOrderId>(id = id) {
 
     var status: ServiceOrderStatus = status
-        private set
-
-    var total: Money = total
         private set
 
     var startedAt: Instant? = startedAt
@@ -44,17 +40,13 @@ class ServiceOrder private constructor(
     var estimatedTime: Duration? = estimatedTime
         private set
 
-    fun updateBudgetTotal(total: Money) {
-        this.total = total
-    }
-
     fun startDiagnosis(at: Instant = Clock.System.now()) {
         requireStatus(expected = ServiceOrderStatus.RECEIVED)
         status = ServiceOrderStatus.IN_DIAGNOSIS
         startedAt = at
         registerEvent(
             event = DiagnosisStarted(
-                serviceOrderId = id,
+                serviceOrderId = id.value,
                 occurredOn = at.toJavaInstant(),
             ),
         )
@@ -62,11 +54,6 @@ class ServiceOrder private constructor(
 
     fun finishDiagnosis(at: Instant = Clock.System.now()) {
         requireStatus(expected = ServiceOrderStatus.IN_DIAGNOSIS)
-        if (total <= Money.ZERO) {
-            throw ServiceOrderException.EmptyBudget(
-                message = "Cannot send an empty budget for approval.",
-            )
-        }
         status = ServiceOrderStatus.WAITING_APPROVAL
         registerEvent(
             event = DiagnosisFinished(
@@ -76,15 +63,31 @@ class ServiceOrder private constructor(
         )
     }
 
-    fun approve(at: Instant = Clock.System.now()) {
+    fun budgetApprove(at: Instant = Clock.System.now()) {
         requireStatus(expected = ServiceOrderStatus.WAITING_APPROVAL)
-        status = ServiceOrderStatus.IN_EXECUTION
+        status = ServiceOrderStatus.BUDGET_APPROVED
         registerEvent(
             event = ServiceOrderApproved(
                 serviceOrderId = id,
                 occurredOn = at.toJavaInstant(),
             ),
         )
+    }
+
+    fun budgetReject(at: Instant = Clock.System.now()) {
+        requireStatus(expected = ServiceOrderStatus.WAITING_APPROVAL)
+        status = ServiceOrderStatus.BUDGET_REJECTED
+        registerEvent(
+            event = ServiceOrderBudgetRejected(
+                serviceOrderId = id,
+                occurredOn = at.toJavaInstant(),
+            ),
+        )
+    }
+
+    fun startExecution() {
+        requireStatus(expected = ServiceOrderStatus.BUDGET_APPROVED)
+        status = ServiceOrderStatus.IN_EXECUTION
     }
 
     fun finish(at: Instant = Clock.System.now()) {
@@ -144,7 +147,6 @@ class ServiceOrder private constructor(
             customerId: UUID,
             vehicleId: UUID,
             status: ServiceOrderStatus = ServiceOrderStatus.RECEIVED,
-            total: Money = Money.ZERO,
             createdAt: Instant = Clock.System.now(),
             startedAt: Instant? = null,
             finishedAt: Instant? = null,
@@ -155,7 +157,6 @@ class ServiceOrder private constructor(
                 customerId = customerId,
                 vehicleId = vehicleId,
                 status = status,
-                total = total,
                 createdAt = createdAt,
                 startedAt = startedAt,
                 finishedAt = finishedAt,
@@ -170,7 +171,6 @@ class ServiceOrder private constructor(
             customerId: UUID,
             vehicleId: UUID,
             status: ServiceOrderStatus,
-            total: Money,
             createdAt: Instant,
             startedAt: Instant?,
             finishedAt: Instant?,
@@ -180,7 +180,6 @@ class ServiceOrder private constructor(
             customerId = customerId,
             vehicleId = vehicleId,
             status = status,
-            total = total,
             createdAt = createdAt,
             startedAt = startedAt,
             finishedAt = finishedAt,

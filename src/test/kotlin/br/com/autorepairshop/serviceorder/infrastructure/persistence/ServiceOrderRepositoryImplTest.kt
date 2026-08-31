@@ -20,7 +20,7 @@ class ServiceOrderRepositoryImplTest {
 
     @Test
     fun `maps an order through save and queries`() {
-        val order = ServiceOrderFixtures.inDiagnosisWithBudget()
+        val order = ServiceOrderFixtures.inDiagnosis()
         val stored = slot<ServiceOrderEntity>()
         every { jpa.save(capture(stored)) } answers { stored.captured }
         repo.save(order = order)

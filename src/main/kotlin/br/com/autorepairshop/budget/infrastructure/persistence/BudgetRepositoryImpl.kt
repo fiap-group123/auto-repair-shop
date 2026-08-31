@@ -4,9 +4,9 @@ import br.com.autorepairshop.budget.domain.aggregate.Budget
 import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
 import br.com.autorepairshop.budget.domain.valueObject.BudgetId
 import br.com.autorepairshop.budget.domain.valueObject.BudgetStatus
-import br.com.autorepairshop.catalog.domain.aggregate.Service
 import br.com.autorepairshop.shared.domain.Money
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
@@ -19,11 +19,11 @@ class BudgetRepositoryImpl(private val jpa: BudgetJpaRepository) : BudgetReposit
     }
 
     override fun findByServiceOrderId(serviceOrderId: UUID): Budget? =
-        jpa.findByServiceOrderId(serviceOrderId = serviceOrderId).toDomain()
+        jpa.findByServiceOrderId(serviceOrderId = serviceOrderId)?.toDomain()
 
+    @Transactional
     override fun deleteByServiceOrderId(serviceOrderId: UUID) =
         jpa.deleteByServiceOrderId(serviceOrderId = serviceOrderId)
-
 
     private fun Budget.toEntity() = BudgetEntity(
         id = id.value,
@@ -40,6 +40,6 @@ class BudgetRepositoryImpl(private val jpa: BudgetJpaRepository) : BudgetReposit
         total = Money.of(raw = total),
         status = BudgetStatus.valueOf(value = status.name),
         createdAt = createdAt.toKotlinInstant(),
-        finishedAt = finishedAt?.toKotlinInstant()
+        finishedAt = finishedAt?.toKotlinInstant(),
     )
 }

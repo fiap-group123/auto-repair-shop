@@ -1,6 +1,5 @@
 package br.com.autorepairshop.budget.infrastructure.persistence
 
-import br.com.autorepairshop.shared.domain.Money
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -28,5 +27,3 @@ class BudgetEntity(
     @Column(name = "finished_at", nullable = true)
     val finishedAt: Instant?,
 )
-
-

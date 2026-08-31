@@ -1,6 +1,5 @@
 package br.com.autorepairshop.serviceorder.application.dto
 
-import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -14,5 +13,4 @@ data class ServiceOrderResponse(
     val startedAt: Instant?,
     val finishedAt: Instant?,
     val estimatedTime: Long?,
-    val total: BigDecimal,
 )

@@ -114,6 +114,9 @@ kover {
                     "br.com.autorepairshop.catalog.domain",
                     "br.com.autorepairshop.catalog.application",
                     "br.com.autorepairshop.catalog.infrastructure.persistence",
+                    "br.com.autorepairshop.budget.domain",
+                    "br.com.autorepairshop.budget.application",
+                    "br.com.autorepairshop.budget.infrastructure.persistence",
                     "br.com.autorepairshop.shared.domain",
                     "br.com.autorepairshop.api.controller",
                 )
@@ -127,6 +130,8 @@ kover {
                     "*VehicleId",
                     "*ServiceOrderId",
                     "*ServiceId",
+                    "*BudgetId",
+                    "*BudgetStatus",
                     "*DocumentType",
                     "*LicensePlateType",
                     "*Role",
