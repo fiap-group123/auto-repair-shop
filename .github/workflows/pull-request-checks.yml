@@ -22,6 +22,9 @@ jobs:
       - name: Compile Kotlin
         run: ./gradlew compileKotlin
 
+      - name: Detekt
+        run: ./gradlew detektMain
+
   unit-tests:
     runs-on: ubuntu-latest
     needs: build-project
@@ -46,16 +49,17 @@ jobs:
         run: python3 .github/scripts/extract-coverage-percentage.py
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         id: upload-coverage-report
         with:
           name: coverage-report
           path: build/reports/kover/html
+          retention-days: 3
 
     outputs:
       coverage-report-url: ${{ steps.upload-coverage-report.outputs.artifact-url }}
       coverage-percentage: ${{ steps.extract-coverage-percentage.outputs.percentage }}
-  
+
   notify-coverage:
     runs-on: ubuntu-latest
     needs: unit-tests

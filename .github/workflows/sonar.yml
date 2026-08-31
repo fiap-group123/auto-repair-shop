@@ -1,0 +1,33 @@
+name: SonarQube Cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Fetch PR base branch
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          java-version: ${{ vars.JAVA_VERSION }}
+          gradle-version: ${{ vars.GRADLE_VERSION }}
+
+      - name: Run Detekt, tests, Kover and Sonar
+        env:
+          JWT_SECRET: ci-test-jwt-secret-key-of-32-bytes-min
+          DATABASE_PASSWORD: postgres
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew detektMain koverXmlReport sonar
