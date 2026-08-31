@@ -1,11 +1,13 @@
 package br.com.autorepairshop.serviceorder.application.event
 
+import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.serviceorder.domain.aggregate.ServiceOrder
 import br.com.autorepairshop.serviceorder.domain.event.DiagnosisFinished
 import br.com.autorepairshop.serviceorder.domain.event.DiagnosisStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderApproved
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderBudgetRejected
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderCompleted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderDelivered
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderOpened
@@ -22,6 +24,7 @@ import org.springframework.transaction.event.TransactionalEventListener
 @Component
 class ServiceOrderStatusMailListener(
     private val orders: ServiceOrderRepository,
+    private val budgets: BudgetRepository,
     private val customers: CustomerRepository,
     private val emails: EmailSender,
 ) {
@@ -36,7 +39,10 @@ class ServiceOrderStatusMailListener(
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun on(event: DiagnosisStarted) {
-        notify(serviceOrderId = event.serviceOrderId, status = ServiceOrderStatus.IN_DIAGNOSIS)
+        notify(
+            serviceOrderId = ServiceOrderId(value = event.serviceOrderId),
+            status = ServiceOrderStatus.IN_DIAGNOSIS,
+        )
     }
 
     @Async
@@ -48,7 +54,13 @@ class ServiceOrderStatusMailListener(
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun on(event: ServiceOrderApproved) {
-        notify(serviceOrderId = event.serviceOrderId, status = ServiceOrderStatus.IN_EXECUTION)
+        notify(serviceOrderId = event.serviceOrderId, status = ServiceOrderStatus.BUDGET_APPROVED)
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun on(event: ServiceOrderBudgetRejected) {
+        notify(serviceOrderId = event.serviceOrderId, status = ServiceOrderStatus.BUDGET_REJECTED)
     }
 
     @Async
@@ -89,7 +101,9 @@ class ServiceOrderStatusMailListener(
         ServiceOrderStatus.RECEIVED -> "Ordem de servico recebida"
         ServiceOrderStatus.IN_DIAGNOSIS -> "Diagnostico iniciado"
         ServiceOrderStatus.WAITING_APPROVAL -> "Orcamento aguardando aprovacao"
-        ServiceOrderStatus.IN_EXECUTION -> "Orcamento aprovado"
+        ServiceOrderStatus.BUDGET_APPROVED -> "Orcamento aprovado"
+        ServiceOrderStatus.BUDGET_REJECTED -> "Orcamento rejeitado"
+        ServiceOrderStatus.IN_EXECUTION -> "Ordem de servico em execucao"
         ServiceOrderStatus.FINISHED -> "Servico concluido"
         ServiceOrderStatus.DELIVERED -> "Veiculo entregue"
     }
@@ -101,7 +115,8 @@ class ServiceOrderStatusMailListener(
     ): String {
         val header = "Ola, $customerName.\n\nOrdem ${order.id.value}: ${subjectFor(status = status).lowercase()}."
         return if (status == ServiceOrderStatus.WAITING_APPROVAL) {
-            "$header Total: R$ ${order.total}."
+            val total = budgets.findByServiceOrderId(serviceOrderId = order.id.value)?.total
+            "$header Total: R$ $total."
         } else {
             header
         }

@@ -1,6 +1,6 @@
 # Arquitetura — Auto Repair Shop
 
-Backend API de um MVP de oficina (FIAP Tech Challenge). Um único deployável Kotlin/Spring Boot, com DDD tático em quatro bounded contexts.
+Backend API de um MVP de oficina (FIAP Tech Challenge). Um único deployável Kotlin/Spring Boot, com DDD tático em cinco bounded contexts.
 
 Este documento descreve **como o sistema funciona**: camadas, contextos, fluxos e integração. A escolha do banco está em [ADR 0001 — PostgreSQL](adr/001-postgresql.md).
 
@@ -25,7 +25,8 @@ src/main/kotlin/br/com/autorepairshop/
 ├── authentication/       # Usuários, JWT, convites, sessões
 ├── customer/             # Clientes e veículos
 ├── catalog/              # Itens de serviço de uma OS
-├── serviceorder/         # Ciclo de vida da OS e orçamento
+├── serviceorder/         # Ciclo de vida da OS
+├── budget/               # Orçamento da OS (total e aprovação)
 └── shared/               # Kernel: AggregateRoot, UseCase, Money, eventos, mail
 ```
 
@@ -43,7 +44,7 @@ Regras e invariantes. Sem anotações de framework.
 |---|---|
 | `AggregateRoot` | Identidade + lista de `DomainEvent` pendentes |
 | `Entity` / `ValueObject` | Identidade vs igualdade por valor |
-| Agregados | `Customer`, `Vehicle`, `ServiceOrder`, `Service`, `User`, `CustomerInvite`, `RefreshSession` |
+| Agregados | `Customer`, `Vehicle`, `ServiceOrder`, `Service`, `Budget`, `User`, `CustomerInvite`, `RefreshSession` |
 | Value objects | Documento, placa, `Money`, `Role`, status, e-mails de login, etc. |
 | Portas de repositório | Interfaces no domínio (`CustomerRepository`, `UserRepository`, …) |
 | Eventos | Fatos do agregado (`CustomerRegistered`, `ServiceRegistered`, …) |
@@ -173,41 +174,73 @@ Cadastro de pessoas/empresas e dos veículos que elas possuem.
 
 ### serviceorder
 
-Ordem de serviço (OS): ciclo de vida e total do orçamento.
+Ordem de serviço (OS): ciclo de vida. O orçamento vive no contexto Budget.
 
 **Agregado `ServiceOrder`**
 
 Status obrigatório, uma transição por vez:
 
 ```
-RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → IN_EXECUTION → FINISHED → DELIVERED
+RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUTION → FINISHED → DELIVERED
+                              ↘ BUDGET_REJECTED 
 ```
 
 | Transição | Método | Regra extra |
 |---|---|---|
 | abrir | `open` | Cliente ativo; veículo do cliente; sem OS aberta no veículo |
-| diagnóstico | `startDiagnosis` | Status `RECEIVED` |
-| fechar diagnóstico | `finishDiagnosis` | Status `IN_DIAGNOSIS` e `total > 0` |
-| aprovar | `approve` | Status `WAITING_APPROVAL` |
+| diagnóstico | `startDiagnosis` | Status `RECEIVED`. Emite `DiagnosisStarted` (cria o Budget) |
+| fechar diagnóstico | `finishDiagnosis` | Status `IN_DIAGNOSIS`. O caso de uso exige `Budget.total > 0` |
+| aprovar orçamento | `budgetApprove` | Status `WAITING_APPROVAL` → `BUDGET_APPROVED`. Listeners de `BudgetApproved` e `BudgetTraded` |
+| rejeitar orçamento | `budgetReject` | Status `WAITING_APPROVAL` → `BUDGET_REJECTED`. Listener de `BudgetRejected` |
+| executar | `startExecution` | Status `BUDGET_APPROVED` → `IN_EXECUTION` |
 | concluir | `finish` | Status `IN_EXECUTION`; grava duração |
 | entregar | `deliver` | Status `FINISHED` |
 
-O total **não** é editado na tela da OS: `updateBudgetTotal` é chamado por `RecalculateBudgetTotalUseCase` quando o catalog muda.
-
-**Casos de uso:** `RegisterServiceOrderUseCase`, `FindServiceOrderUseCase`, `ListServiceOrdersUseCase`, `ListServiceOrdersByCustomerIdUseCase`, `StartDiagnosisUseCase`, `FinishDiagnosisUseCase`, `ApproveServiceOrderUseCase`, `FinishServiceOrderUseCase`, `DeliverServiceOrderUseCase`, `RecalculateBudgetTotalUseCase`.
+**Casos de uso:** `RegisterServiceOrderUseCase`, `FindServiceOrderUseCase`, `ListServiceOrdersUseCase`, `ListServiceOrdersByCustomerIdUseCase`, `StartDiagnosisUseCase`, `FinishDiagnosisUseCase`, `ApproveServiceOrderUseCase`, `RejectServiceOrderUseCase`, `FinishServiceOrderUseCase`, `DeliverServiceOrderUseCase`.
 
 `RegisterServiceOrderUseCase` lê `CustomerRepository` e `VehicleRepository` na mesma transação (consistência: dono, ativo, placa). Não importa os agregados no domínio da OS — só os IDs.
 
-**Read model:** `ServiceOrderAssembler` busca os `Service` do catalog e preenche `serviceIds` na response. O detalhe da OS não embute nome/preço dos itens.
+**Read model:** `ServiceOrderAssembler` busca os `Service` do catalog e preenche `serviceIds` na response. O detalhe da OS não embute nome, preço nem total.
 
 **Listeners**
 
 | Listener | Quando | Transação |
 |---|---|---|
-| `ServiceOrderEventListener` | `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` | Mesmo commit do item |
+| `BudgetApprovedEventListener` | `BudgetApproved` | Mesmo commit: OS → `BUDGET_APPROVED` |
+| `BudgetRejectedEventListener` | `BudgetRejected` | Mesmo commit: OS → `BUDGET_REJECTED` |
+| `BudgetTradedEventListener` | `BudgetTraded` | Mesmo commit: OS → `BUDGET_APPROVED` |
 | `ServiceOrderStatusMailListener` | Eventos de status da OS | `AFTER_COMMIT`, assíncrono |
 
 **Persistência:** `service_orders`. Índice parcial `uk_service_orders_open_vehicle`: no máximo uma OS com status diferente de `DELIVERED` por veículo.
+
+### budget
+
+Orçamento de uma OS: um por ordem, total somado dos itens do catalog.
+
+**Agregado `Budget`**
+
+```
+WAITING_APPROVAL → APPROVED | REJECTED | TRADED
+```
+
+| Ação | Regra |
+|---|---|
+| registrar | OS existe; um budget por OS; total inicia na soma dos itens já cadastrados |
+| recalcular | Soma dos `basePrice` do catalog; zero é permitido |
+| aprovar | Só de `WAITING_APPROVAL`; emite `BudgetApproved`; OS → `BUDGET_APPROVED` |
+| rejeitar | Só de `WAITING_APPROVAL`; emite `BudgetRejected`; OS → `BUDGET_REJECTED` |
+| negociar | Só de `WAITING_APPROVAL`; emite `BudgetTraded`; OS → `BUDGET_APPROVED` |
+
+**Casos de uso:** `RegisterBudgetUseCase`, `FindBudgetUseCase`, `ApproveBudgetUseCase`, `RejectBudgetUseCase`, `TradeBudgetUseCase`, `DeleteBudgetUseCase`, `CalculateBudgetTotalUseCase`.
+
+**Listeners**
+
+| Listener | Quando | Transação |
+|---|---|---|
+| `RegisterBudgetEventListener` | `DiagnosisStarted` | Mesmo commit da OS |
+| `CalculateBudgetEventListener` | `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` | Mesmo commit do item |
+
+**Persistência:** `budgets`. `service_order_id` único → `service_orders`.
 
 ### catalog
 
@@ -231,7 +264,7 @@ WAITING → IN_PROGRESS → FINISHED
 
 `RegisterServiceUseCase` consulta `ServiceOrderRepository` para garantir que a OS existe.
 
-**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` — o total da OS é a soma dos `basePrice`.
+**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` — o total do Budget é a soma dos `basePrice`.
 
 **Persistência:** `services` (`service_order_id` → `service_orders`).
 
@@ -244,9 +277,10 @@ WAITING → IN_PROGRESS → FINISHED
 | `CustomerController` | `/customers` | customer |
 | `VehicleController` | `/vehicles` | customer |
 | `ServiceOrderController` | `/service-orders` | serviceorder |
+| `BudgetController` | `/budgets` | budget |
 | `ServiceController` | `/services` | catalog |
 
-Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
+Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, `BudgetApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
 
 Rotas públicas: login, refresh, logout, preview/conclusão de convite (`/invite/**`), Swagger, OpenAPI, `/error`. `POST /auth/users` é público só com banco sem usuários; depois exige `MANAGER`.
 
@@ -256,7 +290,7 @@ Três padrões, usados de propósito (não é acaso):
 
 | Padrão | Quando | Exemplo |
 |---|---|---|
-| Evento in-process | Efeito colateral depois de um fato do agregado | Cliente cadastrado → convite; item criado → recálculo |
+| Evento in-process | Efeito colateral depois de um fato do agregado | Cliente cadastrado → convite; item criado → recálculo do budget; budget aprovado → OS em execução |
 | Porta anti-corrupção | Um contexto precisa de um recorte do outro | `CustomerAntiLayer` / `CustomerRecord` |
 | Repositório de outro contexto | A transação precisa da verdade agora | Abrir OS valida cliente e veículo; registrar serviço valida a OS |
 | Assembler (leitura) | Response junta dados de dois contextos | `ServiceOrderAssembler` + `ServiceRepository` |
@@ -283,6 +317,7 @@ Flyway é dono do schema (`src/main/resources/db/migration/`). Hibernate só val
 | `customer_invites` | authentication | token hasheado |
 | `refresh_sessions` | authentication | refresh rotacionável |
 | `service_orders` | serviceorder | FKs para customer e vehicle; uma OS aberta por veículo |
+| `budgets` | budget | `service_order_id` único → `service_orders` |
 | `services` | catalog | FK para `service_orders` |
 
 Timestamps em `TIMESTAMPTZ`. Soft delete de cliente e veículo: coluna `active`, histórico preservado.

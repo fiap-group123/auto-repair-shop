@@ -2,7 +2,7 @@
 
 Base URL: `http://localhost:8080`.
 
-Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html. Pedidos prontos: [`http/auth.http`](../http/auth.http), [`http/customer.http`](../http/customer.http), [`http/service-order.http`](../http/service-order.http).
+Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html. Pedidos prontos: [`http/auth.http`](../http/auth.http), [`http/customer.http`](../http/customer.http), [`http/service-order.http`](../http/service-order.http), [`http/budget.http`](../http/budget.http).
 
 Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff vê o que o papel permitir.
 
@@ -232,17 +232,16 @@ Todos os campos opcionais:
 
 ## Service orders
 
-Ciclo: `RECEIVED` → `IN_DIAGNOSIS` → `WAITING_APPROVAL` → `IN_EXECUTION` → `FINISHED` → `DELIVERED`.
+Ciclo: `RECEIVED` → `IN_DIAGNOSIS` → `WAITING_APPROVAL` → `BUDGET_APPROVED` → `IN_EXECUTION` → `FINISHED` → `DELIVERED`. Rejeição: `WAITING_APPROVAL` → `BUDGET_REJECTED`.
 
 | Método | Path | Papéis | Status | Descrição |
 |---|---|---|---|---|
 | `POST` | `/service-orders` | `RECEPTIONIST`, `MANAGER` | `201` | Abre OS (CPF/CNPJ + `vehiclePlate`). Status `RECEIVED`. |
 | `GET` | `/service-orders` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista todas. |
 | `GET` | `/service-orders/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista por cliente. `CLIENT` precisa ser o dono. |
-| `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detalhe (status, total, timestamps, `serviceIds`). |
-| `POST` | `/service-orders/{id}/diagnosis` | `MECHANIC`, `MANAGER` | `200` | Inicia diagnóstico. |
-| `POST` | `/service-orders/{id}/diagnosis/complete` | `MECHANIC`, `MANAGER` | `200` | Fecha diagnóstico e aguarda aprovação (orçamento > 0). |
-| `POST` | `/service-orders/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Aprova o orçamento. |
+| `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detalhe (status, timestamps, `serviceIds`). |
+| `POST` | `/service-orders/{id}/diagnosis` | `MECHANIC`, `MANAGER` | `200` | Inicia diagnóstico e cria o orçamento. |
+| `POST` | `/service-orders/{id}/diagnosis/complete` | `MECHANIC`, `MANAGER` | `200` | Fecha diagnóstico e aguarda aprovação (`Budget.total` > 0). |
 | `POST` | `/service-orders/{id}/complete` | `MECHANIC`, `MANAGER` | `200` | Conclui a execução. |
 | `POST` | `/service-orders/{id}/deliver` | `RECEPTIONIST`, `MANAGER` | `200` | Entrega o veículo. |
 
@@ -271,12 +270,45 @@ Resposta `201` / `200`:
   "createdAt": "2026-08-30T12:00:00Z",
   "startedAt": null,
   "finishedAt": null,
-  "estimatedTime": null,
-  "total": 0.00
+  "estimatedTime": null
 }
 ```
 
-O detalhe da OS só devolve `serviceIds`. Nome, preço e status dos itens saem em `/services`.
+O detalhe da OS só devolve `serviceIds`. Nome, preço e status dos itens saem em `/services`. O total sai em `GET /budgets/{serviceOrderId}`.
+
+## Budgets
+
+Um orçamento por OS. `{id}` é o **id da ordem de serviço**.
+
+| Método | Path | Papéis | Status | Descrição |
+|---|---|---|---|---|
+| `POST` | `/budgets` | `MECHANIC`, `MANAGER` | `201` | Registra o orçamento da OS (também criado ao iniciar o diagnóstico). |
+| `GET` | `/budgets/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca pelo id da OS. |
+| `POST` | `/budgets/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Aprova o orçamento e passa a OS para `BUDGET_APPROVED`. |
+| `POST` | `/budgets/{id}/reject` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Rejeita o orçamento e passa a OS para `BUDGET_REJECTED`. |
+| `POST` | `/budgets/{id}/trade` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Negocia o orçamento e passa a OS para `BUDGET_APPROVED`. |
+| `DELETE` | `/budgets/{id}` | `MANAGER` | `204` | Remove o orçamento da OS. |
+
+### `POST /budgets`
+
+```json
+{
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+Resposta `201` / `200`:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000",
+  "total": 150.00,
+  "status": "WAITING_APPROVAL",
+  "createdAt": "2026-08-30T12:00:00Z",
+  "finishedAt": null
+}
+```
 
 ## Catalog (itens da OS)
 
@@ -284,7 +316,7 @@ Serviço é linha da ordem, não catálogo da oficina. Status do item: `WAITING`
 
 | Método | Path | Papéis | Status | Descrição |
 |---|---|---|---|---|
-| `POST` | `/services` | `RECEPTIONIST`, `MANAGER` | `201` | Adiciona item à OS e recalcula o orçamento. |
+| `POST` | `/services` | `RECEPTIONIST`, `MANAGER` | `201` | Adiciona item à OS e recalcula o total do orçamento. |
 | `GET` | `/services` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista todos os itens. |
 | `GET` | `/services/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Itens do cliente. `CLIENT` precisa ser o dono. |
 | `GET` | `/services/service-order/{serviceOrderId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Itens da OS. `CLIENT` precisa ser dono da OS. |
@@ -336,7 +368,7 @@ Todos os campos opcionais:
 }
 ```
 
-Alterar o preço recalcula o total da OS.
+Alterar o preço recalcula o total do orçamento.
 
 ### `GET /services/average-execution-time`
 
@@ -365,4 +397,4 @@ Alterar o preço recalcula o total da OS.
 | `MANAGER` | Tudo: cadastro de staff, desativar/reativar, alterar preço de item |
 | `RECEPTIONIST` | Cadastra e atualiza cliente/veículo/OS/itens; entrega o veículo; não desativa |
 | `MECHANIC` | Lê cliente/veículo/OS; diagnóstico, execução e conclusão |
-| `CLIENT` | Lê os próprios dados; aprova o próprio orçamento |
+| `CLIENT` | Lê os próprios dados; aprova, rejeita ou negocia o próprio orçamento |
