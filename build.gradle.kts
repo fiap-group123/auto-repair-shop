@@ -155,8 +155,8 @@ kover {
 
 sonar {
     properties {
-        property("sonar.projectKey", "fiap-group123")
-        property("sonar.organization", "Fiap Group 123")
+        property("sonar.projectKey", "fiap-group123_auto-repair-shop")
+        property("sonar.organization", "fiap-group123")
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.sourceEncoding", "UTF-8")
         property("sonar.sources", "src/main/kotlin")
