@@ -63,15 +63,13 @@ jobs:
           name: coverage-report
           path: build/reports/kover/html
 
-      - name: Upload Kover Report and Classes
+      - name: Upload Kover Report
         uses: actions/upload-artifact@v7
         with:
-          name: kover-report-classes
+          name: kover-report
           if-no-files-found: error
           retention-days: 1
-          path: |
-            build/reports/kover/report.xml
-            build/classes/
+          path: build/reports/kover/report.xml
 
     outputs:
       coverage-report-url: ${{ steps.upload-coverage-report.outputs.artifact-url }}
@@ -103,30 +101,19 @@ jobs:
           name: "detekt-report"
           path: build/reports/detekt
 
-      - name: Download Kover Report and Classes
+      - name: Download Kover Report
         uses: actions/download-artifact@v7
         with:
-          name: kover-report-classes
-          path: .
+          name: kover-report
+          path: build/reports/kover
 
-      - name: Place Sonar inputs
+      - name: Verify Sonar reports
         run: |
-          set -euo pipefail
-          mkdir -p build/reports/kover build/reports/detekt
-          if [ ! -f build/reports/detekt/detekt.sarif ]; then
-            SARIF=$(find . -name 'detekt.sarif' | head -n 1)
-            test -n "$SARIF"
-            cp "$SARIF" build/reports/detekt/detekt.sarif
-          fi
-          if [ ! -f build/reports/kover/report.xml ]; then
-            XML=$(find . -name 'report.xml' | head -n 1)
-            test -n "$XML"
-            cp "$XML" build/reports/kover/report.xml
-          fi
-          ls -la build/reports/kover build/reports/detekt
           test -f build/reports/kover/report.xml
           test -f build/reports/detekt/detekt.sarif
-          test -d build/classes/kotlin/main
+
+      - name: Compile for Sonar
+        run: ./gradlew compileKotlin compileTestKotlin
 
       - name: SonarQube Cloud
         env:
