@@ -75,16 +75,16 @@ Content-Type: application/json
 
 ###
 # Reenviar convite de login
-POST {{baseUrl}}/auth/invites/customer/{{customerId}}
+POST {{baseUrl}}/invite/customer/{{customerId}}
 Authorization: Bearer {{managerToken}}
 
 ###
 # Preview do convite (token chega no e-mail / Mailpit em http://localhost:8025)
-GET {{baseUrl}}/auth/invites/{{inviteToken}}
+GET {{baseUrl}}/invite/{{inviteToken}}
 
 ###
 # Cliente cria e-mail de login e senha a partir do convite
-POST {{baseUrl}}/auth/invites/{{inviteToken}}
+POST {{baseUrl}}/invite/{{inviteToken}}
 Content-Type: application/json
 
 {
