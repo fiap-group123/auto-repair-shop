@@ -187,8 +187,6 @@ Detekt uses Kotlin conventions + ktlint + type resolution on `main`. HTML report
 
 `check` includes `detektMain` and fails on findings. `--auto-correct` applies ktlint fixes.
 
-Gradle copies `hooks/pre-commit` into `.git/hooks` on compile/Detekt. Each `git commit` runs Detekt; findings block the commit.
-
 ## CI
 
 On pull request (and `workflow_dispatch`), [`.github/workflows/pull-request-checks.yml`](.github/workflows/pull-request-checks.yml) compiles, runs Detekt, runs tests with Kover, uploads the HTML coverage artifact, and posts a single coverage comment on the PR (the previous coverage comment is replaced). [`.github/workflows/sonar.yml`](.github/workflows/sonar.yml) analyzes `main` on SonarQube Cloud.
@@ -198,10 +196,10 @@ On pull request (and `workflow_dispatch`), [`.github/workflows/pull-request-chec
 Create these under the repository **Settings → Secrets and variables → Actions**. Workflows read `${{ vars.* }}` and `${{ secrets.* }}` — they do not use the Docker `.env`.
 
 | Name | Kind | Value | Required |
-|---|---|---|---|
+|---|---|-----|---|
 | `JAVA_VERSION` | Variable | `17` | Yes. Used by [`.github/actions/setup`](.github/actions/setup). |
 | `GRADLE_VERSION` | Variable | `9.5.1` | Yes. Matches the Gradle Wrapper. |
-| `SONAR_TOKEN` | Secret | Analyze token from [SonarCloud account security](https://sonarcloud.io/account/security) (org `fiap-group123`) | Yes for the Sonar job. A 403 usually means the token is missing, wrong, or lacks Execute Analysis. |
+| `SONAR_TOKEN` | Secret | *** | Yes for the Sonar job. A 403 usually means the token is missing, wrong, or lacks Execute Analysis. |
 
 Do **not** create `GITHUB_TOKEN`: GitHub injects it automatically (PR coverage comment, checkout, Sonar decoration).
 
