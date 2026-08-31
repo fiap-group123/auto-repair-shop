@@ -240,6 +240,7 @@ WAITING → IN_PROGRESS → FINISHED
 | Controller | Base | Contexto |
 |---|---|---|
 | `AuthController` | `/auth` | authentication |
+| `InviteController` | `/invite` | authentication |
 | `CustomerController` | `/customers` | customer |
 | `VehicleController` | `/vehicles` | customer |
 | `ServiceOrderController` | `/service-orders` | serviceorder |
@@ -247,7 +248,7 @@ WAITING → IN_PROGRESS → FINISHED
 
 Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
 
-Rotas públicas: login, refresh, logout, preview/conclusão de convite, Swagger, OpenAPI, `/error`. `POST /auth/users` é público só com banco sem usuários; depois exige `MANAGER`.
+Rotas públicas: login, refresh, logout, preview/conclusão de convite (`/invite/**`), Swagger, OpenAPI, `/error`. `POST /auth/users` é público só com banco sem usuários; depois exige `MANAGER`.
 
 ## Integração entre contextos
 

@@ -25,9 +25,9 @@ Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff v�
 | `POST` | `/auth/login` | Público | `200` | Emite access + refresh. Access ~15 min; refresh ~14 dias. |
 | `POST` | `/auth/refresh` | Público | `200` | Rotaciona o refresh e emite um novo JWT. |
 | `POST` | `/auth/logout` | Público | `204` | Revoga a sessão de refresh. |
-| `GET` | `/auth/invites/{token}` | Público | `200` | Preview do convite (`customerName`, `expiresAt`). |
-| `POST` | `/auth/invites/{token}` | Público | `201` | Cria login `CLIENT` (`email` + `password`). |
-| `POST` | `/auth/invites/customer/{customerId}` | `RECEPTIONIST`, `MANAGER` | `204` | Reenvia o convite se o cliente ainda não tem usuário. |
+| `GET` | `/invite/{token}` | Público | `200` | Preview do convite (`customerName`, `expiresAt`). |
+| `POST` | `/invite/{token}` | Público | `201` | Cria login `CLIENT` (`email` + `password`). |
+| `POST` | `/invite/customer/{customerId}` | `RECEPTIONIST`, `MANAGER` | `204` | Reenvia o convite se o cliente ainda não tem usuário. |
 
 ### `POST /auth/users`
 
@@ -40,7 +40,7 @@ Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff v�
 }
 ```
 
-`role`: `MANAGER` | `RECEPTIONIST` | `MECHANIC`. Staff omite `customerId`. Conta `CLIENT` só vem de `POST /auth/invites/{token}`.
+`role`: `MANAGER` | `RECEPTIONIST` | `MECHANIC`. Staff omite `customerId`. Conta `CLIENT` só vem de `POST /invite/{token}`.
 
 Resposta `201`:
 
@@ -85,7 +85,7 @@ Resposta `200`:
 
 Refresh devolve o mesmo formato de `POST /auth/login`. Logout não tem body de resposta.
 
-### `GET /auth/invites/{token}`
+### `GET /invite/{token}`
 
 ```json
 {
@@ -94,7 +94,7 @@ Refresh devolve o mesmo formato de `POST /auth/login`. Logout não tem body de r
 }
 ```
 
-### `POST /auth/invites/{token}`
+### `POST /invite/{token}`
 
 ```json
 {

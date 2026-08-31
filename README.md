@@ -222,7 +222,7 @@ The [Dockerfile](Dockerfile) does not set `ENV`. The API reads only [`src/main/r
 | `spring.mail.username` | `MAIL_USERNAME` | empty | No | Only for authenticated SMTP (Gmail, SES, …). Omit with Mailpit. |
 | `spring.mail.password` | `MAIL_PASSWORD` | empty | No | Same as `MAIL_USERNAME`. |
 | `app.mail.from` | `MAIL_FROM` | `oficina@localhost` | Yes | Sender address. |
-| `app.mail.invite-base-url` | `INVITE_BASE_URL` | `http://localhost:8080/invite` | Yes | Prefix of the invite link (`/{token}` when the base has no `?`). |
+| `app.mail.invite-base-url` | `INVITE_BASE_URL` | `http://localhost:8080/invite` | Yes | Prefix of the invite link (`/{token}` when the base has no `?`). Default hits public `GET /invite/{token}`. |
 
 Postgres in Compose also gets `POSTGRES_DB=autorepairshop`, `POSTGRES_USER` from `DATABASE_USERNAME`, and `POSTGRES_PASSWORD` from `DATABASE_PASSWORD`.
 
