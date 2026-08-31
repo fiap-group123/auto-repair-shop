@@ -88,6 +88,7 @@ tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
         html.required.set(true)
         markdown.required.set(true)
         sarif.required.set(true)
+        sarif.outputLocation.set(layout.buildDirectory.file("reports/detekt/detekt.sarif"))
         checkstyle.required.set(false)
     }
 }
@@ -153,6 +154,11 @@ kover {
     }
 }
 
+// SonarCloud imports coverage through the JaCoCo XML sensor. Kover 0.9 writes that
+// same format to reports/kover/report.xml — keep using Kover, not the JaCoCo plugin.
+val koverXmlReportFile = layout.buildDirectory.file("reports/kover/report.xml")
+val detektSarifFile = layout.buildDirectory.file("reports/detekt/detekt.sarif")
+
 sonar {
     properties {
         property("sonar.projectKey", "fiap-group123_auto-repair-shop")
@@ -166,14 +172,20 @@ sonar {
         property("sonar.java.binaries", "build/classes/kotlin/main")
         property("sonar.java.test.binaries", "build/classes/kotlin/test")
         property("sonar.java.libraries", "build/libs")
-        // Kover
-        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/kover/report.xml")
-        // Detekt
-        property("sonar.sarifReportPaths", "build/reports/detekt/detekt.sarif")
+
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            koverXmlReportFile.get().asFile.absolutePath,
+        )
+        property("sonar.sarifReportPaths", detektSarifFile.get().asFile.absolutePath)
         property(
             "sonar.exclusions",
             "**/build/**,**/generated/**,**/*.sql",
         )
         property("sonar.coverage.exclusions", "**/dto/**,**/*Entity.kt,**/*JpaRepository.kt")
     }
+}
+
+tasks.named("sonar") {
+    dependsOn("koverXmlReport", "detektMain")
 }

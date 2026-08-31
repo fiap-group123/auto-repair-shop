@@ -25,11 +25,13 @@ jobs:
       - name: Detekt
         run: ./gradlew detektMain
 
-      - name: SonarQube Cloud
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew sonar
+      - name: Upload Detekt Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-report
+          if-no-files-found: error
+          retention-days: 1
+          path: build/reports/detekt/detekt.sarif
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -37,8 +39,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -63,10 +63,59 @@ jobs:
           name: coverage-report
           path: build/reports/kover/html
 
+      - name: Upload Kover Report and Classes
+        uses: actions/upload-artifact@v4
+        with:
+          name: kover-report-classes
+          if-no-files-found: error
+          retention-days: 1
+          path: |
+            build/reports/kover/report.xml
+            build/classes/
+
     outputs:
       coverage-report-url: ${{ steps.upload-coverage-report.outputs.artifact-url }}
       coverage-percentage: ${{ steps.extract-coverage-percentage.outputs.percentage }}
-  
+
+  sonar:
+    runs-on: ubuntu-latest
+    needs: [build-project, unit-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          java-version: ${{ vars.JAVA_VERSION }}
+          gradle-version: ${{ vars.GRADLE_VERSION }}
+
+      - name: Download Detekt Report
+        uses: actions/download-artifact@v4
+        with:
+          name: detekt-report`
+          path: .
+
+      - name: Download Kover Report and Classes
+        uses: actions/download-artifact@v4
+        with:
+          name: kover-report-classes
+          path: .
+
+      - name: Verify Sonar inputs
+        run: |
+          test -f build/reports/kover/report.xml
+          test -f build/reports/detekt/detekt.sarif
+          test -d build/classes/kotlin/main
+
+      - name: SonarQube Cloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew sonar -x test -x koverXmlReport -x koverVerify -x detektMain -x detekt
+
   notify-coverage:
     runs-on: ubuntu-latest
     needs: unit-tests
