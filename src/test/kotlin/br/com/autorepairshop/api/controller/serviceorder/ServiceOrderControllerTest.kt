@@ -6,7 +6,6 @@ import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.toResponse
-import br.com.autorepairshop.serviceorder.application.usecase.ApproveServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.DeliverServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FindServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FinishDiagnosisUseCase
@@ -32,7 +31,6 @@ class ServiceOrderControllerTest {
     private val listOrdersByCustomerId = mockk<ListServiceOrdersByCustomerIdUseCase>()
     private val startDiagnosisUseCase = mockk<StartDiagnosisUseCase>()
     private val finishDiagnosisUseCase = mockk<FinishDiagnosisUseCase>()
-    private val approveOrder = mockk<ApproveServiceOrderUseCase>()
     private val completeOrder = mockk<FinishServiceOrderUseCase>()
     private val deliverOrder = mockk<DeliverServiceOrderUseCase>()
     private val controller = ServiceOrderController(
@@ -40,9 +38,8 @@ class ServiceOrderControllerTest {
         findOrder = findOrder,
         listOrders = listOrders,
         listOrdersByCustomerId = listOrdersByCustomerId,
-        startDiagnosisUseCase = startDiagnosisUseCase,
-        finishDiagnosisUseCase = finishDiagnosisUseCase,
-        approveOrder = approveOrder,
+        startDiagnosis = startDiagnosisUseCase,
+        finishDiagnosis = finishDiagnosisUseCase,
         completeOrder = completeOrder,
         deliverOrder = deliverOrder,
     )
@@ -76,12 +73,11 @@ class ServiceOrderControllerTest {
 
     @Test
     fun `list find and lifecycle endpoints delegate to use cases`() {
-        val order = ServiceOrderFixtures.inDiagnosisWithBudget().toResponse()
+        val order = ServiceOrderFixtures.inDiagnosis().toResponse()
         every { listOrders.execute(input = Unit) } returns listOf(element = order)
         every { findOrder.execute(input = order.id) } returns order
         every { startDiagnosisUseCase.execute(input = order.id) } returns order
         every { finishDiagnosisUseCase.execute(input = order.id) } returns order
-        every { approveOrder.execute(input = order.id) } returns order
         every { completeOrder.execute(input = order.id) } returns order
         every { deliverOrder.execute(input = order.id) } returns order
 
@@ -100,10 +96,6 @@ class ServiceOrderControllerTest {
         assertEquals(
             expected = order.id,
             actual = controller.finishDiagnosis(id = order.id).body?.id,
-        )
-        assertEquals(
-            expected = order.id,
-            actual = controller.approve(id = order.id).body?.id,
         )
         assertEquals(
             expected = order.id,

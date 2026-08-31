@@ -30,48 +30,42 @@ class BudgetController(
     private val rejectBudget: RejectBudgetUseCase,
     private val tradeBudget: TradeBudgetUseCase,
     private val deleteBudget: DeleteBudgetUseCase,
-    private val findBudgetUseCase: FindBudgetUseCase
+    private val findBudget: FindBudgetUseCase,
 ) {
-
 
     @PostMapping
     @Operation(summary = "Register a new budget")
     fun register(@RequestBody request: RegisterBudgetRequest): ResponseEntity<BudgetResponse> {
         val budget = registerBudget.execute(
-            input = request.serviceOrderId
+            input = request.serviceOrderId,
         )
 
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
-            .buildAndExpand(budget.id)
+            .buildAndExpand(budget.serviceOrderId)
             .toUri()
-
         return ResponseEntity.created(location).body(budget)
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Find a budget by service order id")
-    fun findBudgetByServiceId(@PathVariable id: UUID): ResponseEntity<BudgetResponse> {
-        return ResponseEntity.ok(findBudgetUseCase.execute(input = id))
-    }
+    fun findBudgetByServiceId(@PathVariable id: UUID): ResponseEntity<BudgetResponse> =
+        ResponseEntity.ok(findBudget.execute(input = id))
 
     @PostMapping("/{id}/approve")
     @Operation(summary = "Approve a budget by service order id")
-    fun approveBudget(@PathVariable id: UUID): ResponseEntity<BudgetResponse> {
-        return ResponseEntity.ok(approveBudget.execute(input = id))
-    }
+    fun approveBudget(@PathVariable id: UUID): ResponseEntity<BudgetResponse> =
+        ResponseEntity.ok(approveBudget.execute(input = id))
 
     @PostMapping("/{id}/reject")
     @Operation(summary = "Reject a budget by service order id")
-    fun rejectBudget(@PathVariable id: UUID): ResponseEntity<BudgetResponse> {
-        return ResponseEntity.ok(rejectBudget.execute(input = id))
-    }
+    fun rejectBudget(@PathVariable id: UUID): ResponseEntity<BudgetResponse> =
+        ResponseEntity.ok(rejectBudget.execute(input = id))
 
     @PostMapping("/{id}/trade")
     @Operation(summary = "Trade a budget by service order id")
-    fun tradeBudget(@PathVariable id: UUID): ResponseEntity<BudgetResponse> {
-        return ResponseEntity.ok(tradeBudget.execute(input = id))
-    }
+    fun tradeBudget(@PathVariable id: UUID): ResponseEntity<BudgetResponse> =
+        ResponseEntity.ok(tradeBudget.execute(input = id))
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a budget by service order id")

@@ -1,6 +1,7 @@
 package br.com.autorepairshop.serviceorder.application.event
 
 import br.com.autorepairshop.TestcontainersConfiguration
+import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
 import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
 import br.com.autorepairshop.catalog.application.dto.UpdateServiceCommand
 import br.com.autorepairshop.catalog.application.usecase.RegisterServiceUseCase
@@ -38,6 +39,9 @@ class BudgetTotalEventIT {
     private lateinit var orders: ServiceOrderRepository
 
     @Autowired
+    private lateinit var budgets: BudgetRepository
+
+    @Autowired
     private lateinit var registerService: RegisterServiceUseCase
 
     @Autowired
@@ -50,8 +54,8 @@ class BudgetTotalEventIT {
     private lateinit var finishDiagnosis: FinishDiagnosisUseCase
 
     @Test
-    fun `registering a service makes the order recalculate its total`() {
-        val orderId = openOrder()
+    fun `registering a service recalculates the budget total`() {
+        val orderId = openOrderInDiagnosis()
 
         registerService.execute(
             input = RegisterServiceCommand(
@@ -79,8 +83,8 @@ class BudgetTotalEventIT {
     }
 
     @Test
-    fun `changing a price recalculates the order total after approval`() {
-        val orderId = openOrder()
+    fun `changing a price recalculates the budget after approval is sent`() {
+        val orderId = openOrderInDiagnosis()
         val service = registerService.execute(
             input = RegisterServiceCommand(
                 serviceOrderId = orderId.value,
@@ -100,7 +104,6 @@ class BudgetTotalEventIT {
             expected = "250.00",
         )
 
-        startDiagnosis.execute(input = orderId.value)
         finishDiagnosis.execute(input = orderId.value)
 
         updateService.execute(
@@ -115,7 +118,7 @@ class BudgetTotalEventIT {
         )
     }
 
-    private fun openOrder(): ServiceOrderId {
+    private fun openOrderInDiagnosis(): ServiceOrderId {
         val customer = owner()
         val vehicle = CustomerFixtures.vehicle(
             owner = customer,
@@ -127,6 +130,7 @@ class BudgetTotalEventIT {
             vehicleId = vehicle.id.value,
         )
         orders.save(order = order)
+        startDiagnosis.execute(input = order.id.value)
         return order.id
     }
 
@@ -145,7 +149,7 @@ class BudgetTotalEventIT {
     ) {
         assertEquals(
             expected = expected,
-            actual = orders.findById(id = orderId)?.total?.amount?.toPlainString(),
+            actual = budgets.findByServiceOrderId(serviceOrderId = orderId.value)?.total?.amount?.toPlainString(),
         )
     }
 

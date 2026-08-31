@@ -50,7 +50,7 @@ class ServiceControllerTest {
         listServices = listServices,
         listServicesByCustomerId = listServicesByCustomerId,
         listServicesByServiceOrderId = listServicesByServiceOrderId,
-        averageExecutionTimeUseCase = averageExecutionTimeUseCase,
+        averageExecutionTime = averageExecutionTimeUseCase,
     )
 
     @Test

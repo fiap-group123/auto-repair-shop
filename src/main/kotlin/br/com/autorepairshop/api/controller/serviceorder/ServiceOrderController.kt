@@ -3,7 +3,6 @@ package br.com.autorepairshop.api.controller.serviceorder
 import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
-import br.com.autorepairshop.serviceorder.application.usecase.ApproveServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.DeliverServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FindServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FinishDiagnosisUseCase
@@ -32,9 +31,8 @@ class ServiceOrderController(
     private val findOrder: FindServiceOrderUseCase,
     private val listOrders: ListServiceOrdersUseCase,
     private val listOrdersByCustomerId: ListServiceOrdersByCustomerIdUseCase,
-    private val startDiagnosisUseCase: StartDiagnosisUseCase,
-    private val finishDiagnosisUseCase: FinishDiagnosisUseCase,
-    private val approveOrder: ApproveServiceOrderUseCase,
+    private val startDiagnosis: StartDiagnosisUseCase,
+    private val finishDiagnosis: FinishDiagnosisUseCase,
     private val completeOrder: FinishServiceOrderUseCase,
     private val deliverOrder: DeliverServiceOrderUseCase,
 ) {
@@ -72,17 +70,12 @@ class ServiceOrderController(
     @PostMapping("/{id}/diagnosis")
     @Operation(summary = "Start diagnosis")
     fun startDiagnosis(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
-        ResponseEntity.ok(startDiagnosisUseCase.execute(input = id))
+        ResponseEntity.ok(startDiagnosis.execute(input = id))
 
     @PostMapping("/{id}/diagnosis/complete")
     @Operation(summary = "Finish diagnosis and wait for approval")
     fun finishDiagnosis(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
-        ResponseEntity.ok(finishDiagnosisUseCase.execute(input = id))
-
-    @PostMapping("/{id}/approve")
-    @Operation(summary = "Approve service order")
-    fun approve(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
-        ResponseEntity.ok(approveOrder.execute(input = id))
+        ResponseEntity.ok(finishDiagnosis.execute(input = id))
 
     @PostMapping("/{id}/complete")
     @Operation(summary = "Complete execution")

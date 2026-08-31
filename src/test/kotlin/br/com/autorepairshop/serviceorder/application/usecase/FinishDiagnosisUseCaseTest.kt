@@ -1,5 +1,8 @@
 package br.com.autorepairshop.serviceorder.application.usecase
 
+import br.com.autorepairshop.budget.BudgetFixtures
+import br.com.autorepairshop.budget.domain.exception.BudgetException
+import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
@@ -7,6 +10,7 @@ import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
 import br.com.autorepairshop.serviceorder.serviceOrderAssembler
 import br.com.autorepairshop.shared.application.event.EventPublisher
+import br.com.autorepairshop.shared.domain.Money
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,9 +23,11 @@ import kotlin.test.assertFailsWith
 @Tag("unit")
 class FinishDiagnosisUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
+    private val budgets = mockk<BudgetRepository>()
     private val events = mockk<EventPublisher>()
     private val useCase = FinishDiagnosisUseCase(
         orders = orders,
+        budgets = budgets,
         events = events,
         responses = serviceOrderAssembler(),
     )
@@ -40,6 +46,8 @@ class FinishDiagnosisUseCaseTest {
     fun `throws when the order is not in diagnosis`() {
         val order = ServiceOrderFixtures.received()
         every { orders.findById(id = order.id) } returns order
+        every { budgets.findByServiceOrderId(serviceOrderId = order.id.value) } returns
+            BudgetFixtures.waitingApproval(serviceOrderId = order.id.value)
 
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             useCase.execute(input = order.id.value)
@@ -48,11 +56,25 @@ class FinishDiagnosisUseCaseTest {
     }
 
     @Test
-    fun `throws when no service has priced the budget yet`() {
+    fun `throws when the budget is missing`() {
         val order = ServiceOrderFixtures.inDiagnosis()
         every { orders.findById(id = order.id) } returns order
+        every { budgets.findByServiceOrderId(serviceOrderId = order.id.value) } returns null
 
-        assertFailsWith<ServiceOrderException.EmptyBudget> {
+        assertFailsWith<BudgetException.EmptyBudget> {
+            useCase.execute(input = order.id.value)
+        }
+        verify(exactly = 0) { orders.save(order = any()) }
+    }
+
+    @Test
+    fun `throws when the budget total is zero`() {
+        val order = ServiceOrderFixtures.inDiagnosis()
+        every { orders.findById(id = order.id) } returns order
+        every { budgets.findByServiceOrderId(serviceOrderId = order.id.value) } returns
+            BudgetFixtures.waitingApproval(serviceOrderId = order.id.value, total = Money.ZERO)
+
+        assertFailsWith<BudgetException.EmptyBudget> {
             useCase.execute(input = order.id.value)
         }
         verify(exactly = 0) { orders.save(order = any()) }
@@ -60,8 +82,10 @@ class FinishDiagnosisUseCaseTest {
 
     @Test
     fun `finishes diagnosis and waits for approval`() {
-        val order = ServiceOrderFixtures.inDiagnosisWithBudget()
+        val order = ServiceOrderFixtures.inDiagnosis()
         every { orders.findById(id = order.id) } returns order
+        every { budgets.findByServiceOrderId(serviceOrderId = order.id.value) } returns
+            BudgetFixtures.waitingApproval(serviceOrderId = order.id.value)
         every { orders.save(order = order) } returns Unit
         every { events.publish(aggregate = order) } returns Unit
 
@@ -70,10 +94,6 @@ class FinishDiagnosisUseCaseTest {
         assertEquals(
             expected = ServiceOrderStatus.WAITING_APPROVAL.name,
             actual = response.status,
-        )
-        assertEquals(
-            expected = ServiceOrderFixtures.TOTAL.amount,
-            actual = response.total,
         )
         verify { orders.save(order = order) }
         verify { events.publish(aggregate = order) }

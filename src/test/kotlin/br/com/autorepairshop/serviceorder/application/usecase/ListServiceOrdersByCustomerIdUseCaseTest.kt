@@ -1,6 +1,5 @@
 package br.com.autorepairshop.serviceorder.application.usecase
 
-import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.serviceOrderAssembler
@@ -15,11 +14,9 @@ import kotlin.test.assertTrue
 @Tag("unit")
 class ListServiceOrdersByCustomerIdUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
-    private val access = mockk<AccessGuard>(relaxUnitFun = true)
     private val useCase = ListServiceOrdersByCustomerIdUseCase(
         orders = orders,
         responses = serviceOrderAssembler(),
-        access = access,
     )
 
     @Test

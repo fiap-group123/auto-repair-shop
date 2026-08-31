@@ -1,6 +1,5 @@
 package br.com.autorepairshop.budget.application.usecase
 
-import br.com.autorepairshop.budget.application.dto.BudgetResponse
 import br.com.autorepairshop.budget.domain.exception.BudgetException
 import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
 import br.com.autorepairshop.shared.application.UseCase
@@ -9,13 +8,13 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class DeleteBudgetUseCase(private val budgets: BudgetRepository): UseCase<UUID, Unit> {
+class DeleteBudgetUseCase(private val budgets: BudgetRepository) : UseCase<UUID, Unit> {
 
     @Transactional
     override fun execute(input: UUID) {
-        budgets.findByServiceOrderId(serviceOrderId = input)
+        val budget = budgets.findByServiceOrderId(serviceOrderId = input)
             ?: throw BudgetException.BudgetNotFound(message = "Budget of order $input not found")
 
-        budgets.deleteByServiceOrderId(serviceOrderId = input)
+        budgets.deleteByServiceOrderId(serviceOrderId = budget.serviceOrderId)
     }
 }

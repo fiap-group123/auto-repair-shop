@@ -1,10 +1,10 @@
-package br.com.autorepairshop.serviceorder.application.event
+package br.com.autorepairshop.budget.application.event
 
+import br.com.autorepairshop.budget.application.usecase.CalculateBudgetTotalUseCase
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
 import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
-import br.com.autorepairshop.serviceorder.application.usecase.RecalculateBudgetTotalUseCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -14,14 +14,14 @@ import java.time.Instant
 import java.util.UUID
 
 @Tag("unit")
-class ServiceOrderEventListenerTest {
-    private val recalculateBudgetTotal = mockk<RecalculateBudgetTotalUseCase>()
-    private val listener = ServiceOrderEventListener(recalculateBudgetTotal = recalculateBudgetTotal)
+class CalculateBudgetEventListenerTest {
+    private val calculateBudgetTotal = mockk<CalculateBudgetTotalUseCase>()
+    private val listener = CalculateBudgetEventListener(calculateBudgetTotal = calculateBudgetTotal)
 
     @Test
     fun `forwards catalog events to the use case`() {
         val serviceOrderId = UUID.randomUUID()
-        every { recalculateBudgetTotal.execute(input = serviceOrderId) } returns Unit
+        every { calculateBudgetTotal.execute(input = serviceOrderId) } returns Unit
 
         listener.on(
             event = ServiceRegistered(
@@ -45,6 +45,6 @@ class ServiceOrderEventListenerTest {
             ),
         )
 
-        verify(exactly = 3) { recalculateBudgetTotal.execute(input = serviceOrderId) }
+        verify(exactly = 3) { calculateBudgetTotal.execute(input = serviceOrderId) }
     }
 }

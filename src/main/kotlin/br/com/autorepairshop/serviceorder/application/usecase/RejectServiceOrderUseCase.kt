@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class ApproveServiceOrderUseCase(
+class RejectServiceOrderUseCase(
     private val orders: ServiceOrderRepository,
     private val events: EventPublisher,
     private val responses: ServiceOrderAssembler,
@@ -24,7 +24,7 @@ class ApproveServiceOrderUseCase(
             ?: throw ServiceOrderException.ServiceOrderNotFound(
                 message = "Service order $input was not found.",
             )
-        order.budgetApprove()
+        order.budgetReject()
         orders.save(order = order)
         events.publish(aggregate = order)
         return responses.toResponse(order = order)

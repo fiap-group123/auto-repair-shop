@@ -1,4 +1,4 @@
-package br.com.autorepairshop.serviceorder.application.usecase
+package br.com.autorepairshop.budget.application.usecase
 
 import br.com.autorepairshop.budget.domain.exception.BudgetException
 import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
@@ -24,17 +24,9 @@ class CalculateBudgetTotalUseCase(
             ?: throw BudgetException.ServiceOrderNotFound(
                 message = "Service order $input was not found.",
             )
+        val budget = budgets.findByServiceOrderId(serviceOrderId = input) ?: return
         val total = services.findByServiceOrderId(serviceOrderId = input)
             .fold(initial = Money.ZERO) { acc, service -> acc.plus(other = service.basePrice) }
-
-        if(total == Money.ZERO) {
-            throw BudgetException.EmptyBudget("Total budget is empty.")
-        }
-
-        val budget = budgets.findByServiceOrderId(serviceOrderId = input)
-            ?: throw BudgetException.BudgetNotFound(
-                message = "Budget of order $input was not found.",
-            )
         budget.updateBudgetTotal(newTotal = total)
         budgets.save(budget)
     }

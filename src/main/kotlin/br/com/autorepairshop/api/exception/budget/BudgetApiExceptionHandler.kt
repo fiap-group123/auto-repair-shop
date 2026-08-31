@@ -1,7 +1,7 @@
-package br.com.autorepairshop.api.exception.serviceorder
+package br.com.autorepairshop.api.exception.budget
 
 import br.com.autorepairshop.api.exception.problem
-import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
+import br.com.autorepairshop.budget.domain.exception.BudgetException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
@@ -11,19 +11,19 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class ServiceOrderApiExceptionHandler {
+class BudgetApiExceptionHandler {
 
-    @ExceptionHandler(ServiceOrderException::class)
-    fun handleServiceOrder(ex: ServiceOrderException): ProblemDetail = when (ex) {
-        is ServiceOrderException.ServiceOrderNotFound,
+    @ExceptionHandler(BudgetException::class)
+    fun handleBudget(ex: BudgetException): ProblemDetail = when (ex) {
+        is BudgetException.BudgetNotFound,
+        is BudgetException.ServiceOrderNotFound,
         -> problem(status = HttpStatus.NOT_FOUND, ex = ex)
 
-        is ServiceOrderException.OpenOrderAlreadyExists,
-        is ServiceOrderException.VehicleNotOwnedByCustomer,
+        is BudgetException.BudgetAlreadyExists,
         -> problem(status = HttpStatus.CONFLICT, ex = ex)
 
-        is ServiceOrderException.InvalidStatusTransition,
-        is ServiceOrderException.InvalidDuration,
+        is BudgetException.EmptyBudget,
+        is BudgetException.InvalidBudgetStatusTransition,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
 }
