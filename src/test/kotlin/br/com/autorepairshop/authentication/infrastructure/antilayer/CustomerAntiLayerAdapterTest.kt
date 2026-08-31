@@ -1,4 +1,4 @@
-package br.com.autorepairshop.authentication.infrastructure.directory
+package br.com.autorepairshop.authentication.infrastructure.antilayer
 
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
@@ -11,16 +11,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 @Tag("unit")
-class CustomerDirectoryAdapterTest {
+class CustomerAntiLayerAdapterTest {
     private val customers = mockk<CustomerRepository>()
-    private val directory = CustomerDirectoryAdapter(customers = customers)
+    private val antiLayer = CustomerAntiLayerAdapter(customers = customers)
 
     @Test
     fun `maps an active customer`() {
         val customer = CustomerFixtures.activeCustomer()
         every { customers.findById(id = customer.id) } returns customer
 
-        val record = directory.find(id = customer.id.value)
+        val record = antiLayer.find(id = customer.id.value)
 
         assertEquals(
             expected = customer.name.value,
@@ -36,6 +36,6 @@ class CustomerDirectoryAdapterTest {
     fun `returns null when missing`() {
         every { customers.findById(id = any()) } returns null
 
-        assertNull(directory.find(id = UUID.randomUUID()))
+        assertNull(antiLayer.find(id = UUID.randomUUID()))
     }
 }

@@ -1,6 +1,6 @@
 package br.com.autorepairshop.authentication.application.usecase
 
-import br.com.autorepairshop.authentication.application.directory.CustomerDirectory
+import br.com.autorepairshop.authentication.application.antilayer.CustomerAntiLayer
 import br.com.autorepairshop.authentication.application.dto.CustomerInviteResponse
 import br.com.autorepairshop.authentication.domain.InviteToken
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
@@ -13,7 +13,7 @@ import kotlin.time.toJavaInstant
 @Service
 class FindCustomerInviteUseCase(
     private val invites: CustomerInviteRepository,
-    private val customers: CustomerDirectory,
+    private val customers: CustomerAntiLayer,
 ) : UseCase<String, CustomerInviteResponse> {
 
     @Transactional(readOnly = true)

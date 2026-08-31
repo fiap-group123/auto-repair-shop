@@ -1,7 +1,7 @@
 package br.com.autorepairshop.authentication.application.usecase
 
-import br.com.autorepairshop.authentication.application.directory.CustomerDirectory
-import br.com.autorepairshop.authentication.application.directory.CustomerRecord
+import br.com.autorepairshop.authentication.application.antilayer.CustomerAntiLayer
+import br.com.autorepairshop.authentication.application.antilayer.CustomerRecord
 import br.com.autorepairshop.authentication.domain.aggregate.CustomerInvite
 import br.com.autorepairshop.authentication.domain.event.CustomerInviteIssued
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
@@ -17,7 +17,7 @@ import kotlin.time.toJavaInstant
 
 @Service
 class IssueCustomerInviteUseCase(
-    private val customers: CustomerDirectory,
+    private val customers: CustomerAntiLayer,
     private val users: UserRepository,
     private val invites: CustomerInviteRepository,
     private val events: EventPublisher,

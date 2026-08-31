@@ -1,4 +1,4 @@
-package br.com.autorepairshop.authentication.application.directory
+package br.com.autorepairshop.authentication.application.antilayer
 
 import java.util.UUID
 
