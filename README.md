@@ -187,28 +187,57 @@ Detekt uses Kotlin conventions + ktlint + type resolution on `main`. HTML report
 
 `check` includes `detektMain` and fails on findings. `--auto-correct` applies ktlint fixes.
 
-Gradle copies `hooks/pre-commit` into `.git/hooks` on compile/Detekt. Each `git commit` runs Detekt; findings block the commit.
-
 ## CI
 
-On pull request (and `workflow_dispatch`), [`.github/workflows/unit-tests.yml`](.github/workflows/unit-tests.yml) runs unit tests with Kover, uploads the HTML coverage artifact, and posts a single coverage comment on the PR (the previous coverage comment is replaced).
+On pull request (and `workflow_dispatch`), [`.github/workflows/pull-request-checks.yml`](.github/workflows/pull-request-checks.yml) compiles, runs Detekt, runs tests with Kover, uploads the HTML coverage artifact, and posts a single coverage comment on the PR (the previous coverage comment is replaced). [`.github/workflows/sonar.yml`](.github/workflows/sonar.yml) analyzes `main` on SonarQube Cloud.
+
+### GitHub Actions variables and secrets
+
+Create these under the repository **Settings → Secrets and variables → Actions**. Workflows read `${{ vars.* }}` and `${{ secrets.* }}` — they do not use the Docker `.env`.
+
+| Name | Kind | Value | Required |
+|---|---|-----|---|
+| `JAVA_VERSION` | Variable | `17` | Yes. Used by [`.github/actions/setup`](.github/actions/setup). |
+| `GRADLE_VERSION` | Variable | `9.5.1` | Yes. Matches the Gradle Wrapper. |
+| `SONAR_TOKEN` | Secret | *** | Yes for the Sonar job. A 403 usually means the token is missing, wrong, or lacks Execute Analysis. |
+
+Do **not** create `GITHUB_TOKEN`: GitHub injects it automatically (PR coverage comment, checkout, Sonar decoration).
+
+Do **not** create `JWT_SECRET` or `DATABASE_PASSWORD` on GitHub. Test jobs hardcode `ci-test-jwt-secret-key-of-32-bytes-min` and `postgres` (Testcontainers, not the Compose database). `DATABASE_URL`, `MAIL_*`, and `INVITE_BASE_URL` are unused in Actions.
 
 ## Configuration
 
-Values in [`src/main/resources/application.properties`](src/main/resources/application.properties) are read from the environment. Copy [`.env.example`](.env.example) and export the variables (or set them in the shell) before a shared or production deploy.
+The [Dockerfile](Dockerfile) does not set `ENV`. The API reads only [`src/main/resources/application.properties`](src/main/resources/application.properties); Compose injects those keys at runtime. Copy [`.env.example`](.env.example) to `.env` (Compose reads it automatically) or export the variables before a shared or production deploy.
 
-| Property | Environment variable | Local default | Notes |
-|---|---|---|---|
-| `spring.datasource.url` | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/autorepairshop` | In Compose the API uses `jdbc:postgresql://postgres:5432/autorepairshop` |
-| `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Local only |
-| `spring.datasource.password` | `DATABASE_PASSWORD` | `postgres` | Override outside local Docker |
-| `app.security.jwt.secret` | `JWT_SECRET` | placeholder | Must be **at least 32 bytes** outside local dev |
-| `app.security.jwt.ttl-seconds` | `JWT_TTL_SECONDS` | `900` | Access token lifetime |
-| `app.security.refresh.ttl-seconds` | `REFRESH_TTL_SECONDS` | `1209600` | Refresh session lifetime (14 days) |
-| `spring.mail.host` | `MAIL_HOST` | `localhost` | Mailpit in Compose (`mailpit`) |
-| `spring.mail.port` | `MAIL_PORT` | `1025` | SMTP port |
-| `app.mail.from` | `MAIL_FROM` | `oficina@localhost` | Sender address |
-| `app.mail.invite-base-url` | `INVITE_BASE_URL` | `http://localhost:8080/invite` | Prefix of the invite link (`/{token}` when the base has no `?`) |
+| Property | Environment variable | Local default | In Compose `api`? | Notes |
+|---|---|---|---|---|
+| `spring.datasource.url` | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/autorepairshop` | Yes (fixed) | Host must be the `postgres` service inside Docker, not `localhost`. |
+| `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Yes | Must match Postgres. |
+| `spring.datasource.password` | `DATABASE_PASSWORD` | `postgres` | Yes | Must match Postgres. Override outside local Docker. |
+| `app.security.jwt.secret` | `JWT_SECRET` | placeholder (≥ 32 bytes) | Yes | Required in production; the default is only for local dev. |
+| `app.security.jwt.ttl-seconds` | `JWT_TTL_SECONDS` | `900` | Yes | Access token lifetime (15 min). |
+| `app.security.refresh.ttl-seconds` | `REFRESH_TTL_SECONDS` | `1209600` | Yes | Refresh session lifetime (14 days). |
+| `spring.mail.host` | `MAIL_HOST` | `localhost` | Yes (fixed `mailpit`) | Mailpit service name inside Compose. |
+| `spring.mail.port` | `MAIL_PORT` | `1025` | Yes (fixed) | Mailpit SMTP. |
+| `spring.mail.username` | `MAIL_USERNAME` | empty | No | Only for authenticated SMTP (Gmail, SES, …). Omit with Mailpit. |
+| `spring.mail.password` | `MAIL_PASSWORD` | empty | No | Same as `MAIL_USERNAME`. |
+| `app.mail.from` | `MAIL_FROM` | `oficina@localhost` | Yes | Sender address. |
+| `app.mail.invite-base-url` | `INVITE_BASE_URL` | `http://localhost:8080/invite` | Yes | Prefix of the invite link (`/{token}` when the base has no `?`). |
+
+Postgres in Compose also gets `POSTGRES_DB=autorepairshop`, `POSTGRES_USER` from `DATABASE_USERNAME`, and `POSTGRES_PASSWORD` from `DATABASE_PASSWORD`.
+
+`spring.mail.properties.mail.smtp.auth` is `false`. Authenticated SMTP needs `MAIL_USERNAME` / `MAIL_PASSWORD` **and** auth/STARTTLS enabled in properties, not only Compose env.
+
+### Example values
+
+HS256 needs **at least 32 bytes** (32 ASCII characters). Local Docker can use the [`.env.example`](.env.example) defaults:
+
+```
+DATABASE_PASSWORD=postgres
+JWT_SECRET=change-me-to-a-32-byte-or-longer-secret-key
+```
+
+Generate a production secret (`openssl rand -base64 48`). Use the same `JWT_SECRET` on every API instance; changing it invalidates existing tokens.
 
 Tests use `src/test/resources/application.properties` (a dedicated JWT secret). Do not commit real secrets; `.env` and `application-local.properties` are gitignored.
 

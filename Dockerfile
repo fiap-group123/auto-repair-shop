@@ -4,7 +4,6 @@ WORKDIR /workspace
 COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY gradle gradle
 COPY config config
-COPY hooks hooks
 RUN chmod +x gradlew
 
 COPY src/main src/main
