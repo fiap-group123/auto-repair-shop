@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.usecase.vehicle
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.customer.application.dto.vehicle.VehicleResponse
 import br.com.autorepairshop.customer.application.dto.vehicle.toResponse
 import br.com.autorepairshop.customer.domain.exception.VehicleException
@@ -11,12 +12,16 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class FindVehicleUseCase(private val vehicles: VehicleRepository) : UseCase<UUID, VehicleResponse> {
+class FindVehicleUseCase(
+    private val vehicles: VehicleRepository,
+    private val access: AccessGuard,
+) : UseCase<UUID, VehicleResponse> {
 
     @Transactional(readOnly = true)
     override fun execute(input: UUID): VehicleResponse {
         val vehicle = vehicles.findById(id = VehicleId(value = input))
             ?: throw VehicleException.VehicleNotFound(message = "Vehicle $input was not found.")
+        access.requireCustomer(customerId = vehicle.ownerId.value)
         return vehicle.toResponse()
     }
 }

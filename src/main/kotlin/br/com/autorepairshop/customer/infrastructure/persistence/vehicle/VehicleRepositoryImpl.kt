@@ -32,9 +32,10 @@ class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepo
         plate = plate.value,
         brand = brand,
         model = model,
+        color = color,
         year = year.value,
         active = active,
-        registeredAt = registeredAt.toJavaInstant(),
+        createdAt = createdAt.toJavaInstant(),
     )
 
     private fun VehicleEntity.toDomain() = Vehicle.rehydrate(
@@ -43,8 +44,9 @@ class VehicleRepositoryImpl(private val jpa: VehicleJpaRepository) : VehicleRepo
         plate = LicensePlate.of(raw = plate),
         brand = brand,
         model = model,
+        color = color,
         year = ModelYear.of(year = year),
         active = active,
-        registeredAt = registeredAt.toKotlinInstant(),
+        createdAt = createdAt.toKotlinInstant(),
     )
 }

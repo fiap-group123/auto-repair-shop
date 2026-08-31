@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.dto.customer
 
+import java.time.Instant
 import java.util.UUID
 
 data class CustomerResponse(
@@ -10,4 +11,5 @@ data class CustomerResponse(
     val email: String,
     val phone: String,
     val active: Boolean,
+    val createdAt: Instant,
 )

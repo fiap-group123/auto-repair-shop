@@ -2,21 +2,106 @@
 
 Backend API for an auto repair shop MVP (FIAP Tech Challenge — Phase 1).
 
-Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API covers workshop users (JWT auth), customers (CPF/CNPJ), and vehicles (Brazilian plates, ownership transfer).
+Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API covers workshop users (JWT auth), customers (CPF/CNPJ), vehicles (Brazilian plates), service orders, and the services attached to each order.
 
 ## Contents
 
+- [Documentation](#documentation)
+- [Error mapping](#error-mapping)
 - [Tech stack](#tech-stack)
-- [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Getting started](#getting-started)
-- [API](#api)
-- [Endpoints](#endpoints)
 - [Testing](#testing)
 - [Code quality](#code-quality)
 - [CI](#ci)
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, bounded contexts, request flow, integration |
+| [docs/ENDPOINTS.md](docs/ENDPOINTS.md) | All routes, roles, request/response bodies |
+| [docs/adr/001-postgresql.md](docs/adr/001-postgresql.md) | Why PostgreSQL |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+| Auth requests | [`http/auth.http`](http/auth.http) |
+| Customer / vehicle requests | [`http/customer.http`](http/customer.http) |
+| Service order / catalog requests | [`http/service-order.http`](http/service-order.http) |
+
+Authorize Swagger or `.http` files with `Authorization: Bearer <accessToken>` after login. Run [`http/auth.http`](http/auth.http) in order to persist tokens for the rest.
+
+## Error mapping
+
+Errors use RFC 7807 (`application/problem+json`). `detail` is the domain message.
+
+```json
+{
+  "type": "about:blank",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "detail": "Customer 529.***.***-25 is inactive."
+}
+```
+
+Anything that extends `DomainException` and is not listed below falls through to `ApiExceptionHandler` as `422`.
+
+| Status | Meaning |
+|---|---|
+| `400` | Malformed JSON (`HttpMessageNotReadableException`) |
+| `401` | Missing/invalid JWT, bad credentials, invalid or reused refresh |
+| `403` | Role not allowed, or `CLIENT` accessing another customer |
+| `404` | Resource not found |
+| `409` | Duplicate or conflicting state |
+| `410` | Invite expired or already used |
+| `422` | Domain validation (document, plate, status transition, inactive entity) |
+
+### Authentication
+
+| Exception | Status |
+|---|---|
+| `InvalidCredentials`, `Unauthenticated`, `InvalidRefresh`, `RefreshReuse` | `401` |
+| Spring `AuthenticationException`, `JwtException` | `401` |
+| `Forbidden`, Spring `AccessDeniedException` | `403` |
+| `UserNotFound`, `InviteNotFound`, `LinkedCustomerNotFound` | `404` |
+| `UserAlreadyExists`, `CustomerAlreadyHasUser` | `409` |
+| `InviteExpired`, `InviteConsumed` | `410` |
+| `UserInactive`, `UserAlreadyActive`, `InvalidEmail`, `InvalidPassword`, `InvalidRole`, `LinkedCustomerInactive` | `422` |
+
+Filter-chain auth (`SecurityProblemSupport`) also writes `401` / `403` as Problem JSON (no JWT, expired token, role mismatch).
+
+### Customer
+
+| Exception | Status |
+|---|---|
+| `CustomerNotFound` | `404` |
+| `CustomerAlreadyExists` | `409` |
+| `CustomerAlreadyActive`, `CustomerInactive`, `InvalidDocument`, `InvalidPersonName`, `InvalidPhoneNumber`, `InvalidEmailAddress` | `422` |
+
+### Vehicle
+
+| Exception | Status |
+|---|---|
+| `VehicleNotFound` | `404` |
+| `VehicleAlreadyExists`, `AlreadyOwnedByCustomer` | `409` |
+| `InvalidLicensePlate`, `InvalidModelYear`, `InvalidVehicleName`, `VehicleInactive`, `VehicleAlreadyActive` | `422` |
+
+### Service order
+
+| Exception | Status |
+|---|---|
+| `ServiceOrderNotFound` | `404` |
+| `OpenOrderAlreadyExists`, `VehicleNotOwnedByCustomer` | `409` |
+| `InvalidStatusTransition`, `EmptyBudget`, `InvalidDuration` | `422` |
+
+### Catalog
+
+| Exception | Status |
+|---|---|
+| `ServiceNotFound` | `404` |
+| `ServiceAlreadyExists` | `409` |
+| `InvalidServiceName`, `InvalidStatusTransition`, `InvalidDuration` | `422` |
 
 ## Tech stack
 
@@ -30,25 +115,7 @@ Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API
 | Tests | JUnit 5, MockK, Testcontainers, Kover (min. 98% line coverage on domain, application, persistence, and HTTP adapters) |
 | Quality | Detekt + ktlint, Git pre-commit hook |
 | Build | Gradle 9.5 (wrapper included) |
-
-## Architecture
-
-Two bounded contexts in a single deployable:
-
-- **Authentication** — users, roles, login, JWT issuance
-- **Customer** — customers and vehicles (aggregates, value objects, use cases)
-
-Each context follows `domain` → `application` → `infrastructure`. HTTP adapters, JWT security, and OpenAPI live under `api`.
-
-```
-src/main/kotlin/br/com/autorepairshop/
-├── api/                  # Controllers, security, exception handlers, OpenAPI
-├── authentication/       # Users, roles, login
-├── customer/             # Customers and vehicles
-└── shared/               # AggregateRoot, UseCase, domain events
-```
-
-Schema is owned by Flyway (`src/main/resources/db/migration/`): customers, vehicles, then users.
+| Runtime | Dockerfile + docker-compose (API and PostgreSQL) |
 
 ## Prerequisites
 
@@ -60,17 +127,20 @@ The Gradle Wrapper is in the repo (`gradlew` / `gradlew.bat`). You do not need a
 
 ## Getting started
 
-From the repository root:
+From the repository root, the full stack (API + PostgreSQL) is:
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
-This starts PostgreSQL on `localhost:5432` (database `autorepairshop`, user/password from `DATABASE_USERNAME` / `DATABASE_PASSWORD`, default `postgres`). Wait until the container is healthy (`docker compose ps`).
+This builds the `Dockerfile` and starts the API on `http://localhost:8080`, Postgres on `localhost:5432`, and Mailpit (SMTP UI) on `http://localhost:8025`. Wait until `api` is up (`docker compose ps`). Swagger: http://localhost:8080/swagger-ui.html
 
-Then start the API:
+Copy [`.env.example`](.env.example) to `.env` to override credentials and `JWT_SECRET`. Compose reads it automatically.
+
+### API only (Gradle on the host)
 
 ```bash
+docker compose up -d postgres
 ./gradlew bootRun
 ```
 
@@ -78,7 +148,7 @@ On Windows CMD/PowerShell use `gradlew.bat bootRun`. When you see `Tomcat starte
 
 ### IDE
 
-1. `docker compose up -d`
+1. `docker compose up -d postgres`
 2. Run `src/main/kotlin/br/com/autorepairshop/AutoRepairShopApplication.kt`
 
 Do not use `bootTestRun` unless Docker is running: that profile starts Postgres via Testcontainers and fails if the engine is down.
@@ -86,168 +156,10 @@ Do not use `bootTestRun` unless Docker is running: that profile starts Postgres 
 ### Stop
 
 ```bash
-# API: Ctrl+C in the bootRun terminal
-
 docker compose down
 ```
 
 `docker compose down -v` also drops the database volume (local data is lost).
-
-## API
-
-| Resource | URL |
-|---|---|
-| Swagger UI | http://localhost:8080/swagger-ui.html |
-| OpenAPI JSON | http://localhost:8080/v3/api-docs |
-| Auth requests | [`http/auth.http`](http/auth.http) |
-| Customer / vehicle requests | [`http/customer.http`](http/customer.http) |
-
-Authorize Swagger (or `.http` files) with `Authorization: Bearer <accessToken>` after login. Swagger UI, OpenAPI, and `/error` are public; everything else requires a JWT except user registration and login.
-
-### Auth
-
-1. Register the **first** user as `MANAGER` (`POST /auth/users`). Later staff and clients can be created with other roles.
-2. `POST /auth/login` returns `{ "accessToken", "tokenType": "Bearer" }`. Tokens last **1 hour** by default.
-3. A `CLIENT` user **must** include `customerId` (the shop customer already registered). Staff roles must **not**.
-
-Ready-made flow: run [`http/auth.http`](http/auth.http) in order. The first requests persist tokens and ids for the rest.
-
-### Roles
-
-| Role | Typical access |
-|---|---|
-| `MANAGER` | Full customer/vehicle management, including deactivate/reactivate |
-| `RECEPTIONIST` | Register and update customers and vehicles; cannot deactivate |
-| `MECHANIC` | Read customers (by document/id) and vehicles |
-| `CLIENT` | Read **their own** customer record and vehicles only |
-
-## Endpoints
-
-Base URL: `http://localhost:8080`. Send `Authorization: Bearer <accessToken>` unless the endpoint is public. A `CLIENT` may only read **their own** customer and vehicles.
-
-### Auth
-
-| Method | Path | Auth | Status | Description |
-|---|---|---|---|---|
-| `POST` | `/auth/users` | Public | `201` | Register a user. First user must be `MANAGER`. `CLIENT` requires `customerId`; staff must omit it. |
-| `POST` | `/auth/login` | Public | `200` | Issue a JWT (`accessToken`, `tokenType`). |
-
-**`POST /auth/users` body**
-
-```json
-{
-  "email": "gerente@oficina.com",
-  "password": "senha123",
-  "role": "MANAGER",
-  "customerId": null
-}
-```
-
-`role`: `MANAGER` \| `RECEPTIONIST` \| `MECHANIC` \| `CLIENT`. `customerId` is required only for `CLIENT`.
-
-**`POST /auth/login` body**
-
-```json
-{
-  "email": "gerente@oficina.com",
-  "password": "senha123"
-}
-```
-
-### Customers
-
-| Method | Path | Roles | Status | Description |
-|---|---|---|---|---|
-| `POST` | `/customers` | `RECEPTIONIST`, `MANAGER` | `201` | Register a customer (CPF or CNPJ). |
-| `GET` | `/customers` | `RECEPTIONIST`, `MANAGER` | `200` | List all customers. |
-| `GET` | `/customers/document/{document}` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find by CPF/CNPJ (formatted or digits only). |
-| `GET` | `/customers/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find by id. |
-| `PUT` | `/customers/{id}` | `RECEPTIONIST`, `MANAGER` | `200` | Update name and/or contact (`email`, `phone`). |
-| `DELETE` | `/customers/{id}` | `MANAGER` | `204` | Deactivate (soft delete; history is kept). |
-| `POST` | `/customers/{id}` | `MANAGER` | `204` | Reactivate a customer. |
-
-**`POST /customers` body**
-
-```json
-{
-  "documentId": "529.982.247-25",
-  "name": "Ana Souza",
-  "email": "ana.souza@email.com",
-  "phone": "11987654321"
-}
-```
-
-**`PUT /customers/{id}` body** (all fields optional)
-
-```json
-{
-  "name": "Ana Souza Silva",
-  "email": "ana.silva@email.com",
-  "phone": "11988887777"
-}
-```
-
-### Vehicles
-
-| Method | Path | Roles | Status | Description |
-|---|---|---|---|---|
-| `POST` | `/vehicles` | `RECEPTIONIST`, `MANAGER` | `201` | Register a vehicle for a customer. |
-| `GET` | `/vehicles/owner/{ownerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | List vehicles owned by the customer. |
-| `GET` | `/vehicles/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find vehicle by id. |
-| `GET` | `/vehicles?plate={plate}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Find vehicle by license plate. |
-| `PUT` | `/vehicles/{id}` | `RECEPTIONIST`, `MANAGER` | `200` | Update brand, model, and/or year. |
-| `PATCH` | `/vehicles/{id}/plate` | `RECEPTIONIST`, `MANAGER` | `200` | Change license plate. |
-| `PATCH` | `/vehicles/{id}/owner` | `RECEPTIONIST`, `MANAGER` | `200` | Transfer the vehicle to another customer. |
-
-**`POST /vehicles` body**
-
-```json
-{
-  "ownerId": "00000000-0000-0000-0000-000000000000",
-  "plate": "ABC1D23",
-  "brand": "Toyota",
-  "model": "Corolla",
-  "year": 2024
-}
-```
-
-`plate` accepts Mercosul (`ABC1D23`) or the old format (`ABC-1234`).
-
-**`PUT /vehicles/{id}` body** (all fields optional)
-
-```json
-{
-  "brand": "Toyota",
-  "model": "Corolla Cross",
-  "year": 2025
-}
-```
-
-**`PATCH /vehicles/{id}/plate` body**
-
-```json
-{
-  "plate": "XYZ1A23"
-}
-```
-
-**`PATCH /vehicles/{id}/owner` body**
-
-```json
-{
-  "newOwnerId": "00000000-0000-0000-0000-000000000000"
-}
-```
-
-### Docs and errors (public)
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/swagger-ui.html` | Swagger UI |
-| `GET` | `/v3/api-docs` | OpenAPI JSON |
-| `GET` | `/error` | Spring error fallback |
-
-Domain rules: valid Brazilian CPF/CNPJ, unique document and plate, no new vehicles on an inactive customer. Typical errors: `401` unauthenticated, `403` forbidden (including a `CLIENT` accessing another customer), `409` duplicate, `422` validation.
 
 ## Testing
 
@@ -275,23 +187,57 @@ Detekt uses Kotlin conventions + ktlint + type resolution on `main`. HTML report
 
 `check` includes `detektMain` and fails on findings. `--auto-correct` applies ktlint fixes.
 
-Gradle copies `hooks/pre-commit` into `.git/hooks` on compile/Detekt. Each `git commit` runs Detekt; findings block the commit.
-
 ## CI
 
-On pull request (and `workflow_dispatch`), [`.github/workflows/unit-tests.yml`](.github/workflows/unit-tests.yml) runs unit tests with Kover, uploads the HTML coverage artifact, and posts a single coverage comment on the PR (the previous coverage comment is replaced).
+On pull request (and `workflow_dispatch`), [`.github/workflows/pull-request-checks.yml`](.github/workflows/pull-request-checks.yml) compiles, runs Detekt, runs tests with Kover, uploads the HTML coverage artifact, and posts a single coverage comment on the PR (the previous coverage comment is replaced). [`.github/workflows/sonar.yml`](.github/workflows/sonar.yml) analyzes `main` on SonarQube Cloud.
+
+### GitHub Actions variables and secrets
+
+Create these under the repository **Settings → Secrets and variables → Actions**. Workflows read `${{ vars.* }}` and `${{ secrets.* }}` — they do not use the Docker `.env`.
+
+| Name | Kind | Value | Required |
+|---|---|-----|---|
+| `JAVA_VERSION` | Variable | `17` | Yes. Used by [`.github/actions/setup`](.github/actions/setup). |
+| `GRADLE_VERSION` | Variable | `9.5.1` | Yes. Matches the Gradle Wrapper. |
+| `SONAR_TOKEN` | Secret | *** | Yes for the Sonar job. A 403 usually means the token is missing, wrong, or lacks Execute Analysis. |
+
+Do **not** create `GITHUB_TOKEN`: GitHub injects it automatically (PR coverage comment, checkout, Sonar decoration).
+
+Do **not** create `JWT_SECRET` or `DATABASE_PASSWORD` on GitHub. Test jobs hardcode `ci-test-jwt-secret-key-of-32-bytes-min` and `postgres` (Testcontainers, not the Compose database). `DATABASE_URL`, `MAIL_*`, and `INVITE_BASE_URL` are unused in Actions.
 
 ## Configuration
 
-Values in [`src/main/resources/application.properties`](src/main/resources/application.properties) are read from the environment. Copy [`.env.example`](.env.example) and export the variables (or set them in the shell) before a shared or production deploy.
+The [Dockerfile](Dockerfile) does not set `ENV`. The API reads only [`src/main/resources/application.properties`](src/main/resources/application.properties); Compose injects those keys at runtime. Copy [`.env.example`](.env.example) to `.env` (Compose reads it automatically) or export the variables before a shared or production deploy.
 
-| Property | Environment variable | Local default | Notes |
-|---|---|---|---|
-| `spring.datasource.url` | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/autorepairshop` | Match `docker-compose.yml` |
-| `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Local only |
-| `spring.datasource.password` | `DATABASE_PASSWORD` | `postgres` | Override outside local Docker |
-| `app.security.jwt.secret` | `JWT_SECRET` | placeholder | Must be **at least 32 bytes** outside local dev |
-| `app.security.jwt.ttl-seconds` | `JWT_TTL_SECONDS` | `3600` | Access token lifetime |
+| Property | Environment variable | Local default | In Compose `api`? | Notes |
+|---|---|---|---|---|
+| `spring.datasource.url` | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/autorepairshop` | Yes (fixed) | Host must be the `postgres` service inside Docker, not `localhost`. |
+| `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Yes | Must match Postgres. |
+| `spring.datasource.password` | `DATABASE_PASSWORD` | `postgres` | Yes | Must match Postgres. Override outside local Docker. |
+| `app.security.jwt.secret` | `JWT_SECRET` | placeholder (≥ 32 bytes) | Yes | Required in production; the default is only for local dev. |
+| `app.security.jwt.ttl-seconds` | `JWT_TTL_SECONDS` | `900` | Yes | Access token lifetime (15 min). |
+| `app.security.refresh.ttl-seconds` | `REFRESH_TTL_SECONDS` | `1209600` | Yes | Refresh session lifetime (14 days). |
+| `spring.mail.host` | `MAIL_HOST` | `localhost` | Yes (fixed `mailpit`) | Mailpit service name inside Compose. |
+| `spring.mail.port` | `MAIL_PORT` | `1025` | Yes (fixed) | Mailpit SMTP. |
+| `spring.mail.username` | `MAIL_USERNAME` | empty | No | Only for authenticated SMTP (Gmail, SES, …). Omit with Mailpit. |
+| `spring.mail.password` | `MAIL_PASSWORD` | empty | No | Same as `MAIL_USERNAME`. |
+| `app.mail.from` | `MAIL_FROM` | `oficina@localhost` | Yes | Sender address. |
+| `app.mail.invite-base-url` | `INVITE_BASE_URL` | `http://localhost:8080/invite` | Yes | Prefix of the invite link (`/{token}` when the base has no `?`). Default hits public `GET /invite/{token}`. |
+
+Postgres in Compose also gets `POSTGRES_DB=autorepairshop`, `POSTGRES_USER` from `DATABASE_USERNAME`, and `POSTGRES_PASSWORD` from `DATABASE_PASSWORD`.
+
+`spring.mail.properties.mail.smtp.auth` is `false`. Authenticated SMTP needs `MAIL_USERNAME` / `MAIL_PASSWORD` **and** auth/STARTTLS enabled in properties, not only Compose env.
+
+### Example values
+
+HS256 needs **at least 32 bytes** (32 ASCII characters). Local Docker can use the [`.env.example`](.env.example) defaults:
+
+```
+DATABASE_PASSWORD=postgres
+JWT_SECRET=change-me-to-a-32-byte-or-longer-secret-key
+```
+
+Generate a production secret (`openssl rand -base64 48`). Use the same `JWT_SECRET` on every API instance; changing it invalidates existing tokens.
 
 Tests use `src/test/resources/application.properties` (a dedicated JWT secret). Do not commit real secrets; `.env` and `application-local.properties` are gitignored.
 
@@ -304,10 +250,10 @@ Start Docker Desktop and wait until it is healthy, then run `docker compose up -
 Another Postgres or API is bound to that port. Stop it, or change the port in `docker-compose.yml` / `application.properties`.
 
 **Flyway / connection refused**  
-Compose is not ready yet. Run `docker compose ps` and only then `bootRun`.
+Postgres is not ready yet. Run `docker compose ps` and wait until it is healthy. If you started only the database, run `bootRun` after that.
 
 **401 on customer/vehicle requests**  
-Login first (`POST /auth/login`) and send `Authorization: Bearer <accessToken>`. Staff vs client permissions are listed under [Roles](#roles).
+Login first (`POST /auth/login`) and send `Authorization: Bearer <accessToken>`. Roles and routes: [docs/ENDPOINTS.md](docs/ENDPOINTS.md).
 
 **422 on first user registration**  
 The empty database only accepts a `MANAGER` as the first user.

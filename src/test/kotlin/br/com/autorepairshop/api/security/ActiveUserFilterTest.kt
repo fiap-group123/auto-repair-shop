@@ -1,7 +1,10 @@
 package br.com.autorepairshop.api.security
 
+import br.com.autorepairshop.authentication.AuthFixtures
+import br.com.autorepairshop.authentication.application.security.Actor
 import br.com.autorepairshop.authentication.application.usecase.RequireActiveUserUseCase
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
+import br.com.autorepairshop.authentication.domain.valueobject.Role
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -17,6 +20,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
 import java.util.UUID
+import kotlin.test.assertEquals
 
 @Tag("unit")
 class ActiveUserFilterTest {
@@ -85,7 +89,8 @@ class ActiveUserFilterTest {
     fun `lets an active user through`() {
         val userId = UUID.randomUUID()
         authenticate(subject = userId.toString())
-        every { requireActiveUser.execute(input = userId) } returns Unit
+        val user = AuthFixtures.manager()
+        every { requireActiveUser.execute(input = userId) } returns user
         every { filterChain.doFilter(any(), any()) } just Runs
 
         filter.doFilter(
@@ -94,6 +99,11 @@ class ActiveUserFilterTest {
             filterChain,
         )
 
+        val actor = SecurityContextHolder.getContext().authentication?.details as Actor
+        assertEquals(
+            expected = Role.MANAGER,
+            actual = actor.role,
+        )
         verify { requireActiveUser.execute(input = userId) }
         verify { filterChain.doFilter(any(), any()) }
     }

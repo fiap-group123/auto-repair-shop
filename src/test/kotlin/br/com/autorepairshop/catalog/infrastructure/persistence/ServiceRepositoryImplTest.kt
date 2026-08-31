@@ -4,6 +4,7 @@ import br.com.autorepairshop.catalog.CatalogFixtures
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.util.Optional
@@ -61,6 +62,10 @@ class ServiceRepositoryImplTest {
             actual = repo.findByServiceOrderIds(serviceOrderIds = listOf(element = service.serviceOrderId)).single().id,
         )
         assertTrue(repo.existsByServiceOrderId(serviceOrderId = service.serviceOrderId))
+
+        every { jpa.deleteById(service.id.value) } returns Unit
+        repo.delete(service = service)
+        verify { jpa.deleteById(service.id.value) }
     }
 
     @Test

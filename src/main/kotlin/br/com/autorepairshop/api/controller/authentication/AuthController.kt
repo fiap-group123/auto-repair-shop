@@ -1,12 +1,16 @@
 package br.com.autorepairshop.api.controller.authentication
 
 import br.com.autorepairshop.api.dto.authentication.LoginRequest
+import br.com.autorepairshop.api.dto.authentication.RefreshTokenRequest
 import br.com.autorepairshop.api.dto.authentication.RegisterUserRequest
 import br.com.autorepairshop.authentication.application.dto.LoginCommand
+import br.com.autorepairshop.authentication.application.dto.RefreshTokenCommand
 import br.com.autorepairshop.authentication.application.dto.RegisterUserCommand
 import br.com.autorepairshop.authentication.application.dto.TokenResponse
 import br.com.autorepairshop.authentication.application.dto.UserResponse
 import br.com.autorepairshop.authentication.application.usecase.LoginUseCase
+import br.com.autorepairshop.authentication.application.usecase.LogoutUseCase
+import br.com.autorepairshop.authentication.application.usecase.RefreshTokenUseCase
 import br.com.autorepairshop.authentication.application.usecase.RegisterUserUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirements
@@ -20,10 +24,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "Auth", description = "Login and user registration (bounded context Authentication)")
+@Tag(name = "Auth", description = "Login and staff registration (bounded context Authentication)")
 class AuthController(
     private val login: LoginUseCase,
     private val registerUser: RegisterUserUseCase,
+    private val refreshToken: RefreshTokenUseCase,
+    private val logout: LogoutUseCase,
 ) {
 
     @PostMapping("/login")
@@ -38,9 +44,25 @@ class AuthController(
         ),
     )
 
-    @PostMapping("/users")
+    @PostMapping("/refresh")
     @SecurityRequirements
-    @Operation(summary = "Register user (first user must be MANAGER)")
+    @Operation(summary = "Rotate refresh token and issue a new access JWT")
+    fun refresh(@RequestBody request: RefreshTokenRequest): ResponseEntity<TokenResponse> = ResponseEntity.ok(
+        refreshToken.execute(input = RefreshTokenCommand(refreshToken = request.refreshToken)),
+    )
+
+    @PostMapping("/logout")
+    @SecurityRequirements
+    @Operation(summary = "Revoke a refresh session")
+    fun logout(@RequestBody request: RefreshTokenRequest): ResponseEntity<Void> {
+        logout.execute(input = RefreshTokenCommand(refreshToken = request.refreshToken))
+        return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/users")
+    @Operation(
+        summary = "Register staff (public only when the database is empty; afterwards MANAGER JWT required)",
+    )
     fun register(@RequestBody request: RegisterUserRequest): ResponseEntity<UserResponse> {
         val created = registerUser.execute(
             input = RegisterUserCommand(

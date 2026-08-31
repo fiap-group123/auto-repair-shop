@@ -24,10 +24,10 @@ class ServiceEntity(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     var status: ServiceStatusColumn,
-    @Column(name = "registered_at", nullable = false)
-    val registeredAt: Instant,
-    @Column(name = "opened_at")
-    var openedAt: Instant?,
+    @Column(name = "created_at", nullable = false)
+    val createdAt: Instant,
+    @Column(name = "started_at")
+    var startedAt: Instant?,
     @Column(name = "finished_at")
     var finishedAt: Instant?,
     @Column(name = "estimated_time_seconds")

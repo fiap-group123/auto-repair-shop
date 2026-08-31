@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.dto.vehicle
 
+import java.time.Instant
 import java.util.UUID
 
 data class VehicleResponse(
@@ -10,4 +11,7 @@ data class VehicleResponse(
     val brand: String,
     val model: String,
     val year: Int,
+    val color: String,
+    val active: Boolean,
+    val createdAt: Instant,
 )

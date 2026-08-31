@@ -4,6 +4,7 @@ import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
+import br.com.autorepairshop.shared.application.event.EventPublisher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,8 +17,10 @@ import kotlin.test.assertTrue
 @Tag("unit")
 class ReactivateCustomerUseCaseTest {
     private val customers = mockk<CustomerRepository>()
+    private val events = mockk<EventPublisher>(relaxUnitFun = true)
     private val useCase = ReactivateCustomerUseCase(
         customers = customers,
+        events = events,
     )
 
     @Test

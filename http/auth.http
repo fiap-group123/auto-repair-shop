@@ -21,11 +21,23 @@ Content-Type: application/json
   "password": "senha123"
 }
 
-> {% client.global.set("managerToken", response.body.accessToken); %}
+> {% client.global.set("managerToken", response.body.accessToken); client.global.set("managerRefresh", response.body.refreshToken); %}
 
 ###
-# Cadastro — recepcionista
+# Renovar access token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{managerRefresh}}"
+}
+
+> {% client.global.set("managerToken", response.body.accessToken); client.global.set("managerRefresh", response.body.refreshToken); %}
+
+###
+# Cadastro — recepcionista (somente MANAGER autenticado)
 POST {{baseUrl}}/auth/users
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -37,6 +49,7 @@ Content-Type: application/json
 ###
 # Cadastro — mecânico
 POST {{baseUrl}}/auth/users
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -61,15 +74,22 @@ Content-Type: application/json
 > {% client.global.set("customerId", response.body.id); %}
 
 ###
-# Cadastro — cliente (CLIENT precisa de customerId)
-POST {{baseUrl}}/auth/users
+# Reenviar convite de login
+POST {{baseUrl}}/invite/customer/{{customerId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# Preview do convite (token chega no e-mail / Mailpit em http://localhost:8025)
+GET {{baseUrl}}/invite/{{inviteToken}}
+
+###
+# Cliente cria e-mail de login e senha a partir do convite
+POST {{baseUrl}}/invite/{{inviteToken}}
 Content-Type: application/json
 
 {
   "email": "ana.souza@email.com",
-  "password": "senha123",
-  "role": "CLIENT",
-  "customerId": "{{customerId}}"
+  "password": "senha123"
 }
 
 ###
@@ -162,7 +182,7 @@ Content-Type: application/json
 }
 
 ###
-# CLIENT sem customerId — espera 422
+# CLIENT pelo POST /auth/users — espera 422 (so via convite)
 POST {{baseUrl}}/auth/users
 Content-Type: application/json
 

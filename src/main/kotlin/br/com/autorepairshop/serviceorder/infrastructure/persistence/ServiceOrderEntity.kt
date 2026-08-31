@@ -24,10 +24,12 @@ class ServiceOrderEntity(
     var status: ServiceOrderStatusColumn,
     @Column(nullable = false, precision = 10, scale = 2)
     var total: BigDecimal,
-    @Column(name = "registered_at", nullable = false)
-    val registeredAt: Instant,
-    @Column(name = "opened_at")
-    var openedAt: Instant?,
+    @Column(name = "created_at", nullable = false)
+    val createdAt: Instant,
+    @Column(name = "started_at")
+    var startedAt: Instant?,
     @Column(name = "finished_at")
     var finishedAt: Instant?,
+    @Column(name = "estimated_time_seconds")
+    var estimatedTimeSeconds: Long?,
 )

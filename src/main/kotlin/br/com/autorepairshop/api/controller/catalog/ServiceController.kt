@@ -2,18 +2,24 @@ package br.com.autorepairshop.api.controller.catalog
 
 import br.com.autorepairshop.api.dto.catalog.RegisterServiceRequest
 import br.com.autorepairshop.api.dto.catalog.UpdateServiceRequest
+import br.com.autorepairshop.catalog.application.dto.AverageExecutionTimeResponse
 import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
 import br.com.autorepairshop.catalog.application.dto.ServiceResponse
 import br.com.autorepairshop.catalog.application.dto.UpdateServiceCommand
+import br.com.autorepairshop.catalog.application.usecase.AverageExecutionTimeUseCase
+import br.com.autorepairshop.catalog.application.usecase.DeleteServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.FindServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.FinishServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.InProgressServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.ListServicesByCustomerIdUseCase
+import br.com.autorepairshop.catalog.application.usecase.ListServicesByServiceOrderIdUseCase
 import br.com.autorepairshop.catalog.application.usecase.ListServicesUseCase
 import br.com.autorepairshop.catalog.application.usecase.RegisterServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.UpdateServiceUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -30,10 +36,14 @@ import java.util.UUID
 class ServiceController(
     private val registerService: RegisterServiceUseCase,
     private val updateService: UpdateServiceUseCase,
+    private val deleteService: DeleteServiceUseCase,
     private val inProgressService: InProgressServiceUseCase,
     private val finishService: FinishServiceUseCase,
     private val findService: FindServiceUseCase,
     private val listServices: ListServicesUseCase,
+    private val listServicesByCustomerId: ListServicesByCustomerIdUseCase,
+    private val listServicesByServiceOrderId: ListServicesByServiceOrderIdUseCase,
+    private val averageExecutionTimeUseCase: AverageExecutionTimeUseCase,
 ) {
 
     @PostMapping
@@ -57,10 +67,32 @@ class ServiceController(
     @Operation(summary = "List services")
     fun list(): ResponseEntity<List<ServiceResponse>> = ResponseEntity.ok(listServices.execute(input = Unit))
 
+    @GetMapping("/customer/{customerId}")
+    @Operation(summary = "List services linked to a customer")
+    fun listByCustomerId(@PathVariable customerId: UUID): ResponseEntity<List<ServiceResponse>> =
+        ResponseEntity.ok(listServicesByCustomerId.execute(input = customerId))
+
+    @GetMapping("/service-order/{serviceOrderId}")
+    @Operation(summary = "List services of a service order")
+    fun listByServiceOrderId(@PathVariable serviceOrderId: UUID): ResponseEntity<List<ServiceResponse>> =
+        ResponseEntity.ok(listServicesByServiceOrderId.execute(input = serviceOrderId))
+
+    @GetMapping("/average-execution-time")
+    @Operation(summary = "Average execution time of finished services")
+    fun averageExecutionTime(): ResponseEntity<AverageExecutionTimeResponse> =
+        ResponseEntity.ok(averageExecutionTimeUseCase.execute(input = Unit))
+
     @GetMapping("/{id}")
     @Operation(summary = "Search for an offered service by id")
     fun findById(@PathVariable id: UUID): ResponseEntity<ServiceResponse> =
         ResponseEntity.ok(findService.execute(input = id))
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Remove a waiting service from the order")
+    fun delete(@PathVariable id: UUID): ResponseEntity<Void> {
+        deleteService.execute(input = id)
+        return ResponseEntity.noContent().build()
+    }
 
     @PostMapping("/{id}/in-progress")
     @Operation(summary = "Start executing the service")

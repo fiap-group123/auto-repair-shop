@@ -2,6 +2,7 @@ package br.com.autorepairshop.serviceorder.application.event
 
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
+import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import br.com.autorepairshop.serviceorder.application.usecase.RecalculateBudgetTotalUseCase
 import io.mockk.every
@@ -18,7 +19,7 @@ class ServiceOrderEventListenerTest {
     private val listener = ServiceOrderEventListener(recalculateBudgetTotal = recalculateBudgetTotal)
 
     @Test
-    fun `forwards service registered and price changed to the use case`() {
+    fun `forwards catalog events to the use case`() {
         val serviceOrderId = UUID.randomUUID()
         every { recalculateBudgetTotal.execute(input = serviceOrderId) } returns Unit
 
@@ -36,7 +37,14 @@ class ServiceOrderEventListenerTest {
                 occurredOn = Instant.now(),
             ),
         )
+        listener.on(
+            event = ServiceRemoved(
+                serviceId = ServiceId.generate(),
+                serviceOrderId = serviceOrderId,
+                occurredOn = Instant.now(),
+            ),
+        )
 
-        verify(exactly = 2) { recalculateBudgetTotal.execute(input = serviceOrderId) }
+        verify(exactly = 3) { recalculateBudgetTotal.execute(input = serviceOrderId) }
     }
 }

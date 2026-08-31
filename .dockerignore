@@ -1,0 +1,14 @@
+.git
+.github
+.gradle
+.idea
+.kotlin
+.vscode
+build
+out
+bin
+http
+*.md
+.env
+application-local.properties
+src/test

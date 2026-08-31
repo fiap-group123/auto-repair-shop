@@ -12,7 +12,10 @@ Content-Type: application/json
   "phone": "11987654321"
 }
 
-> {% client.global.set("customerId", response.body.id); %}
+> {%
+client.global.set("customerId", response.body.id);
+client.global.set("document", response.body.document);
+%}
 
 ###
 # Cadastro — cliente B (para transferência de veículo)
@@ -69,10 +72,14 @@ Content-Type: application/json
   "plate": "ABC1D23",
   "brand": "Toyota",
   "model": "Corolla",
-  "year": 2024
+  "year": 2024,
+  "color": "Prata"
 }
 
-> {% client.global.set("vehicleId", response.body.id); %}
+> {%
+client.global.set("vehicleId", response.body.id);
+client.global.set("vehiclePlate", response.body.plate);
+%}
 
 ###
 # Cadastrar segundo veículo (placa antiga)
@@ -84,7 +91,8 @@ Content-Type: application/json
   "plate": "ABC-1234",
   "brand": "Honda",
   "model": "Civic",
-  "year": 2018
+  "year": 2018,
+  "color": "Preto"
 }
 
 ###

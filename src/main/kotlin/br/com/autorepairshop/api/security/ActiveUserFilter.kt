@@ -1,13 +1,16 @@
 package br.com.autorepairshop.api.security
 
+import br.com.autorepairshop.authentication.application.security.Actor
 import br.com.autorepairshop.authentication.application.usecase.RequireActiveUserUseCase
 import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.authentication.DisabledException
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.web.filter.OncePerRequestFilter
 import java.util.UUID
 
@@ -32,7 +35,18 @@ class ActiveUserFilter(
             return
         }
         try {
-            requireActiveUser.execute(input = userId)
+            val user = requireActiveUser.execute(input = userId)
+            val actor = Actor(
+                userId = user.id.value,
+                role = user.role,
+                customerId = user.customerId,
+            )
+            val authentication = JwtAuthenticationToken(
+                jwt,
+                listOf(element = SimpleGrantedAuthority("ROLE_${user.role.name}")),
+            )
+            authentication.details = actor
+            SecurityContextHolder.getContext().authentication = authentication
         } catch (ex: AuthenticationException) {
             reject(
                 request = request,

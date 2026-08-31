@@ -59,4 +59,18 @@ class UserTest {
             actual = client.role,
         )
     }
+
+    @Test
+    fun `deactivate and reactivate follow customer invariants`() {
+        val user = AuthFixtures.manager()
+        user.deactivate()
+        assertFailsWith<AuthenticationException.UserInactive> {
+            user.deactivate()
+        }
+        user.reactivate()
+        assertTrue(user.active)
+        assertFailsWith<AuthenticationException.UserAlreadyActive> {
+            user.reactivate()
+        }
+    }
 }

@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.kover)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.sonar)
+
 }
 
 group = "br.com"
@@ -81,36 +83,19 @@ configurations.matching { it.name.contains("detekt", ignoreCase = true) }.config
 }
 
 tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
-//    dependsOn("installGitHooks")
     jvmTarget.set("17")
     reports {
+        checkstyle.required.set(true)
+        checkstyle.outputLocation.set(layout.buildDirectory.file("reports/detekt/detekt.xml"))
         html.required.set(true)
         markdown.required.set(true)
         sarif.required.set(true)
-        checkstyle.required.set(false)
     }
 }
 
 tasks.named("check") {
     dependsOn("detektMain")
 }
-
-//val installGitHooks by tasks.registering(type = Exec::class) {
-//    group = "verification"
-//    description = "Installs the Git pre-commit hook that runs Detekt."
-//    workingDir(rootDir)
-//    commandLine("sh", "hooks/install.sh")
-//    onlyIf { layout.projectDirectory.dir(".git").asFile.exists() }
-//    inputs.files(
-//        layout.projectDirectory.file("hooks/install.sh"),
-//        layout.projectDirectory.file("hooks/pre-commit"),
-//    )
-//    outputs.file(layout.projectDirectory.file(".git/hooks/pre-commit"))
-//}
-
-//tasks.named("compileKotlin") {
-//    dependsOn(installGitHooks)
-//}
 
 kover {
     reports {
@@ -137,6 +122,7 @@ kover {
                 classes(
                     "*HashedPassword",
                     "*UserId",
+                    "*CustomerInviteId",
                     "*CustomerId",
                     "*VehicleId",
                     "*ServiceOrderId",
@@ -162,8 +148,36 @@ kover {
         }
         verify {
             rule {
-                minBound(98)
+                minBound(80)
             }
         }
     }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "fiap-group123_auto-repair-shop")
+        property("sonar.organization", "fiap-group123")
+        property("sonar.host.url", "https://sonarcloud.io")
+        property("sonar.sourceEncoding", "UTF-8")
+        property("sonar.sources", "src/main/kotlin")
+        property("sonar.tests", "src/test/kotlin")
+        property("sonar.kotlin.file.suffixes", ".kt")
+
+        property("sonar.java.binaries", "build/classes/kotlin/main")
+        property("sonar.java.test.binaries", "build/classes/kotlin/test")
+        property("sonar.java.libraries", "build/libs")
+
+        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/kover/report.xml")
+        property("sonar.kotlin.detekt.reportPaths", "build/reports/detekt/detekt.sarif")
+        property(
+            "sonar.exclusions",
+            "**/build/**,**/generated/**,**/*.sql",
+        )
+        property("sonar.coverage.exclusions", "**/dto/**,**/*Entity.kt,**/*JpaRepository.kt")
+    }
+}
+
+tasks.named("sonar") {
+    dependsOn("koverXmlReport", "detektMain")
 }

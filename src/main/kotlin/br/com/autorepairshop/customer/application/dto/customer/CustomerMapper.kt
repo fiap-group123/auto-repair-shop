@@ -1,6 +1,7 @@
 package br.com.autorepairshop.customer.application.dto.customer
 
 import br.com.autorepairshop.customer.domain.aggregate.Customer
+import kotlin.time.toJavaInstant
 
 fun Customer.toResponse() = CustomerResponse(
     id = id.value,
@@ -10,4 +11,5 @@ fun Customer.toResponse() = CustomerResponse(
     email = contact.email.value,
     phone = contact.phone.value,
     active = active,
+    createdAt = createdAt.toJavaInstant(),
 )

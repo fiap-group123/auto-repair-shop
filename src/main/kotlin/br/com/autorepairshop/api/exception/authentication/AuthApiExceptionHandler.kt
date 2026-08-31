@@ -20,10 +20,18 @@ class AuthApiExceptionHandler {
     fun handleAuth(ex: AuthenticationException): ProblemDetail = when (ex) {
         is AuthenticationException.InvalidCredentials,
         is AuthenticationException.Unauthenticated,
+        is AuthenticationException.InvalidRefresh,
+        is AuthenticationException.RefreshReuse,
         -> problem(status = HttpStatus.UNAUTHORIZED, ex = ex)
 
-        is AuthenticationException.UserNotFound ->
-            problem(status = HttpStatus.NOT_FOUND, ex = ex)
+        is AuthenticationException.UserNotFound,
+        is AuthenticationException.InviteNotFound,
+        is AuthenticationException.LinkedCustomerNotFound,
+        -> problem(status = HttpStatus.NOT_FOUND, ex = ex)
+
+        is AuthenticationException.InviteExpired,
+        is AuthenticationException.InviteConsumed,
+        -> problem(status = HttpStatus.GONE, ex = ex)
 
         is AuthenticationException.UserAlreadyExists,
         is AuthenticationException.CustomerAlreadyHasUser,
@@ -33,8 +41,11 @@ class AuthApiExceptionHandler {
             problem(status = HttpStatus.FORBIDDEN, ex = ex)
 
         is AuthenticationException.UserInactive,
+        is AuthenticationException.UserAlreadyActive,
         is AuthenticationException.InvalidEmail,
+        is AuthenticationException.InvalidPassword,
         is AuthenticationException.InvalidRole,
+        is AuthenticationException.LinkedCustomerInactive,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }
 

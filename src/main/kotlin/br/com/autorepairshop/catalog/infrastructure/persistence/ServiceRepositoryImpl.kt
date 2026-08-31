@@ -41,14 +41,18 @@ class ServiceRepositoryImpl(private val jpa: ServiceJpaRepository) : ServiceRepo
 
     override fun existsByServiceOrderId(serviceOrderId: UUID): Boolean = jpa.existsByServiceOrderId(serviceOrderId)
 
+    override fun delete(service: Service) {
+        jpa.deleteById(service.id.value)
+    }
+
     private fun Service.toEntity() = ServiceEntity(
         id = id.value,
         serviceOrderId = serviceOrderId,
         name = name.value,
         price = basePrice.amount,
         status = ServiceStatusColumn.valueOf(value = status.name),
-        registeredAt = registeredAt.toJavaInstant(),
-        openedAt = openedAt?.toJavaInstant(),
+        createdAt = createdAt.toJavaInstant(),
+        startedAt = startedAt?.toJavaInstant(),
         finishedAt = finishedAt?.toJavaInstant(),
         estimatedTimeSeconds = estimatedTime?.inWholeSeconds,
     )
@@ -58,9 +62,9 @@ class ServiceRepositoryImpl(private val jpa: ServiceJpaRepository) : ServiceRepo
         serviceOrderId = serviceOrderId,
         name = ServiceName.of(raw = name),
         price = Money.of(raw = price),
-        registeredAt = registeredAt.toKotlinInstant(),
+        createdAt = createdAt.toKotlinInstant(),
         status = ServiceStatus.valueOf(value = status.name),
-        openedAt = openedAt?.toKotlinInstant(),
+        startedAt = startedAt?.toKotlinInstant(),
         finishedAt = finishedAt?.toKotlinInstant(),
         estimatedTime = estimatedTimeSeconds?.seconds,
     )

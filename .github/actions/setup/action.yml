@@ -21,8 +21,8 @@ runs:
     - name: Setup gradle
       uses: gradle/actions/setup-gradle@v6
       with:
-          gradle-version: ${{ inputs.gradle-version }}
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+        gradle-version: ${{ inputs.gradle-version }}
+        cache-read-only: false
 
     - name: Gradle permission
       shell: bash

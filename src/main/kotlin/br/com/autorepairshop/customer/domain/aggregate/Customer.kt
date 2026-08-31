@@ -1,5 +1,8 @@
 package br.com.autorepairshop.customer.domain.aggregate
 
+import br.com.autorepairshop.customer.domain.event.CustomerDeactivated
+import br.com.autorepairshop.customer.domain.event.CustomerReactivated
+import br.com.autorepairshop.customer.domain.event.CustomerRegistered
 import br.com.autorepairshop.customer.domain.exception.CustomerException
 import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
@@ -8,6 +11,7 @@ import br.com.autorepairshop.customer.domain.valueobject.document.Document
 import br.com.autorepairshop.shared.domain.AggregateRoot
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 class Customer private constructor(
     id: CustomerId,
@@ -15,7 +19,7 @@ class Customer private constructor(
     name: PersonName,
     contact: ContactInfo,
     active: Boolean,
-    val registeredAt: Instant,
+    val createdAt: Instant,
 ) : AggregateRoot<CustomerId>(id = id) {
 
     var name: PersonName = name
@@ -37,14 +41,26 @@ class Customer private constructor(
         contact = newContact
     }
 
-    fun deactivate() {
+    fun deactivate(at: Instant = Clock.System.now()) {
         requireActive()
         active = false
+        registerEvent(
+            event = CustomerDeactivated(
+                customerId = id.value,
+                occurredOn = at.toJavaInstant(),
+            ),
+        )
     }
 
-    fun reactivate() {
+    fun reactivate(at: Instant = Clock.System.now()) {
         if (active) throw CustomerException.CustomerAlreadyActive(message = "Customer is already active.")
         active = true
+        registerEvent(
+            event = CustomerReactivated(
+                customerId = id.value,
+                occurredOn = at.toJavaInstant(),
+            ),
+        )
     }
 
     private fun requireActive() {
@@ -67,8 +83,15 @@ class Customer private constructor(
             name = name,
             contact = contact,
             active = true,
-            registeredAt = at,
-        )
+            createdAt = at,
+        ).apply {
+            registerEvent(
+                event = CustomerRegistered(
+                    customerId = id.value,
+                    occurredOn = createdAt.toJavaInstant(),
+                ),
+            )
+        }
 
         internal fun rehydrate(
             id: CustomerId,
@@ -76,14 +99,14 @@ class Customer private constructor(
             name: PersonName,
             contact: ContactInfo,
             active: Boolean,
-            registeredAt: Instant,
+            createdAt: Instant,
         ) = Customer(
             id = id,
             document = documentId,
             name = name,
             contact = contact,
             active = active,
-            registeredAt = registeredAt,
+            createdAt = createdAt,
         )
     }
 }

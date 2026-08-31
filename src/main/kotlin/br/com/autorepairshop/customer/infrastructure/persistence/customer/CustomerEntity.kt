@@ -22,6 +22,6 @@ class CustomerEntity(
     var phone: String,
     @Column(nullable = false)
     var active: Boolean,
-    @Column(name = "registered_at", nullable = false)
-    val registeredAt: Instant,
+    @Column(name = "created_at", nullable = false)
+    val createdAt: Instant,
 )

@@ -2,7 +2,6 @@ package br.com.autorepairshop.api.controller.customer
 
 import br.com.autorepairshop.api.dto.customer.RegisterCustomerRequest
 import br.com.autorepairshop.api.dto.customer.UpdateCustomerRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.customer.application.dto.customer.CustomerResponse
 import br.com.autorepairshop.customer.application.dto.customer.RegisterCustomerCommand
 import br.com.autorepairshop.customer.application.dto.customer.UpdateCustomerCommand
@@ -38,7 +37,6 @@ class CustomerController(
     private val findCustomer: FindCustomerUseCase,
     private val findCustomerByDocument: FindCustomerByDocumentUseCase,
     private val listCustomers: ListCustomersUseCase,
-    private val authorization: AuthorizationSupport,
 ) {
 
     @PostMapping
@@ -70,10 +68,8 @@ class CustomerController(
 
     @GetMapping("/{id}")
     @Operation(summary = "Search for a customer by id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<CustomerResponse> {
-        authorization.requireCanAccessCustomer(customerId = id)
-        return ResponseEntity.ok(findCustomer.execute(input = id))
-    }
+    fun findById(@PathVariable id: UUID): ResponseEntity<CustomerResponse> =
+        ResponseEntity.ok(findCustomer.execute(input = id))
 
     @PutMapping("/{id}")
     @Operation(summary = "Update name and/or contact information")

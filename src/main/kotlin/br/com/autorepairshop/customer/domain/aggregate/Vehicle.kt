@@ -5,7 +5,7 @@ import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.LicensePlate
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.ModelYear
 import br.com.autorepairshop.customer.domain.valueobject.vehicle.VehicleId
-import br.com.autorepairshop.shared.domain.Entity
+import br.com.autorepairshop.shared.domain.AggregateRoot
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -16,9 +16,10 @@ class Vehicle private constructor(
     brand: String,
     model: String,
     year: ModelYear,
+    color: String,
     active: Boolean,
-    val registeredAt: Instant,
-) : Entity<VehicleId>(id = id) {
+    val createdAt: Instant,
+) : AggregateRoot<VehicleId>(id = id) {
 
     var ownerId: CustomerId = ownerId
         private set
@@ -30,6 +31,9 @@ class Vehicle private constructor(
         private set
 
     var model: String = model
+        private set
+
+    var color: String = color
         private set
 
     var year: ModelYear = year
@@ -56,11 +60,13 @@ class Vehicle private constructor(
     fun updateSpec(
         brand: String?,
         model: String?,
+        color: String?,
         year: ModelYear?,
     ) {
         requireActive()
         brand?.let { this.brand = normalizeName(raw = it, field = "brand") }
         model?.let { this.model = normalizeName(raw = it, field = "model") }
+        color?.let { this.color = it }
         year?.let { this.year = it }
     }
 
@@ -88,7 +94,9 @@ class Vehicle private constructor(
             plate: LicensePlate,
             brand: String,
             model: String,
+            color: String,
             year: ModelYear,
+            active: Boolean = true,
             at: Instant = Clock.System.now(),
         ) = Vehicle(
             id = VehicleId.generate(),
@@ -96,9 +104,10 @@ class Vehicle private constructor(
             plate = plate,
             brand = normalizeName(raw = brand, field = "brand"),
             model = normalizeName(raw = model, field = "model"),
+            color = color,
             year = year,
-            active = true,
-            registeredAt = at,
+            active = active,
+            createdAt = at,
         )
 
         internal fun rehydrate(
@@ -107,18 +116,20 @@ class Vehicle private constructor(
             plate: LicensePlate,
             brand: String,
             model: String,
+            color: String,
             year: ModelYear,
             active: Boolean,
-            registeredAt: Instant,
+            createdAt: Instant,
         ) = Vehicle(
             id = id,
             ownerId = ownerId,
             plate = plate,
             brand = brand,
             model = model,
+            color = color,
             year = year,
             active = active,
-            registeredAt = registeredAt,
+            createdAt = createdAt,
         )
 
         private fun normalizeName(

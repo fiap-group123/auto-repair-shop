@@ -2,6 +2,7 @@ package br.com.autorepairshop.catalog.domain.aggregate
 
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
+import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
@@ -20,8 +21,8 @@ class Service private constructor(
     name: ServiceName,
     basePrice: Money,
     status: ServiceStatus,
-    val registeredAt: Instant,
-    openedAt: Instant?,
+    val createdAt: Instant,
+    startedAt: Instant?,
     finishedAt: Instant?,
     estimatedTime: Duration?,
 ) : AggregateRoot<ServiceId>(id = id) {
@@ -35,7 +36,7 @@ class Service private constructor(
     var status: ServiceStatus = status
         private set
 
-    var openedAt: Instant? = openedAt
+    var startedAt: Instant? = startedAt
         private set
 
     var finishedAt: Instant? = finishedAt
@@ -65,16 +66,27 @@ class Service private constructor(
     fun inProgress(at: Instant = Clock.System.now()) {
         requireStatus(ServiceStatus.WAITING)
         status = ServiceStatus.IN_PROGRESS
-        openedAt = at
+        startedAt = at
     }
 
     fun finish(at: Instant = Clock.System.now()) {
         requireStatus(ServiceStatus.IN_PROGRESS)
         status = ServiceStatus.FINISHED
         finishedAt = at
-        openedAt?.let { opened ->
-            estimateTime(duration = at - opened)
+        startedAt?.let { started ->
+            estimateTime(duration = at - started)
         }
+    }
+
+    fun remove(at: Instant = Clock.System.now()) {
+        requireStatus(ServiceStatus.WAITING)
+        registerEvent(
+            event = ServiceRemoved(
+                serviceId = id,
+                serviceOrderId = serviceOrderId,
+                occurredOn = at.toJavaInstant(),
+            ),
+        )
     }
 
     private fun estimateTime(duration: Duration) {
@@ -99,7 +111,7 @@ class Service private constructor(
             event = ServiceRegistered(
                 serviceId = id,
                 serviceOrderId = serviceOrderId,
-                occurredOn = registeredAt.toJavaInstant(),
+                occurredOn = createdAt.toJavaInstant(),
             ),
         )
     }
@@ -110,8 +122,8 @@ class Service private constructor(
             name: ServiceName,
             price: Money,
             status: ServiceStatus = ServiceStatus.WAITING,
-            registeredAt: Instant = Clock.System.now(),
-            openedAt: Instant? = null,
+            createdAt: Instant = Clock.System.now(),
+            startedAt: Instant? = null,
             finishedAt: Instant? = null,
             estimatedTime: Duration? = null,
         ): Service {
@@ -121,8 +133,8 @@ class Service private constructor(
                 name = name,
                 basePrice = price,
                 status = status,
-                registeredAt = registeredAt,
-                openedAt = openedAt,
+                createdAt = createdAt,
+                startedAt = startedAt,
                 finishedAt = finishedAt,
                 estimatedTime = estimatedTime,
             )
@@ -135,9 +147,9 @@ class Service private constructor(
             serviceOrderId: UUID,
             name: ServiceName,
             price: Money,
-            registeredAt: Instant,
+            createdAt: Instant,
             status: ServiceStatus = ServiceStatus.WAITING,
-            openedAt: Instant? = null,
+            startedAt: Instant? = null,
             finishedAt: Instant? = null,
             estimatedTime: Duration? = null,
         ) = Service(
@@ -146,8 +158,8 @@ class Service private constructor(
             name = name,
             basePrice = price,
             status = status,
-            registeredAt = registeredAt,
-            openedAt = openedAt,
+            createdAt = createdAt,
+            startedAt = startedAt,
             finishedAt = finishedAt,
             estimatedTime = estimatedTime,
         )

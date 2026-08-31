@@ -2,6 +2,7 @@ package br.com.autorepairshop.serviceorder.application.event
 
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
+import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
 import br.com.autorepairshop.serviceorder.application.usecase.RecalculateBudgetTotalUseCase
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -22,6 +23,11 @@ class ServiceOrderEventListener(private val recalculateBudgetTotal: RecalculateB
 
     @EventListener
     fun on(event: ServicePriceChanged) {
+        recalculateBudgetTotal.execute(input = event.serviceOrderId)
+    }
+
+    @EventListener
+    fun on(event: ServiceRemoved) {
         recalculateBudgetTotal.execute(input = event.serviceOrderId)
     }
 }

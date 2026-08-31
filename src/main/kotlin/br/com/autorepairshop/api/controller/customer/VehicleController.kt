@@ -4,7 +4,6 @@ import br.com.autorepairshop.api.dto.customer.ChangeVehiclePlateRequest
 import br.com.autorepairshop.api.dto.customer.RegisterVehicleRequest
 import br.com.autorepairshop.api.dto.customer.TransferVehicleRequest
 import br.com.autorepairshop.api.dto.customer.UpdateVehicleSpecRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.customer.application.dto.vehicle.ChangeVehiclePlateCommand
 import br.com.autorepairshop.customer.application.dto.vehicle.RegisterVehicleCommand
 import br.com.autorepairshop.customer.application.dto.vehicle.TransferVehicleCommand
@@ -48,7 +47,6 @@ class VehicleController(
     private val transferVehicle: TransferVehicleUseCase,
     private val deactivateVehicle: DeactivateVehicleUseCase,
     private val reactivateVehicle: ReactivateVehicleUseCase,
-    private val authorization: AuthorizationSupport,
 ) {
 
     @PostMapping
@@ -61,6 +59,7 @@ class VehicleController(
                 brand = request.brand,
                 model = request.model,
                 year = request.year,
+                color = request.color,
             ),
         )
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -72,26 +71,18 @@ class VehicleController(
 
     @GetMapping("/owner/{ownerId}")
     @Operation(summary = "List vehicles owned by a customer")
-    fun listByOwner(@PathVariable ownerId: UUID): ResponseEntity<List<VehicleResponse>> {
-        authorization.requireCanAccessCustomer(customerId = ownerId)
-        return ResponseEntity.ok(listVehiclesByOwner.execute(input = ownerId))
-    }
+    fun listByOwner(@PathVariable ownerId: UUID): ResponseEntity<List<VehicleResponse>> =
+        ResponseEntity.ok(listVehiclesByOwner.execute(input = ownerId))
 
     @GetMapping("/{id}")
     @Operation(summary = "Search for vehicle by id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<VehicleResponse> {
-        val vehicle = findVehicle.execute(input = id)
-        authorization.requireCanAccessVehicleOwner(ownerId = vehicle.ownerId)
-        return ResponseEntity.ok(vehicle)
-    }
+    fun findById(@PathVariable id: UUID): ResponseEntity<VehicleResponse> =
+        ResponseEntity.ok(findVehicle.execute(input = id))
 
     @GetMapping
     @Operation(summary = "Search for vehicle by license plate")
-    fun findByPlate(@RequestParam plate: String): ResponseEntity<VehicleResponse> {
-        val vehicle = findVehicleByPlate.execute(input = plate)
-        authorization.requireCanAccessVehicleOwner(ownerId = vehicle.ownerId)
-        return ResponseEntity.ok(vehicle)
-    }
+    fun findByPlate(@RequestParam plate: String): ResponseEntity<VehicleResponse> =
+        ResponseEntity.ok(findVehicleByPlate.execute(input = plate))
 
     @PutMapping("/{id}")
     @Operation(summary = "Update brand, model and/or year")
@@ -105,6 +96,7 @@ class VehicleController(
                 brand = request.brand,
                 model = request.model,
                 year = request.year,
+                color = request.color,
             ),
         ),
     )

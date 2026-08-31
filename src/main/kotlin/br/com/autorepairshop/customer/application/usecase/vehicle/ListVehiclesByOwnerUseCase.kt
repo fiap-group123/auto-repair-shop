@@ -1,5 +1,6 @@
 package br.com.autorepairshop.customer.application.usecase.vehicle
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.customer.application.dto.vehicle.VehicleResponse
 import br.com.autorepairshop.customer.application.dto.vehicle.toResponse
 import br.com.autorepairshop.customer.domain.exception.CustomerException
@@ -15,10 +16,12 @@ import java.util.UUID
 class ListVehiclesByOwnerUseCase(
     private val customers: CustomerRepository,
     private val vehicles: VehicleRepository,
+    private val access: AccessGuard,
 ) : UseCase<UUID, List<VehicleResponse>> {
 
     @Transactional(readOnly = true)
     override fun execute(input: UUID): List<VehicleResponse> {
+        access.requireCustomer(customerId = input)
         val ownerId = CustomerId(value = input)
         customers.findById(id = ownerId)
             ?: throw CustomerException.CustomerNotFound(message = "Customer $input was not found.")

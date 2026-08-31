@@ -82,6 +82,7 @@ class RegisterVehicleUseCaseTest {
         plate = CustomerFixtures.MERCOSUL_PLATE,
         brand = "Fiat",
         model = "Argo",
+        color = "Preto",
         year = 2024,
     )
 }

@@ -1,6 +1,7 @@
 package br.com.autorepairshop.api.controller.authentication
 
 import br.com.autorepairshop.api.dto.authentication.LoginRequest
+import br.com.autorepairshop.api.dto.authentication.RefreshTokenRequest
 import br.com.autorepairshop.api.dto.authentication.RegisterUserRequest
 import br.com.autorepairshop.api.withHttpRequest
 import br.com.autorepairshop.authentication.AuthFixtures
@@ -9,6 +10,8 @@ import br.com.autorepairshop.authentication.application.dto.RegisterUserCommand
 import br.com.autorepairshop.authentication.application.dto.TokenResponse
 import br.com.autorepairshop.authentication.application.dto.toResponse
 import br.com.autorepairshop.authentication.application.usecase.LoginUseCase
+import br.com.autorepairshop.authentication.application.usecase.LogoutUseCase
+import br.com.autorepairshop.authentication.application.usecase.RefreshTokenUseCase
 import br.com.autorepairshop.authentication.application.usecase.RegisterUserUseCase
 import io.mockk.every
 import io.mockk.mockk
@@ -22,14 +25,22 @@ import kotlin.test.assertEquals
 class AuthControllerTest {
     private val login = mockk<LoginUseCase>()
     private val registerUser = mockk<RegisterUserUseCase>()
+    private val refreshToken = mockk<RefreshTokenUseCase>()
+    private val logout = mockk<LogoutUseCase>(relaxUnitFun = true)
     private val controller = AuthController(
         login = login,
         registerUser = registerUser,
+        refreshToken = refreshToken,
+        logout = logout,
     )
 
     @Test
     fun `login returns the token from the use case`() {
-        every { login.execute(input = any()) } returns TokenResponse(accessToken = "jwt")
+        every { login.execute(input = any()) } returns TokenResponse(
+            accessToken = "jwt",
+            refreshToken = "refresh",
+            expiresIn = 900,
+        )
 
         val response = controller.login(
             request = LoginRequest(
@@ -89,5 +100,29 @@ class AuthControllerTest {
                 ),
             )
         }
+    }
+
+    @Test
+    fun `refresh delegates to the use case`() {
+        val tokens = TokenResponse(
+            accessToken = "new-jwt",
+            refreshToken = "new-refresh",
+            expiresIn = 900,
+        )
+        every { refreshToken.execute(input = any()) } returns tokens
+
+        assertEquals(
+            expected = "new-jwt",
+            actual = controller.refresh(request = RefreshTokenRequest(refreshToken = "old")).body?.accessToken,
+        )
+    }
+
+    @Test
+    fun `logout returns no content`() {
+        assertEquals(
+            expected = HttpStatus.NO_CONTENT,
+            actual = controller.logout(request = RefreshTokenRequest(refreshToken = "refresh")).statusCode,
+        )
+        verify { logout.execute(input = any()) }
     }
 }

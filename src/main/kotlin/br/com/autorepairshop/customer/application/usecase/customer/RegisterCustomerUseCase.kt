@@ -10,12 +10,15 @@ import br.com.autorepairshop.customer.domain.valueobject.contact.ContactInfo
 import br.com.autorepairshop.customer.domain.valueobject.customer.PersonName
 import br.com.autorepairshop.customer.domain.valueobject.document.Document
 import br.com.autorepairshop.shared.application.UseCase
+import br.com.autorepairshop.shared.application.event.EventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class RegisterCustomerUseCase(private val customers: CustomerRepository) :
-    UseCase<RegisterCustomerCommand, CustomerResponse> {
+class RegisterCustomerUseCase(
+    private val customers: CustomerRepository,
+    private val events: EventPublisher,
+) : UseCase<RegisterCustomerCommand, CustomerResponse> {
 
     @Transactional
     override fun execute(input: RegisterCustomerCommand): CustomerResponse {
@@ -34,6 +37,7 @@ class RegisterCustomerUseCase(private val customers: CustomerRepository) :
             ),
         )
         customers.save(customer = customer)
+        events.publish(aggregate = customer)
         return customer.toResponse()
     }
 }

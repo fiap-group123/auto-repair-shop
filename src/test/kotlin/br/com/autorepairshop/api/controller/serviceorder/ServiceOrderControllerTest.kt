@@ -1,9 +1,8 @@
 package br.com.autorepairshop.api.controller.serviceorder
 
 import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.api.withHttpRequest
-import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
+import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.toResponse
@@ -24,7 +23,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 @Tag("unit")
 class ServiceOrderControllerTest {
@@ -37,7 +35,6 @@ class ServiceOrderControllerTest {
     private val approveOrder = mockk<ApproveServiceOrderUseCase>()
     private val completeOrder = mockk<FinishServiceOrderUseCase>()
     private val deliverOrder = mockk<DeliverServiceOrderUseCase>()
-    private val authorization = mockk<AuthorizationSupport>(relaxUnitFun = true)
     private val controller = ServiceOrderController(
         registerOrder = openOrder,
         findOrder = findOrder,
@@ -48,7 +45,6 @@ class ServiceOrderControllerTest {
         approveOrder = approveOrder,
         completeOrder = completeOrder,
         deliverOrder = deliverOrder,
-        authorization = authorization,
     )
 
     @Test
@@ -59,8 +55,8 @@ class ServiceOrderControllerTest {
         withHttpRequest(requestUri = "/service-orders") {
             val response = controller.register(
                 request = RegisterServiceOrderRequest(
-                    customerId = order.customerId,
-                    vehicleId = order.vehicleId,
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
                 ),
             )
             assertEquals(
@@ -71,8 +67,8 @@ class ServiceOrderControllerTest {
         verify {
             openOrder.execute(
                 input = RegisterServiceOrderCommand(
-                    customerId = order.customerId,
-                    vehicleId = order.vehicleId,
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
                 ),
             )
         }
@@ -117,31 +113,15 @@ class ServiceOrderControllerTest {
             expected = order.id,
             actual = controller.deliver(id = order.id).body?.id,
         )
-        verify {
-            authorization.requireCanAccessServiceOrder(customerId = order.customerId)
-        }
     }
 
     @Test
-    fun `listing by customer id checks ownership before loading`() {
+    fun `listing by customer id delegates to the use case`() {
         val customerId = UUID.randomUUID()
         every { listOrdersByCustomerId.execute(input = customerId) } returns emptyList()
 
         controller.listByCustomerId(customerId = customerId)
 
-        verify { authorization.requireCanAccessServiceOrder(customerId = customerId) }
-    }
-
-    @Test
-    fun `a client cannot list another customer orders`() {
-        val otherCustomerId = UUID.randomUUID()
-        every {
-            authorization.requireCanAccessServiceOrder(customerId = otherCustomerId)
-        } throws AuthenticationException.Forbidden(message = "Cannot access another customer.")
-
-        assertFailsWith<AuthenticationException.Forbidden> {
-            controller.listByCustomerId(customerId = otherCustomerId)
-        }
-        verify(exactly = 0) { listOrdersByCustomerId.execute(input = any()) }
+        verify { listOrdersByCustomerId.execute(input = customerId) }
     }
 }

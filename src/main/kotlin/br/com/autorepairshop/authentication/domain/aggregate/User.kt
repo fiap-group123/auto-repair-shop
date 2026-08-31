@@ -5,7 +5,7 @@ import br.com.autorepairshop.authentication.domain.valueobject.HashedPassword
 import br.com.autorepairshop.authentication.domain.valueobject.LoginEmail
 import br.com.autorepairshop.authentication.domain.valueobject.Role
 import br.com.autorepairshop.authentication.domain.valueobject.UserId
-import br.com.autorepairshop.shared.domain.Entity
+import br.com.autorepairshop.shared.domain.AggregateRoot
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -17,14 +17,28 @@ class User private constructor(
     val role: Role,
     active: Boolean,
     val customerId: UUID?,
-    val registeredAt: Instant,
-) : Entity<UserId>(id = id) {
+    val createdAt: Instant,
+) : AggregateRoot<UserId>(id = id) {
 
     var hashedPassword: HashedPassword = hashedPassword
         private set
 
     var active: Boolean = active
         private set
+
+    fun deactivate() {
+        if (!active) {
+            throw AuthenticationException.UserInactive(message = "User is inactive.")
+        }
+        active = false
+    }
+
+    fun reactivate() {
+        if (active) {
+            throw AuthenticationException.UserAlreadyActive(message = "User is already active.")
+        }
+        active = true
+    }
 
     companion object {
         fun register(
@@ -51,7 +65,7 @@ class User private constructor(
                 role = role,
                 active = true,
                 customerId = customerId,
-                registeredAt = at,
+                createdAt = at,
             )
         }
 
@@ -62,7 +76,7 @@ class User private constructor(
             role: Role,
             active: Boolean,
             customerId: UUID?,
-            registeredAt: Instant,
+            createdAt: Instant,
         ) = User(
             id = id,
             email = email,
@@ -70,7 +84,7 @@ class User private constructor(
             role = role,
             active = active,
             customerId = customerId,
-            registeredAt = registeredAt,
+            createdAt = createdAt,
         )
     }
 }

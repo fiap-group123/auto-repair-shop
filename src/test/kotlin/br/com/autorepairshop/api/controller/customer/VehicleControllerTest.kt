@@ -4,7 +4,6 @@ import br.com.autorepairshop.api.dto.customer.ChangeVehiclePlateRequest
 import br.com.autorepairshop.api.dto.customer.RegisterVehicleRequest
 import br.com.autorepairshop.api.dto.customer.TransferVehicleRequest
 import br.com.autorepairshop.api.dto.customer.UpdateVehicleSpecRequest
-import br.com.autorepairshop.api.security.AuthorizationSupport
 import br.com.autorepairshop.api.withHttpRequest
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.application.dto.vehicle.ChangeVehiclePlateCommand
@@ -42,7 +41,6 @@ class VehicleControllerTest {
     private val transferVehicle = mockk<TransferVehicleUseCase>()
     private val deactivateVehicle = mockk<DeactivateVehicleUseCase>()
     private val reactivateVehicle = mockk<ReactivateVehicleUseCase>()
-    private val authorization = mockk<AuthorizationSupport>(relaxUnitFun = true)
     private val controller = VehicleController(
         registerVehicle = registerVehicle,
         listVehiclesByOwner = listVehiclesByOwner,
@@ -53,7 +51,6 @@ class VehicleControllerTest {
         transferVehicle = transferVehicle,
         deactivateVehicle = deactivateVehicle,
         reactivateVehicle = reactivateVehicle,
-        authorization = authorization,
     )
 
     @Test
@@ -72,7 +69,6 @@ class VehicleControllerTest {
             expected = vehicle.id,
             actual = controller.findByPlate(plate = CustomerFixtures.MERCOSUL_PLATE).body?.id,
         )
-        verify { authorization.requireCanAccessVehicleOwner(ownerId = vehicle.ownerId) }
     }
 
     @Test
@@ -142,6 +138,7 @@ class VehicleControllerTest {
                     plate = CustomerFixtures.MERCOSUL_PLATE,
                     brand = "Fiat",
                     model = "Argo",
+                    color = "Black",
                     year = 2024,
                 ),
             )
@@ -159,10 +156,10 @@ class VehicleControllerTest {
                     plate = CustomerFixtures.MERCOSUL_PLATE,
                     brand = "Fiat",
                     model = "Argo",
+                    color = "Black",
                     year = 2024,
                 ),
             )
-            authorization.requireCanAccessCustomer(customerId = ownerId)
         }
     }
 
