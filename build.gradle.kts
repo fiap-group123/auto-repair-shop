@@ -154,11 +154,6 @@ kover {
     }
 }
 
-// SonarCloud imports coverage through the JaCoCo XML sensor. Kover 0.9 writes that
-// same format to reports/kover/report.xml — keep using Kover, not the JaCoCo plugin.
-val koverXmlReportFile = layout.buildDirectory.file("reports/kover/report.xml")
-val detektSarifFile = layout.buildDirectory.file("reports/detekt/detekt.sarif")
-
 sonar {
     properties {
         property("sonar.projectKey", "fiap-group123_auto-repair-shop")
@@ -173,11 +168,8 @@ sonar {
         property("sonar.java.test.binaries", "build/classes/kotlin/test")
         property("sonar.java.libraries", "build/libs")
 
-        property(
-            "sonar.coverage.jacoco.xmlReportPaths",
-            koverXmlReportFile.get().asFile.absolutePath,
-        )
-        property("sonar.sarifReportPaths", detektSarifFile.get().asFile.absolutePath)
+        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/kover/report.xml")
+        property("sonar.sarifReportPaths", "build/reports/detekt/detekt.sarif")
         property(
             "sonar.exclusions",
             "**/build/**,**/generated/**,**/*.sql",
