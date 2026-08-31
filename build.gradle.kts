@@ -1,5 +1,3 @@
-import org.gradle.internal.impldep.org.jsoup.nodes.Document
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
