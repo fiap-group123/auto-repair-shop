@@ -280,24 +280,19 @@ O detalhe da OS só devolve `serviceIds`. Nome, preço e status dos itens saem e
 
 Um orçamento por OS. `{id}` é o **id da ordem de serviço**.
 
+O orçamento é criado ao iniciar o diagnóstico (`POST /service-orders/{id}/diagnosis`). Não há `POST /budgets` nem `POST /service-orders/{id}/approve`.
+
 | Método | Path | Papéis | Status | Descrição |
 |---|---|---|---|---|
-| `POST` | `/budgets` | `MECHANIC`, `MANAGER` | `201` | Registra o orçamento da OS (também criado ao iniciar o diagnóstico). |
 | `GET` | `/budgets/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca pelo id da OS. |
 | `POST` | `/budgets/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Aprova o orçamento e passa a OS para `BUDGET_APPROVED`. |
 | `POST` | `/budgets/{id}/reject` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Rejeita o orçamento e passa a OS para `BUDGET_REJECTED`. |
 | `POST` | `/budgets/{id}/trade` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Negocia o orçamento e passa a OS para `BUDGET_APPROVED`. |
 | `DELETE` | `/budgets/{id}` | `MANAGER` | `204` | Remove o orçamento da OS. |
 
-### `POST /budgets`
+### `GET /budgets/{id}`
 
-```json
-{
-  "serviceOrderId": "00000000-0000-0000-0000-000000000000"
-}
-```
-
-Resposta `201` / `200`:
+Resposta `200`:
 
 ```json
 {

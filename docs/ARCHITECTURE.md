@@ -225,7 +225,7 @@ WAITING_APPROVAL → APPROVED | REJECTED | TRADED
 
 | Ação | Regra |
 |---|---|
-| registrar | OS existe; um budget por OS; total inicia na soma dos itens já cadastrados |
+| registrar | Disparado por `DiagnosisStarted`; OS existe; um budget por OS; total inicia na soma dos itens já cadastrados |
 | recalcular | Soma dos `basePrice` do catalog; zero é permitido |
 | aprovar | Só de `WAITING_APPROVAL`; emite `BudgetApproved`; OS → `BUDGET_APPROVED` |
 | rejeitar | Só de `WAITING_APPROVAL`; emite `BudgetRejected`; OS → `BUDGET_REJECTED` |

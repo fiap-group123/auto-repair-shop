@@ -155,7 +155,6 @@ class SecurityConfig {
     private fun configureBudgetRules(
         requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
     ) {
-        requests.requestMatchers(HttpMethod.POST, "/budgets").hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/budgets/**")
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/budgets/*/approve", "/budgets/*/reject", "/budgets/*/trade")

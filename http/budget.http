@@ -22,16 +22,6 @@ POST {{baseUrl}}/budgets/{{serviceOrderId}}/trade
 Authorization: Bearer {{token}}
 
 ###
-# Registrar orcamento manualmente (normalmente criado no diagnostico)
-POST {{baseUrl}}/budgets
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "serviceOrderId": "{{serviceOrderId}}"
-}
-
-###
 # Remover orcamento
 DELETE {{baseUrl}}/budgets/{{serviceOrderId}}
 Authorization: Bearer {{token}}
