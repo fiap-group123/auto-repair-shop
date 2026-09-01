@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
 
 COPY gradlew settings.gradle.kts build.gradle.kts ./
@@ -10,7 +10,7 @@ COPY src/main src/main
 RUN ./gradlew bootJar --no-daemon -x test -x detekt -x detektMain \
     && find build/libs -name '*.jar' ! -name '*-plain.jar' -exec cp {} /workspace/app.jar \;
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 RUN useradd --system --uid 1001 spring
