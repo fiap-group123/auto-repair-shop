@@ -21,14 +21,14 @@ Pacote raiz: `br.com.autorepairshop`.
 
 ```
 src/main/kotlin/br/com/autorepairshop/
-├── api/                  # Adaptador HTTP (não é um bounded context)
-├── authentication/       # Usuários, JWT, convites, sessões
-├── customer/             # Clientes e veículos
-├── catalog/              # Itens de serviço de uma OS
-├── inventory/            # Estoque da oficina e linhas de peça da OS
-├── serviceorder/         # Ciclo de vida da OS
-├── budget/               # Orçamento da OS (total e aprovação)
-└── shared/               # Kernel: AggregateRoot, UseCase, Money, eventos, mail
+├── api/                    # Adaptador HTTP (não é um bounded context)
+├── accessidentity/         # Usuários, JWT, convites, sessões
+├── customer/               # Clientes e veículos
+├── catalog/                # Itens de serviço de uma OS
+├── inputmanagment/         # Estoque da oficina e linhas de peça da OS
+├── serviceandexecution/    # Ciclo de vida da OS
+├── budget/                 # Orçamento da OS (total e aprovação)
+└── shared/                 # Kernel: AggregateRoot, UseCase, Money, eventos, mail
 ```
 
 Cada contexto de negócio segue `domain` → `application` → `infrastructure`. HTTP, JWT da cadeia de filtros e OpenAPI ficam em `api`.
@@ -114,13 +114,13 @@ Escrita típica (ex.: cadastrar cliente):
 6. Listeners `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` enviam e-mail **depois** do commit.
 7. A API devolve o Response. Exceções de domínio viram `422` (ou o status do handler do contexto).
 
-Leitura: o caso de uso carrega o agregado (ou uma lista), aplica `AccessGuard` se for dado de cliente, e mapeia para Response. Detalhe de OS usa `ServiceOrderAssembler` para incluir os `serviceIds` do catalog e os `partIds` do inventory.
+Leitura: o caso de uso carrega o agregado (ou uma lista), aplica `AccessGuard` se for dado de cliente, e mapeia para Response. Detalhe de OS usa `ServiceOrderAssembler` para incluir os `serviceIds` do catalog e os `partIds` do inputmanagment.
 
 ## Bounded contexts
 
 Referências entre contextos são **UUIDs**, não objetos de agregado. `ServiceOrder` guarda `customerId` e `vehicleId`; `Service` guarda `serviceOrderId`; `User` guarda `customerId` opcional.
 
-### authentication
+### accessidentity
 
 Identidade da oficina: staff, cliente com login, JWT e convite.
 
@@ -173,7 +173,7 @@ Cadastro de pessoas/empresas e dos veículos que elas possuem.
 
 **Persistência:** `customers`, `vehicles`. Documento e placa únicos no banco.
 
-### serviceorder
+### serviceandexecution
 
 Ordem de serviço (OS): ciclo de vida. O orçamento vive no contexto Budget.
 
@@ -201,7 +201,7 @@ RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUT
 
 `RegisterServiceOrderUseCase` lê `CustomerRepository` e `VehicleRepository` na mesma transação (consistência: dono, ativo, placa). Não importa os agregados no domínio da OS — só os IDs.
 
-**Read model:** `ServiceOrderAssembler` busca os `Service` do catalog e os `Part` do inventory e preenche `serviceIds` e `partIds` na response. O detalhe da OS não embute nome, preço nem total.
+**Read model:** `ServiceOrderAssembler` busca os `Service` do catalog e os `Part` do inputmanagment e preenche `serviceIds` e `partIds` na response. O detalhe da OS não embute nome, preço nem total.
 
 **Listeners**
 
@@ -294,7 +294,7 @@ APPROVED → IN_PROGRESS → FINISHED
 
 **Persistência:** `services` e `extra_services` (`service_order_id` → `service_orders`). Unique `(service_order_id, name)` em cada tabela.
 
-### inventory
+### inputmanagment
 
 Catálogo de estoque da oficina (`Inventory`) e linha da OS (`Part`). O estoque existe **sem** OS. A OS só guarda `partIds`, como `serviceIds`.
 
@@ -330,16 +330,16 @@ Fora deste recorte: peça extra depois do orçamento aprovado continua `ExtraSer
 
 | Controller | Base | Contexto |
 |---|---|---|
-| `AuthController` | `/auth` | authentication |
-| `InviteController` | `/invite` | authentication |
+| `AuthController` | `/auth` | accessidentity |
+| `InviteController` | `/invite` | accessidentity |
 | `CustomerController` | `/customers` | customer |
 | `VehicleController` | `/vehicles` | customer |
-| `ServiceOrderController` | `/service-orders` | serviceorder |
+| `ServiceOrderController` | `/service-orders` | serviceandexecution |
 | `BudgetController` | `/budgets` | budget |
 | `ServiceController` | `/services` | catalog |
 | `ExtraServiceController` | `/extra-services` | catalog |
-| `InventoryController` | `/inventories` | inventory |
-| `PartController` | `/parts` | inventory |
+| `InventoryController` | `/inventories` | inputmanagment |
+| `PartController` | `/parts` | inputmanagment |
 
 Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, `InventoryApiExceptionHandler`, `BudgetApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
 
@@ -374,15 +374,15 @@ Flyway é dono do schema (`src/main/resources/db/migration/`). Hibernate só val
 |---|---|---|
 | `customers` | customer | `document_id` único |
 | `vehicles` | customer | placa única; `owner_id` → `customers` |
-| `users` | authentication | e-mail único; `customer_id` opcional → `customers` |
-| `customer_invites` | authentication | token hasheado |
-| `refresh_sessions` | authentication | refresh rotacionável |
-| `service_orders` | serviceorder | FKs para customer e vehicle; uma OS aberta por veículo |
+| `users` | accessidentity | e-mail único; `customer_id` opcional → `customers` |
+| `customer_invites` | accessidentity | token hasheado |
+| `refresh_sessions` | accessidentity | refresh rotacionável |
+| `service_orders` | serviceandexecution | FKs para customer e vehicle; uma OS aberta por veículo |
 | `budgets` | budget | `service_order_id` único → `service_orders` |
 | `services` | catalog | FK para `service_orders` |
 | `extra_services` | catalog | FK para `service_orders`; unique `(service_order_id, name)` |
-| `inventories` | inventory | nome único; `kind` `PART`/`SUPPLY`; soft delete `active` |
-| `parts` | inventory | FK para `service_orders` e `inventories`; unique `(service_order_id, inventory_id)` |
+| `inventories` | inputmanagment | nome único; `kind` `PART`/`SUPPLY`; soft delete `active` |
+| `parts` | inputmanagment | FK para `service_orders` e `inventories`; unique `(service_order_id, inventory_id)` |
 
 Timestamps em `TIMESTAMPTZ`. Soft delete de cliente e veículo: coluna `active`, histórico preservado.
 

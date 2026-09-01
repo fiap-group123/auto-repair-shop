@@ -114,7 +114,7 @@ Handler: `ServiceOrderApiExceptionHandler`.
 | `InvalidStatusTransition` | 422 | Método de ciclo chamado no status errado | `Cannot transition from <STATUS>.` (mensagem do agregado) |
 | `InvalidDuration` | 422 | Duração inválida ao concluir a OS | — |
 
-Transições válidas: [ARCHITECTURE.md](ARCHITECTURE.md#serviceorder) e [ENDPOINTS.md](ENDPOINTS.md#service-orders).
+Transições válidas: [ARCHITECTURE.md](ARCHITECTURE.md#serviceandexecution) e [ENDPOINTS.md](ENDPOINTS.md#service-orders).
 
 Fechar diagnóstico com orçamento ausente ou total ≤ 0 lança `BudgetException.EmptyBudget` (**422**), não uma exceção de OS.
 
