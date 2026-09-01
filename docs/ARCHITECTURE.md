@@ -226,7 +226,7 @@ WAITING_APPROVAL → APPROVED | REJECTED | TRADED
 | Ação | Regra |
 |---|---|
 | registrar | Disparado por `DiagnosisStarted`; OS existe; um budget por OS; total inicia na soma dos itens já cadastrados |
-| recalcular | Soma dos `basePrice` dos `Service` + extras `APPROVED`; zero é permitido; um extra aprovado pode aumentar um orçamento já `APPROVED` |
+| recalcular | Soma dos `basePrice` dos `Service` + extras `APPROVED`/`IN_PROGRESS`/`FINISHED`; zero é permitido; um extra aprovado pode aumentar um orçamento já `APPROVED` |
 | aprovar | Só de `WAITING_APPROVAL`; emite `BudgetApproved`; OS → `BUDGET_APPROVED` |
 | rejeitar | Só de `WAITING_APPROVAL`; emite `BudgetRejected`; OS → `BUDGET_REJECTED` |
 | negociar | Só de `WAITING_APPROVAL`; emite `BudgetTraded`; OS → `BUDGET_APPROVED` |
@@ -268,6 +268,7 @@ WAITING → IN_PROGRESS → FINISHED
 
 ```
 PENDING → APPROVED | REJECTED
+APPROVED → IN_PROGRESS → FINISHED
 ```
 
 | Ação | Regra |
@@ -275,12 +276,14 @@ PENDING → APPROVED | REJECTED
 | registrar | OS em `BUDGET_APPROVED` ou `IN_EXECUTION`; nome único **naquela** OS (também contra `Service`); emite `ExtraServiceRegistered` |
 | aprovar | Só de `PENDING`; emite `ExtraServiceApproved` |
 | rejeitar | Só de `PENDING`; emite `ExtraServiceRejected` |
+| iniciar | Só de `APPROVED` |
+| finalizar | Só de `IN_PROGRESS`; grava duração |
 
-**Casos de uso:** `RegisterExtraServiceUseCase`, `FindExtraServiceUseCase`, `ListExtraServicesByServiceOrderIdUseCase`, `ApproveExtraServiceUseCase`, `RejectExtraServiceUseCase`.
+**Casos de uso:** `RegisterExtraServiceUseCase`, `FindExtraServiceUseCase`, `ListExtraServicesByServiceOrderIdUseCase`, `ApproveExtraServiceUseCase`, `RejectExtraServiceUseCase`, `InProgressExtraServiceUseCase`, `FinishExtraServiceUseCase`.
 
 `AccessGuard.requireCustomer` no find/list/approve/reject (dono da OS).
 
-**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` recalculam o Budget. `ExtraServiceApproved` e `ExtraServiceRejected` também. `PENDING` e `REJECTED` não entram no total.
+**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` recalculam o Budget. `ExtraServiceApproved` e `ExtraServiceRejected` também. `PENDING` e `REJECTED` não entram no total; `APPROVED`, `IN_PROGRESS` e `FINISHED` entram.
 
 **Listeners**
 

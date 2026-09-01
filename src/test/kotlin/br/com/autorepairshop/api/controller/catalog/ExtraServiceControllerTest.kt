@@ -7,6 +7,8 @@ import br.com.autorepairshop.catalog.application.dto.RegisterExtraServiceCommand
 import br.com.autorepairshop.catalog.application.dto.toResponse
 import br.com.autorepairshop.catalog.application.usecase.ApproveExtraServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.FindExtraServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.FinishExtraServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.InProgressExtraServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.ListExtraServicesByServiceOrderIdUseCase
 import br.com.autorepairshop.catalog.application.usecase.RegisterExtraServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.RejectExtraServiceUseCase
@@ -27,12 +29,16 @@ class ExtraServiceControllerTest {
     private val listByServiceOrder = mockk<ListExtraServicesByServiceOrderIdUseCase>()
     private val approveExtra = mockk<ApproveExtraServiceUseCase>()
     private val rejectExtra = mockk<RejectExtraServiceUseCase>()
+    private val inProgressExtra = mockk<InProgressExtraServiceUseCase>()
+    private val finishExtra = mockk<FinishExtraServiceUseCase>()
     private val controller = ExtraServiceController(
         registerExtra = registerExtra,
         findExtra = findExtra,
         listByServiceOrder = listByServiceOrder,
         approveExtra = approveExtra,
         rejectExtra = rejectExtra,
+        inProgressExtra = inProgressExtra,
+        finishExtra = finishExtra,
     )
 
     @Test
@@ -69,12 +75,14 @@ class ExtraServiceControllerTest {
     }
 
     @Test
-    fun `list find approve and reject delegate to use cases`() {
+    fun `list find approve reject start and finish delegate to use cases`() {
         val extra = CatalogFixtures.extraService().toResponse()
         every { findExtra.execute(input = extra.id) } returns extra
         every { listByServiceOrder.execute(input = extra.serviceOrderId) } returns listOf(element = extra)
         every { approveExtra.execute(input = extra.id) } returns extra
         every { rejectExtra.execute(input = extra.id) } returns extra
+        every { inProgressExtra.execute(input = extra.id) } returns extra
+        every { finishExtra.execute(input = extra.id) } returns extra
 
         assertEquals(
             expected = extra.id,
@@ -92,10 +100,20 @@ class ExtraServiceControllerTest {
             expected = extra.id,
             actual = controller.reject(id = extra.id).body?.id,
         )
+        assertEquals(
+            expected = extra.id,
+            actual = controller.start(id = extra.id).body?.id,
+        )
+        assertEquals(
+            expected = extra.id,
+            actual = controller.finish(id = extra.id).body?.id,
+        )
         verify { findExtra.execute(input = extra.id) }
         verify { listByServiceOrder.execute(input = extra.serviceOrderId) }
         verify { approveExtra.execute(input = extra.id) }
         verify { rejectExtra.execute(input = extra.id) }
+        verify { inProgressExtra.execute(input = extra.id) }
+        verify { finishExtra.execute(input = extra.id) }
     }
 
     @Test

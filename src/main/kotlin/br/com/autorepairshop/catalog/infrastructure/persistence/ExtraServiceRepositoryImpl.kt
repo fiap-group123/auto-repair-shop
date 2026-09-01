@@ -8,6 +8,7 @@ import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
 import br.com.autorepairshop.shared.domain.Money
 import org.springframework.stereotype.Repository
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
@@ -38,6 +39,9 @@ class ExtraServiceRepositoryImpl(private val jpa: ExtraServiceJpaRepository) : E
         price = basePrice.amount,
         status = ExtraServiceStatusColumn.valueOf(value = status.name),
         createdAt = createdAt.toJavaInstant(),
+        startedAt = startedAt?.toJavaInstant(),
+        finishedAt = finishedAt?.toJavaInstant(),
+        estimatedTimeSeconds = estimatedTime?.inWholeSeconds,
     )
 
     private fun ExtraServiceEntity.toDomain() = ExtraService.rehydrate(
@@ -47,5 +51,8 @@ class ExtraServiceRepositoryImpl(private val jpa: ExtraServiceJpaRepository) : E
         price = Money.of(raw = price),
         status = ExtraServiceStatus.valueOf(value = status.name),
         createdAt = createdAt.toKotlinInstant(),
+        startedAt = startedAt?.toKotlinInstant(),
+        finishedAt = finishedAt?.toKotlinInstant(),
+        estimatedTime = estimatedTimeSeconds?.seconds,
     )
 }

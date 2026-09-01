@@ -100,6 +100,7 @@ class CalculateBudgetTotalUseCaseTest {
         val pending = CatalogFixtures.extraService(name = "Pendente", serviceOrderId = order.id.value)
         val approved = CatalogFixtures.extraService(name = "Aprovado", price = "30.00", serviceOrderId = order.id.value)
         approved.approve()
+        approved.inProgress()
         every { orders.findById(id = order.id) } returns order
         every { budgets.findByServiceOrderId(serviceOrderId = order.id.value) } returns budget
         every { services.findByServiceOrderId(serviceOrderId = order.id.value) } returns listOf(

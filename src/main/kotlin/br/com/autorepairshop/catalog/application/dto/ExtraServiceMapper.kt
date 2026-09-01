@@ -10,4 +10,7 @@ fun ExtraService.toResponse() = ExtraServiceResponse(
     basePrice = basePrice.amount,
     status = status.name,
     createdAt = createdAt.toJavaInstant(),
+    startedAt = startedAt?.toJavaInstant(),
+    finishedAt = finishedAt?.toJavaInstant(),
+    estimatedTime = estimatedTime?.inWholeSeconds,
 )

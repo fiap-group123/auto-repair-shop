@@ -5,6 +5,8 @@ import br.com.autorepairshop.catalog.application.dto.ExtraServiceResponse
 import br.com.autorepairshop.catalog.application.dto.RegisterExtraServiceCommand
 import br.com.autorepairshop.catalog.application.usecase.ApproveExtraServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.FindExtraServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.FinishExtraServiceUseCase
+import br.com.autorepairshop.catalog.application.usecase.InProgressExtraServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.ListExtraServicesByServiceOrderIdUseCase
 import br.com.autorepairshop.catalog.application.usecase.RegisterExtraServiceUseCase
 import br.com.autorepairshop.catalog.application.usecase.RejectExtraServiceUseCase
@@ -29,6 +31,8 @@ class ExtraServiceController(
     private val listByServiceOrder: ListExtraServicesByServiceOrderIdUseCase,
     private val approveExtra: ApproveExtraServiceUseCase,
     private val rejectExtra: RejectExtraServiceUseCase,
+    private val inProgressExtra: InProgressExtraServiceUseCase,
+    private val finishExtra: FinishExtraServiceUseCase,
 ) {
 
     @PostMapping
@@ -67,4 +71,14 @@ class ExtraServiceController(
     @Operation(summary = "Reject an extra service")
     fun reject(@PathVariable id: UUID): ResponseEntity<ExtraServiceResponse> =
         ResponseEntity.ok(rejectExtra.execute(input = id))
+
+    @PostMapping("/{id}/in-progress")
+    @Operation(summary = "Start execution of an approved extra service")
+    fun start(@PathVariable id: UUID): ResponseEntity<ExtraServiceResponse> =
+        ResponseEntity.ok(inProgressExtra.execute(input = id))
+
+    @PostMapping("/{id}/finish")
+    @Operation(summary = "Finish an extra service in progress")
+    fun finish(@PathVariable id: UUID): ResponseEntity<ExtraServiceResponse> =
+        ResponseEntity.ok(finishExtra.execute(input = id))
 }
