@@ -2,7 +2,9 @@ package br.com.autorepairshop.budget.application.usecase
 
 import br.com.autorepairshop.budget.domain.exception.BudgetException
 import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
+import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
+import br.com.autorepairshop.catalog.domain.valueobject.ExtraServiceStatus
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.shared.application.UseCase
@@ -15,6 +17,7 @@ import java.util.UUID
 class CalculateBudgetTotalUseCase(
     private val orders: ServiceOrderRepository,
     private val services: ServiceRepository,
+    private val extras: ExtraServiceRepository,
     private val budgets: BudgetRepository,
 ) : UseCase<UUID, Unit> {
 
@@ -25,9 +28,12 @@ class CalculateBudgetTotalUseCase(
                 message = "Service order $input was not found.",
             )
         val budget = budgets.findByServiceOrderId(serviceOrderId = input) ?: return
-        val total = services.findByServiceOrderId(serviceOrderId = input)
+        val serviceTotal = services.findByServiceOrderId(serviceOrderId = input)
             .fold(initial = Money.ZERO) { acc, service -> acc.plus(other = service.basePrice) }
-        budget.updateBudgetTotal(newTotal = total)
+        val extraTotal = extras.findByServiceOrderId(serviceOrderId = input)
+            .filter { extra -> extra.status == ExtraServiceStatus.APPROVED }
+            .fold(initial = Money.ZERO) { acc, extra -> acc.plus(other = extra.basePrice) }
+        budget.updateBudgetTotal(newTotal = serviceTotal.plus(other = extraTotal))
         budgets.save(budget)
     }
 }

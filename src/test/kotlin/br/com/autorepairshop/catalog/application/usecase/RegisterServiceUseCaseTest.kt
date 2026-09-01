@@ -3,6 +3,7 @@ package br.com.autorepairshop.catalog.application.usecase
 import br.com.autorepairshop.catalog.CatalogFixtures
 import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
+import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
@@ -22,10 +23,12 @@ import kotlin.test.assertFailsWith
 class RegisterServiceUseCaseTest {
     private val serviceOrders = mockk<ServiceOrderRepository>()
     private val services = mockk<ServiceRepository>()
+    private val extras = mockk<ExtraServiceRepository>()
     private val events = mockk<EventPublisher>(relaxed = true)
     private val useCase = RegisterServiceUseCase(
         serviceOrders = serviceOrders,
         services = services,
+        extras = extras,
         events = events,
     )
 
@@ -42,10 +45,24 @@ class RegisterServiceUseCaseTest {
     }
 
     @Test
+    fun `rejects a name already used by an extra service`() {
+        val order = ServiceOrderFixtures.received()
+        every { serviceOrders.findById(id = order.id) } returns order
+        every { services.existsByName(name = any(), serviceOrderId = order.id.value) } returns false
+        every { extras.existsByName(name = any(), serviceOrderId = order.id.value) } returns true
+
+        assertFailsWith<CatalogException.ServiceAlreadyExists> {
+            useCase.execute(input = command(serviceOrderId = order.id.value))
+        }
+        verify(exactly = 0) { services.save(service = any()) }
+    }
+
+    @Test
     fun `rejects a negative price`() {
         val order = ServiceOrderFixtures.received()
         every { serviceOrders.findById(id = order.id) } returns order
         every { services.existsByName(name = any(), serviceOrderId = order.id.value) } returns false
+        every { extras.existsByName(name = any(), serviceOrderId = order.id.value) } returns false
 
         assertFailsWith<DomainException> {
             useCase.execute(
@@ -63,6 +80,7 @@ class RegisterServiceUseCaseTest {
         val order = ServiceOrderFixtures.received()
         every { serviceOrders.findById(id = order.id) } returns order
         every { services.existsByName(name = any(), serviceOrderId = order.id.value) } returns false
+        every { extras.existsByName(name = any(), serviceOrderId = order.id.value) } returns false
         every { services.save(service = any()) } returns Unit
 
         val response = useCase.execute(input = command(serviceOrderId = order.id.value))
@@ -81,6 +99,17 @@ class RegisterServiceUseCaseTest {
         )
         verify { services.save(service = any()) }
         verify { events.publish(aggregate = any()) }
+    }
+
+    @Test
+    fun `rejects a service after the budget is approved`() {
+        val order = ServiceOrderFixtures.budgetApproved()
+        every { serviceOrders.findById(id = order.id) } returns order
+
+        assertFailsWith<CatalogException.InvalidStatusTransition> {
+            useCase.execute(input = command(serviceOrderId = order.id.value))
+        }
+        verify(exactly = 0) { services.save(service = any()) }
     }
 
     private fun command(

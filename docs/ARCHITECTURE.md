@@ -44,7 +44,7 @@ Regras e invariantes. Sem anotações de framework.
 |---|---|
 | `AggregateRoot` | Identidade + lista de `DomainEvent` pendentes |
 | `Entity` / `ValueObject` | Identidade vs igualdade por valor |
-| Agregados | `Customer`, `Vehicle`, `ServiceOrder`, `Service`, `Budget`, `User`, `CustomerInvite`, `RefreshSession` |
+| Agregados | `Customer`, `Vehicle`, `ServiceOrder`, `Service`, `ExtraService`, `Budget`, `User`, `CustomerInvite`, `RefreshSession` |
 | Value objects | Documento, placa, `Money`, `Role`, status, e-mails de login, etc. |
 | Portas de repositório | Interfaces no domínio (`CustomerRepository`, `UserRepository`, …) |
 | Eventos | Fatos do agregado (`CustomerRegistered`, `ServiceRegistered`, …) |
@@ -215,7 +215,7 @@ RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUT
 
 ### budget
 
-Orçamento de uma OS: um por ordem, total somado dos itens do catalog.
+Orçamento de uma OS: um por ordem, total somado dos `Service` da OS mais os `ExtraService` com status `APPROVED`.
 
 **Agregado `Budget`**
 
@@ -226,7 +226,7 @@ WAITING_APPROVAL → APPROVED | REJECTED | TRADED
 | Ação | Regra |
 |---|---|
 | registrar | Disparado por `DiagnosisStarted`; OS existe; um budget por OS; total inicia na soma dos itens já cadastrados |
-| recalcular | Soma dos `basePrice` do catalog; zero é permitido |
+| recalcular | Soma dos `basePrice` dos `Service` + extras `APPROVED`; zero é permitido; um extra aprovado pode aumentar um orçamento já `APPROVED` |
 | aprovar | Só de `WAITING_APPROVAL`; emite `BudgetApproved`; OS → `BUDGET_APPROVED` |
 | rejeitar | Só de `WAITING_APPROVAL`; emite `BudgetRejected`; OS → `BUDGET_REJECTED` |
 | negociar | Só de `WAITING_APPROVAL`; emite `BudgetTraded`; OS → `BUDGET_APPROVED` |
@@ -238,13 +238,13 @@ WAITING_APPROVAL → APPROVED | REJECTED | TRADED
 | Listener | Quando | Transação |
 |---|---|---|
 | `RegisterBudgetEventListener` | `DiagnosisStarted` | Mesmo commit da OS |
-| `CalculateBudgetEventListener` | `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` | Mesmo commit do item |
+| `CalculateBudgetEventListener` | `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved`, `ExtraServiceApproved`, `ExtraServiceRejected` | Mesmo commit do item |
 
 **Persistência:** `budgets`. `service_order_id` único → `service_orders`.
 
 ### catalog
 
-Itens de serviço **de uma OS**, não um catálogo da oficina. Nome, preço, status de execução e duração.
+Itens de serviço **de uma OS**, não um catálogo da oficina. `Service` é o diagnóstico. `ExtraService` é reparo adicional depois do orçamento aprovado e **não vira** `Service`.
 
 **Agregado `Service`**
 
@@ -254,7 +254,7 @@ WAITING → IN_PROGRESS → FINISHED
 
 | Ação | Regra |
 |---|---|
-| registrar | OS existe; nome único **naquela** OS |
+| registrar | OS em `RECEIVED`, `IN_DIAGNOSIS` ou `WAITING_APPROVAL`; nome único **naquela** OS (também contra extras) |
 | alterar preço | Emite `ServicePriceChanged` |
 | iniciar | Só de `WAITING` |
 | finalizar | Só de `IN_PROGRESS`; grava duração |
@@ -262,11 +262,33 @@ WAITING → IN_PROGRESS → FINISHED
 
 **Casos de uso:** `RegisterServiceUseCase`, `FindServiceUseCase`, `ListServicesUseCase`, `ListServicesByServiceOrderIdUseCase`, `ListServicesByCustomerIdUseCase`, `UpdateServiceUseCase`, `DeleteServiceUseCase`, `InProgressServiceUseCase`, `FinishServiceUseCase`, `AverageExecutionTimeUseCase`.
 
-`RegisterServiceUseCase` consulta `ServiceOrderRepository` para garantir que a OS existe.
+`RegisterServiceUseCase` consulta `ServiceOrderRepository` para garantir que a OS existe e ainda aceita itens de diagnóstico.
 
-**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` — o total do Budget é a soma dos `basePrice`.
+**Agregado `ExtraService`**
 
-**Persistência:** `services` (`service_order_id` → `service_orders`).
+```
+PENDING → APPROVED | REJECTED
+```
+
+| Ação | Regra |
+|---|---|
+| registrar | OS em `BUDGET_APPROVED` ou `IN_EXECUTION`; nome único **naquela** OS (também contra `Service`); emite `ExtraServiceRegistered` |
+| aprovar | Só de `PENDING`; emite `ExtraServiceApproved` |
+| rejeitar | Só de `PENDING`; emite `ExtraServiceRejected` |
+
+**Casos de uso:** `RegisterExtraServiceUseCase`, `FindExtraServiceUseCase`, `ListExtraServicesByServiceOrderIdUseCase`, `ApproveExtraServiceUseCase`, `RejectExtraServiceUseCase`.
+
+`AccessGuard.requireCustomer` no find/list/approve/reject (dono da OS).
+
+**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` recalculam o Budget. `ExtraServiceApproved` e `ExtraServiceRejected` também. `PENDING` e `REJECTED` não entram no total.
+
+**Listeners**
+
+| Listener | Quando | Transação |
+|---|---|---|
+| `ExtraServiceRegisteredMailListener` | `ExtraServiceRegistered` | `AFTER_COMMIT`, assíncrono |
+
+**Persistência:** `services` e `extra_services` (`service_order_id` → `service_orders`). Unique `(service_order_id, name)` em cada tabela.
 
 ### api (borda HTTP)
 
@@ -279,6 +301,7 @@ WAITING → IN_PROGRESS → FINISHED
 | `ServiceOrderController` | `/service-orders` | serviceorder |
 | `BudgetController` | `/budgets` | budget |
 | `ServiceController` | `/services` | catalog |
+| `ExtraServiceController` | `/extra-services` | catalog |
 
 Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, `BudgetApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
 
@@ -319,6 +342,7 @@ Flyway é dono do schema (`src/main/resources/db/migration/`). Hibernate só val
 | `service_orders` | serviceorder | FKs para customer e vehicle; uma OS aberta por veículo |
 | `budgets` | budget | `service_order_id` único → `service_orders` |
 | `services` | catalog | FK para `service_orders` |
+| `extra_services` | catalog | FK para `service_orders`; unique `(service_order_id, name)` |
 
 Timestamps em `TIMESTAMPTZ`. Soft delete de cliente e veículo: coluna `active`, histórico preservado.
 

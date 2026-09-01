@@ -1,9 +1,12 @@
 package br.com.autorepairshop.budget.application.event
 
 import br.com.autorepairshop.budget.application.usecase.CalculateBudgetTotalUseCase
+import br.com.autorepairshop.catalog.domain.event.ExtraServiceApproved
+import br.com.autorepairshop.catalog.domain.event.ExtraServiceRejected
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
 import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
+import br.com.autorepairshop.catalog.domain.valueobject.ExtraServiceId
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
 import io.mockk.every
 import io.mockk.mockk
@@ -44,7 +47,21 @@ class CalculateBudgetEventListenerTest {
                 occurredOn = Instant.now(),
             ),
         )
+        listener.on(
+            event = ExtraServiceApproved(
+                extraServiceId = ExtraServiceId.generate(),
+                serviceOrderId = serviceOrderId,
+                occurredOn = Instant.now(),
+            ),
+        )
+        listener.on(
+            event = ExtraServiceRejected(
+                extraServiceId = ExtraServiceId.generate(),
+                serviceOrderId = serviceOrderId,
+                occurredOn = Instant.now(),
+            ),
+        )
 
-        verify(exactly = 3) { calculateBudgetTotal.execute(input = serviceOrderId) }
+        verify(exactly = 5) { calculateBudgetTotal.execute(input = serviceOrderId) }
     }
 }

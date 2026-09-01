@@ -1,5 +1,6 @@
 package br.com.autorepairshop.catalog
 
+import br.com.autorepairshop.catalog.domain.aggregate.ExtraService
 import br.com.autorepairshop.catalog.domain.aggregate.Service
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
 import br.com.autorepairshop.shared.domain.Money
@@ -18,6 +19,16 @@ object CatalogFixtures {
         price: String = PRICE,
         serviceOrderId: UUID = UUID.randomUUID(),
     ): Service = Service.register(
+        serviceOrderId = serviceOrderId,
+        name = ServiceName.of(raw = name),
+        price = money(raw = price),
+    )
+
+    fun extraService(
+        name: String = OTHER_NAME,
+        price: String = PRICE,
+        serviceOrderId: UUID = UUID.randomUUID(),
+    ): ExtraService = ExtraService.register(
         serviceOrderId = serviceOrderId,
         name = ServiceName.of(raw = name),
         price = money(raw = price),

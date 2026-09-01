@@ -1,6 +1,8 @@
 package br.com.autorepairshop.budget.application.event
 
 import br.com.autorepairshop.budget.application.usecase.CalculateBudgetTotalUseCase
+import br.com.autorepairshop.catalog.domain.event.ExtraServiceApproved
+import br.com.autorepairshop.catalog.domain.event.ExtraServiceRejected
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
 import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
@@ -21,6 +23,16 @@ class CalculateBudgetEventListener(private val calculateBudgetTotal: CalculateBu
 
     @EventListener
     fun on(event: ServiceRemoved) {
+        calculateBudgetTotal.execute(input = event.serviceOrderId)
+    }
+
+    @EventListener
+    fun on(event: ExtraServiceApproved) {
+        calculateBudgetTotal.execute(input = event.serviceOrderId)
+    }
+
+    @EventListener
+    fun on(event: ExtraServiceRejected) {
         calculateBudgetTotal.execute(input = event.serviceOrderId)
     }
 }

@@ -2,7 +2,7 @@
 
 Base URL: `http://localhost:8080`.
 
-Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html. Pedidos prontos: [`http/auth.http`](../http/auth.http), [`http/customer.http`](../http/customer.http), [`http/service-order.http`](../http/service-order.http), [`http/budget.http`](../http/budget.http).
+Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html. Pedidos prontos: [`http/auth.http`](../http/auth.http), [`http/customer.http`](../http/customer.http), [`http/service-order.http`](../http/service-order.http), [`http/budget.http`](../http/budget.http), [`http/extra-service.http`](../http/extra-service.http).
 
 Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff vê o que o papel permitir.
 
@@ -275,7 +275,7 @@ Resposta `201` / `200`:
 }
 ```
 
-O detalhe da OS só devolve `serviceIds`. Nome, preço e status dos itens saem em `/services`. O total sai em `GET /budgets/{serviceOrderId}`.
+O detalhe da OS só devolve `serviceIds`. Nome, preço e status dos itens saem em `/services`. Extras saem em `/extra-services`. O total sai em `GET /budgets/{serviceOrderId}`.
 
 ## Budgets
 
@@ -285,7 +285,7 @@ O orçamento é criado ao iniciar o diagnóstico (`POST /service-orders/{id}/dia
 
 | Método | Path | Papéis | Status | Descrição |
 |---|---|---|---|---|
-| `GET` | `/budgets/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca pelo id da OS. |
+| `GET` | `/budgets/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca pelo id da OS. Total = itens do diagnóstico + extras `APPROVED`. |
 | `POST` | `/budgets/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Aprova o orçamento e passa a OS para `BUDGET_APPROVED`. |
 | `POST` | `/budgets/{id}/reject` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Rejeita o orçamento e passa a OS para `BUDGET_REJECTED`. |
 | `POST` | `/budgets/{id}/trade` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Negocia o orçamento e passa a OS para `BUDGET_APPROVED`. |
@@ -312,7 +312,7 @@ Serviço é linha da ordem, não catálogo da oficina. Status do item: `WAITING`
 
 | Método | Path | Papéis | Status | Descrição |
 |---|---|---|---|---|
-| `POST` | `/services` | `RECEPTIONIST`, `MANAGER` | `201` | Adiciona item à OS e recalcula o total do orçamento. |
+| `POST` | `/services` | `RECEPTIONIST`, `MANAGER` | `201` | Adiciona item à OS (`RECEIVED`, `IN_DIAGNOSIS` ou `WAITING_APPROVAL`) e recalcula o total. |
 | `GET` | `/services` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista todos os itens. |
 | `GET` | `/services/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Itens do cliente. `CLIENT` precisa ser o dono. |
 | `GET` | `/services/service-order/{serviceOrderId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Itens da OS. `CLIENT` precisa ser dono da OS. |
@@ -335,7 +335,7 @@ Serviço é linha da ordem, não catálogo da oficina. Status do item: `WAITING`
 }
 ```
 
-Nome único **naquela** OS.
+Nome único **naquela** OS (entre `Service` e `ExtraService`). Só enquanto a OS estiver em `RECEIVED`, `IN_DIAGNOSIS` ou `WAITING_APPROVAL`.
 
 Resposta `201` / `200`:
 
@@ -372,6 +372,45 @@ Alterar o preço recalcula o total do orçamento.
 {
   "sampleSize": 12,
   "averageSeconds": 3600
+}
+```
+
+## Extra services
+
+Reparo extra encontrado depois do orçamento. **Não vira** `Service`. Status: `PENDING` → `APPROVED` | `REJECTED`. Só `APPROVED` entra no `Budget.total`.
+
+`POST /extra-services` só com OS em `BUDGET_APPROVED` ou `IN_EXECUTION`.
+
+| Método | Path | Papéis | Status | Descrição |
+|---|---|---|---|---|
+| `POST` | `/extra-services` | `MECHANIC`, `MANAGER` | `201` | Registra extra `PENDING` e avisa o cliente por e-mail. |
+| `GET` | `/extra-services/service-order/{serviceOrderId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista extras da OS. `CLIENT` precisa ser dono da OS. |
+| `GET` | `/extra-services/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca um extra. `CLIENT` precisa ser dono da OS. |
+| `POST` | `/extra-services/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Aprova e soma o preço no orçamento. |
+| `POST` | `/extra-services/{id}/reject` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Rejeita. Não entra no total. |
+
+### `POST /extra-services`
+
+```json
+{
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000",
+  "name": "Troca de pastilha",
+  "basePrice": 220.00
+}
+```
+
+Nome único **naquela** OS (entre `Service` e `ExtraService`).
+
+Resposta `201` / `200`:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000",
+  "name": "Troca de pastilha",
+  "basePrice": 220.00,
+  "status": "PENDING",
+  "createdAt": "2026-08-31T12:00:00Z"
 }
 ```
 
