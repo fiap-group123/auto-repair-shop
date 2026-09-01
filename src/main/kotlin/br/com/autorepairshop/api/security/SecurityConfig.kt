@@ -83,6 +83,7 @@ class SecurityConfig {
         configureCustomerRules(requests = requests)
         configureVehicleRules(requests = requests)
         configureServiceRules(requests = requests)
+        configureExtraServiceRules(requests = requests)
         configureOrderRules(requests = requests)
         configureBudgetRules(requests = requests)
         requests.anyRequest().authenticated()
