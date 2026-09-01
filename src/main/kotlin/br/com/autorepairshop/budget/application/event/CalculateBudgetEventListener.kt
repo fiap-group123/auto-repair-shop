@@ -6,6 +6,9 @@ import br.com.autorepairshop.catalog.domain.event.ExtraServiceRejected
 import br.com.autorepairshop.catalog.domain.event.ServicePriceChanged
 import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
 import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
+import br.com.autorepairshop.inputmanagment.domain.event.PartQuantityChanged
+import br.com.autorepairshop.inputmanagment.domain.event.PartRegistered
+import br.com.autorepairshop.inputmanagment.domain.event.PartRemoved
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
@@ -33,6 +36,21 @@ class CalculateBudgetEventListener(private val calculateBudgetTotal: CalculateBu
 
     @EventListener
     fun on(event: ExtraServiceRejected) {
+        calculateBudgetTotal.execute(input = event.serviceOrderId)
+    }
+
+    @EventListener
+    fun on(event: PartRegistered) {
+        calculateBudgetTotal.execute(input = event.serviceOrderId)
+    }
+
+    @EventListener
+    fun on(event: PartQuantityChanged) {
+        calculateBudgetTotal.execute(input = event.serviceOrderId)
+    }
+
+    @EventListener
+    fun on(event: PartRemoved) {
         calculateBudgetTotal.execute(input = event.serviceOrderId)
     }
 }

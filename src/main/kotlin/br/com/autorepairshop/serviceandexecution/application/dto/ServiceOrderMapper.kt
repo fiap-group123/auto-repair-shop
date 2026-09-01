@@ -1,7 +1,7 @@
 package br.com.autorepairshop.serviceandexecution.application.dto
 
 import br.com.autorepairshop.catalog.domain.aggregate.Service
-import br.com.autorepairshop.inventory.domain.aggregate.Part
+import br.com.autorepairshop.inputmanagment.domain.aggregate.Part
 import br.com.autorepairshop.serviceandexecution.domain.aggregate.ServiceOrder
 import kotlin.time.toJavaInstant
 

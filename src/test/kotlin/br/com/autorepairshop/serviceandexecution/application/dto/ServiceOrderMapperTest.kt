@@ -1,7 +1,7 @@
 package br.com.autorepairshop.serviceandexecution.application.dto
 
 import br.com.autorepairshop.catalog.CatalogFixtures
-import br.com.autorepairshop.inventory.InventoryFixtures
+import br.com.autorepairshop.inputmanagment.InventoryFixtures
 import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test

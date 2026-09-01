@@ -1,7 +1,7 @@
 package br.com.autorepairshop.serviceandexecution.application.dto
 
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
-import br.com.autorepairshop.inventory.domain.repository.PartRepository
+import br.com.autorepairshop.inputmanagment.domain.repository.PartRepository
 import br.com.autorepairshop.serviceandexecution.domain.aggregate.ServiceOrder
 import org.springframework.stereotype.Component
 
