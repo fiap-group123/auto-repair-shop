@@ -54,11 +54,21 @@ class ExtraServiceRepositoryImplTest {
         )
 
         extra.approve()
+        extra.inProgress()
+        extra.finish()
         repo.save(extra = extra)
         every { jpa.findById(extra.id.value) } returns Optional.of(stored.captured)
         assertEquals(
             expected = extra.status.name,
             actual = repo.findById(id = extra.id)?.status?.name,
+        )
+        assertEquals(
+            expected = extra.startedAt,
+            actual = repo.findById(id = extra.id)?.startedAt,
+        )
+        assertEquals(
+            expected = extra.finishedAt,
+            actual = repo.findById(id = extra.id)?.finishedAt,
         )
     }
 

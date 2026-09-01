@@ -32,3 +32,13 @@ Authorization: Bearer {{token}}
 # Rejeitar extra
 POST {{baseUrl}}/extra-services/{{extraServiceId}}/reject
 Authorization: Bearer {{token}}
+
+###
+# Iniciar execucao do extra aprovado
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/in-progress
+Authorization: Bearer {{token}}
+
+###
+# Finalizar extra
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/finish
+Authorization: Bearer {{token}}

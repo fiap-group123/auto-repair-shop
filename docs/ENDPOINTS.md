@@ -377,7 +377,7 @@ Alterar o preço recalcula o total do orçamento.
 
 ## Extra services
 
-Reparo extra encontrado depois do orçamento. **Não vira** `Service`. Status: `PENDING` → `APPROVED` | `REJECTED`. Só `APPROVED` entra no `Budget.total`.
+Reparo extra encontrado depois do orçamento. **Não vira** `Service`. Autorização: `PENDING` → `APPROVED` | `REJECTED`. Execução: `APPROVED` → `IN_PROGRESS` → `FINISHED`. `APPROVED`, `IN_PROGRESS` e `FINISHED` entram no `Budget.total`.
 
 `POST /extra-services` só com OS em `BUDGET_APPROVED` ou `IN_EXECUTION`.
 
@@ -388,6 +388,8 @@ Reparo extra encontrado depois do orçamento. **Não vira** `Service`. Status: `
 | `GET` | `/extra-services/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca um extra. `CLIENT` precisa ser dono da OS. |
 | `POST` | `/extra-services/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Aprova e soma o preço no orçamento. |
 | `POST` | `/extra-services/{id}/reject` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Rejeita. Não entra no total. |
+| `POST` | `/extra-services/{id}/in-progress` | `MECHANIC`, `MANAGER` | `200` | Inicia execução de um extra `APPROVED`. |
+| `POST` | `/extra-services/{id}/finish` | `MECHANIC`, `MANAGER` | `200` | Finaliza e grava duração. |
 
 ### `POST /extra-services`
 
@@ -410,7 +412,10 @@ Resposta `201` / `200`:
   "name": "Troca de pastilha",
   "basePrice": 220.00,
   "status": "PENDING",
-  "createdAt": "2026-08-31T12:00:00Z"
+  "createdAt": "2026-08-31T12:00:00Z",
+  "startedAt": null,
+  "finishedAt": null,
+  "estimatedTime": null
 }
 ```
 
