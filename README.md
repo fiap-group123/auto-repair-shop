@@ -29,12 +29,12 @@ Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. 
 
 | Contexto | Pacote | Responsabilidade |
 |---|---|---|
-| Authentication | `accessidentity` | Staff, convite do cliente, JWT + refresh |
+| Access identity | `accessidentity` | Staff, convite do cliente, JWT + refresh |
 | Customer | `customer` | Cliente (CPF/CNPJ) e veículos |
-| Service order | `serviceandexecution` | Ciclo de vida da OS |
+| Service and execution | `serviceandexecution` | Ciclo de vida da OS |
 | Budget | `budget` | Total e aprovação do orçamento |
 | Catalog | `catalog` | Itens de diagnóstico (`Service`) e extras (`ExtraService`) |
-| Inventory | `inventory` | Estoque da oficina (`Inventory`) e linhas da OS (`Part`) |
+| Input management | `inputmanagment` | Estoque da oficina (`Inventory`) e linhas da OS (`Part`) |
 
 Papéis: `MANAGER`, `RECEPTIONIST`, `MECHANIC`, `CLIENT`. Conta `CLIENT` só nasce pelo convite (e-mail de contato do cliente). Detalhe das rotas: [ENDPOINTS.md](docs/ENDPOINTS.md). Ciclo da OS:
 

@@ -102,26 +102,14 @@ kover {
         filters {
             includes {
                 packages(
-                    "br.com.autorepairshop.customer.domain",
-                    "br.com.autorepairshop.customer.application",
-                    "br.com.autorepairshop.customer.infrastructure.persistence",
-                    "br.com.autorepairshop.authentication.domain",
-                    "br.com.autorepairshop.authentication.application",
-                    "br.com.autorepairshop.authentication.infrastructure.persistence",
-                    "br.com.autorepairshop.serviceorder.domain",
-                    "br.com.autorepairshop.serviceorder.application",
-                    "br.com.autorepairshop.serviceorder.infrastructure",
-                    "br.com.autorepairshop.catalog.domain",
-                    "br.com.autorepairshop.catalog.application",
-                    "br.com.autorepairshop.catalog.infrastructure.persistence",
-                    "br.com.autorepairshop.budget.domain",
-                    "br.com.autorepairshop.budget.application",
-                    "br.com.autorepairshop.budget.infrastructure.persistence",
-                    "br.com.autorepairshop.inventory.domain",
-                    "br.com.autorepairshop.inventory.application",
-                    "br.com.autorepairshop.inventory.infrastructure.persistence",
-                    "br.com.autorepairshop.shared.domain",
-                    "br.com.autorepairshop.api.controller",
+                    "br.com.autorepairshop.accessidentity",
+                    "br.com.autorepairshop.customer",
+                    "br.com.autorepairshop.catalog",
+                    "br.com.autorepairshop.inputmanagment",
+                    "br.com.autorepairshop.serviceandexecution",
+                    "br.com.autorepairshop.budget",
+                    "br.com.autorepairshop.shared",
+                    "br.com.autorepairshop.api",
                 )
             }
             excludes {
@@ -129,10 +117,12 @@ kover {
                     "*HashedPassword",
                     "*UserId",
                     "*CustomerInviteId",
+                    "*RefreshSessionId",
                     "*CustomerId",
                     "*VehicleId",
                     "*ServiceOrderId",
                     "*ServiceId",
+                    "*ExtraServiceId",
                     "*InventoryId",
                     "*PartId",
                     "*InventoryKind",
@@ -146,6 +136,12 @@ kover {
                     "*ContactInfo",
                     "*Entity",
                     "*JpaRepository",
+                    "*Column",
+                    "*OpenApiConfig",
+                    "*AutoRepairShopApplication",
+                    "*JwtConfig",
+                    "*MailSettings",
+                    "*SecurityConfig",
                 )
             }
         }
@@ -185,7 +181,27 @@ sonar {
             "sonar.exclusions",
             "**/build/**,**/generated/**,**/*.sql",
         )
-        property("sonar.coverage.exclusions", "**/dto/**,**/*Entity.kt,**/*JpaRepository.kt")
+        property(
+            "sonar.coverage.exclusions",
+            listOf(
+                "**/dto/**",
+                "**/*Entity.kt",
+                "**/*JpaRepository.kt",
+                "**/*Column.kt",
+                "**/*Id.kt",
+                "**/Role.kt",
+                "**/*Status.kt",
+                "**/*Type.kt",
+                "**/ContactInfo.kt",
+                "**/HashedPassword.kt",
+                "**/InventoryKind.kt",
+                "**/OpenApiConfig.kt",
+                "**/AutoRepairShopApplication.kt",
+                "**/JwtConfig.kt",
+                "**/MailSettings.kt",
+                "**/SecurityConfig.kt",
+            ).joinToString(separator = ","),
+        )
     }
 }
 

@@ -1,0 +1,283 @@
+@baseUrl = http://localhost:8080
+
+# Apresentacao — Auto Repair Shop (FIAP Tech Challenge)
+#
+# Fluxo linear, de cima para baixo, sem pular. Uma historia so:
+# o Civic do John Doe entra na oficina e sai entregue.
+#
+# Pre-requisito: banco vazio.
+#   docker compose down -v
+#   docker compose up --build
+#
+# Pausa unica: depois do POST /customers, abra http://localhost:8025,
+# copie o token do link /invite/{token} e cole em @inviteToken abaixo.
+#
+# Totais para falar na demo:
+#   servico R$ 150 + 2 pecas a R$ 50 = R$ 250 (orcamento)
+#   extra aprovado R$ 100 → total final R$ 350
+#
+# Papel de cada token:
+#   managerToken  — cadastro, estoque, OS, execucao, entrega
+#   clientToken   — aprova orcamento e extra
+
+@inviteToken = VIjeLINxBB3bb_EC3JHhWed-JDKC-xVczgThArV7VkM
+
+###
+# 1. Primeiro usuario — MANAGER (so funciona com banco vazio)
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123",
+  "role": "MANAGER"
+}
+
+###
+# 2. Login — gerente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {%
+client.global.set("managerToken", response.body.accessToken);
+%}
+
+###
+# 3. Equipe — recepcionista
+POST {{baseUrl}}/auth/users
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "email": "recepcao@oficina.com",
+  "password": "senha123",
+  "role": "RECEPTIONIST"
+}
+
+###
+# 4. Equipe — mecanico
+POST {{baseUrl}}/auth/users
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "email": "mecanico@oficina.com",
+  "password": "senha123",
+  "role": "MECHANIC"
+}
+
+###
+# 5. Cliente — John Doe (dispara convite; e-mail cai no Mailpit)
+POST {{baseUrl}}/customers
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "documentId": "529.982.247-25",
+  "name": "John Doe",
+  "email": "john.doe@email.com",
+  "phone": "11987654321"
+}
+
+> {%
+client.global.set("customerId", response.body.id);
+client.global.set("document", response.body.documentId);
+%}
+
+###
+# 6. PAUSA — cole o token do Mailpit em @inviteToken no topo e rode este GET
+GET {{baseUrl}}/invite/{{inviteToken}}
+
+###
+# 7. Cliente cria o login CLIENT
+POST {{baseUrl}}/invite/{{inviteToken}}
+Content-Type: application/json
+
+{
+  "email": "john.doe@email.com",
+  "password": "senha123"
+}
+
+###
+# 8. Login — cliente (vai aprovar orcamento e extra)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@email.com",
+  "password": "senha123"
+}
+
+> {% client.global.set("clientToken", response.body.accessToken); %}
+
+###
+# 9. Veiculo — Honda Civic, placa antiga
+POST {{baseUrl}}/vehicles
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "ownerId": "{{customerId}}",
+  "plate": "ABC-1234",
+  "brand": "Honda",
+  "model": "Civic",
+  "year": 2018,
+  "color": "Preto"
+}
+
+> {% client.global.set("vehicleId", response.body.id); %}
+
+###
+# 10. Estoque — filtro (catalogo da oficina, ainda sem OS)
+POST {{baseUrl}}/inventories
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "name": "Filtro de oleo",
+  "kind": "PART",
+  "unitPrice": 50.00,
+  "stock": 10
+}
+
+> {% client.global.set("inventoryId", response.body.id); %}
+
+###
+# 11. Abrir OS — status RECEIVED
+POST {{baseUrl}}/service-orders
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "document": "{{document}}",
+  "vehiclePlate": "ABC-1234"
+}
+
+> {% client.global.set("serviceOrderId", response.body.id); %}
+
+###
+# 12. Item de diagnostico — R$ 150
+POST {{baseUrl}}/services
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "name": "Troca de oleo e filtro",
+  "basePrice": 150.00
+}
+
+> {% client.global.set("serviceId", response.body.id); %}
+
+###
+# 13. Peca na OS — 2 un., baixa estoque, snapshot R$ 50
+POST {{baseUrl}}/parts
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "inventoryId": "{{inventoryId}}",
+  "quantity": 2
+}
+
+> {% client.global.set("partId", response.body.id); %}
+
+###
+# 14. Estoque depois da baixa — espera stock 8
+GET {{baseUrl}}/inventories/{{inventoryId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 15. OS recebida — serviceIds + partIds, status RECEIVED
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 16. Iniciar diagnostico — cria o orcamento (evento DiagnosisStarted)
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis
+Authorization: Bearer {{managerToken}}
+
+###
+# 17. Encerrar diagnostico — WAITING_APPROVAL (total precisa ser > 0)
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 18. Orcamento — espera total 250.00 (150 + 2*50)
+GET {{baseUrl}}/budgets/{{serviceOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 19. Cliente aprova o orcamento — OS vai para BUDGET_APPROVED
+POST {{baseUrl}}/budgets/{{serviceOrderId}}/approve
+Authorization: Bearer {{clientToken}}
+
+###
+# 20. Iniciar execucao
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/execution
+Authorization: Bearer {{managerToken}}
+
+###
+# 21. Mecanico inicia o servico
+POST {{baseUrl}}/services/{{serviceId}}/in-progress
+Authorization: Bearer {{managerToken}}
+
+###
+# 22. Mecanico finaliza o servico
+POST {{baseUrl}}/services/{{serviceId}}/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 23. Extra encontrado na execucao — nasce PENDING, e-mail no Mailpit
+POST {{baseUrl}}/extra-services
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "name": "Troca de pastilha",
+  "basePrice": 100.00
+}
+
+> {% client.global.set("extraServiceId", response.body.id); %}
+
+###
+# 24. Cliente aprova o extra — entra no total do orcamento
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/approve
+Authorization: Bearer {{clientToken}}
+
+###
+# 25. Executar o extra
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/in-progress
+Authorization: Bearer {{managerToken}}
+
+###
+# 26. Finalizar o extra
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 27. Orcamento atualizado — espera total 350.00 (250 + 100)
+GET {{baseUrl}}/budgets/{{serviceOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 28. Concluir a OS
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 29. Entregar o veiculo — DELIVERED
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/deliver
+Authorization: Bearer {{managerToken}}
+
+###
+# 30. Conferencia final
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}
+Authorization: Bearer {{managerToken}}
