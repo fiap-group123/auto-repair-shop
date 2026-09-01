@@ -14,5 +14,4 @@ fun ServiceOrder.toResponse(catalog: List<Service> = emptyList()) = ServiceOrder
     startedAt = startedAt?.toJavaInstant(),
     finishedAt = finishedAt?.toJavaInstant(),
     estimatedTime = estimatedTime?.inWholeSeconds,
-    total = total.amount,
 )

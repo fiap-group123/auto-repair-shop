@@ -1,0 +1,27 @@
+@baseUrl = http://localhost:8080
+@token = {{loginToken}}
+
+###
+# Consultar orcamento da OS
+GET {{baseUrl}}/budgets/{{serviceOrderId}}
+Authorization: Bearer {{token}}
+
+###
+# Aprovar orcamento (OS vai para BUDGET_APPROVED)
+POST {{baseUrl}}/budgets/{{serviceOrderId}}/approve
+Authorization: Bearer {{token}}
+
+###
+# Rejeitar orcamento (OS vai para BUDGET_REJECTED)
+POST {{baseUrl}}/budgets/{{serviceOrderId}}/reject
+Authorization: Bearer {{token}}
+
+###
+# Negociar orcamento (OS vai para BUDGET_APPROVED)
+POST {{baseUrl}}/budgets/{{serviceOrderId}}/trade
+Authorization: Bearer {{token}}
+
+###
+# Remover orcamento
+DELETE {{baseUrl}}/budgets/{{serviceOrderId}}
+Authorization: Bearer {{token}}

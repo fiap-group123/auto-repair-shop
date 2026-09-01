@@ -84,6 +84,7 @@ class SecurityConfig {
         configureVehicleRules(requests = requests)
         configureServiceRules(requests = requests)
         configureOrderRules(requests = requests)
+        configureBudgetRules(requests = requests)
         requests.anyRequest().authenticated()
     }
 
@@ -136,11 +137,15 @@ class SecurityConfig {
     ) {
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis/complete")
             .hasAnyRole("MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis/finish")
+            .hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/diagnosis")
             .hasAnyRole("MECHANIC", "MANAGER")
-        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/approve")
-            .hasAnyRole("CLIENT", "RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/execution")
+            .hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/complete")
+            .hasAnyRole("MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/service-orders/*/finish")
             .hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/service-orders/*/deliver")
             .hasAnyRole("RECEPTIONIST", "MANAGER")
@@ -151,6 +156,16 @@ class SecurityConfig {
             .hasAnyRole("RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.GET, "/service-orders/**")
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
+    }
+
+    private fun configureBudgetRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
+        requests.requestMatchers(HttpMethod.GET, "/budgets/**")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/budgets/*/approve", "/budgets/*/reject", "/budgets/*/trade")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.DELETE, "/budgets/**").hasRole("MANAGER")
     }
 
     private fun bootstrapOrManager(users: UserRepository): AuthorizationManager<RequestAuthorizationContext> =

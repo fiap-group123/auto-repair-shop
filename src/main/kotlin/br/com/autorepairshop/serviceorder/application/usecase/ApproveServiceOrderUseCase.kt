@@ -1,6 +1,5 @@
 package br.com.autorepairshop.serviceorder.application.usecase
 
-import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderAssembler
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
@@ -17,7 +16,6 @@ class ApproveServiceOrderUseCase(
     private val orders: ServiceOrderRepository,
     private val events: EventPublisher,
     private val responses: ServiceOrderAssembler,
-    private val access: AccessGuard,
 ) : UseCase<UUID, ServiceOrderResponse> {
 
     @Transactional
@@ -26,8 +24,7 @@ class ApproveServiceOrderUseCase(
             ?: throw ServiceOrderException.ServiceOrderNotFound(
                 message = "Service order $input was not found.",
             )
-        access.requireCustomer(customerId = order.customerId)
-        order.approve()
+        order.budgetApprove()
         orders.save(order = order)
         events.publish(aggregate = order)
         return responses.toResponse(order = order)

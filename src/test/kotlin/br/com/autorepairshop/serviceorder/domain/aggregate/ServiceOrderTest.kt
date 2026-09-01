@@ -4,8 +4,10 @@ import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.event.DiagnosisFinished
 import br.com.autorepairshop.serviceorder.domain.event.DiagnosisStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderApproved
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderBudgetRejected
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderCompleted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderDelivered
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderExecutionStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderOpened
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
@@ -39,7 +41,6 @@ class ServiceOrderTest {
         )
         assertTrue(order.domainEvents.last() is DiagnosisStarted)
 
-        order.updateBudgetTotal(total = ServiceOrderFixtures.TOTAL)
         order.finishDiagnosis()
         assertEquals(
             expected = ServiceOrderStatus.WAITING_APPROVAL,
@@ -47,12 +48,19 @@ class ServiceOrderTest {
         )
         assertTrue(order.domainEvents.last() is DiagnosisFinished)
 
-        order.approve()
+        order.budgetApprove()
+        assertEquals(
+            expected = ServiceOrderStatus.BUDGET_APPROVED,
+            actual = order.status,
+        )
+        assertTrue(order.domainEvents.last() is ServiceOrderApproved)
+
+        order.startExecution()
         assertEquals(
             expected = ServiceOrderStatus.IN_EXECUTION,
             actual = order.status,
         )
-        assertTrue(order.domainEvents.last() is ServiceOrderApproved)
+        assertTrue(order.domainEvents.last() is ServiceOrderExecutionStarted)
 
         order.finish()
         assertEquals(
@@ -75,7 +83,7 @@ class ServiceOrderTest {
             ServiceOrderFixtures.received().finishDiagnosis()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
-            ServiceOrderFixtures.received().approve()
+            ServiceOrderFixtures.received().budgetApprove()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             ServiceOrderFixtures.received().finish()
@@ -90,11 +98,30 @@ class ServiceOrderTest {
             ServiceOrderFixtures.waitingApproval().finish()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
-            ServiceOrderFixtures.inExecution().approve()
+            ServiceOrderFixtures.waitingApproval().startExecution()
+        }
+        assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
+            ServiceOrderFixtures.inExecution().budgetApprove()
+        }
+        assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
+            ServiceOrderFixtures.inExecution().budgetReject()
         }
         assertFailsWith<ServiceOrderException.InvalidStatusTransition> {
             ServiceOrderFixtures.delivered().deliver()
         }
+    }
+
+    @Test
+    fun `budgetReject records the event and marks the order as rejected`() {
+        val order = ServiceOrderFixtures.waitingApproval()
+
+        order.budgetReject()
+
+        assertEquals(
+            expected = ServiceOrderStatus.BUDGET_REJECTED,
+            actual = order.status,
+        )
+        assertTrue(order.domainEvents.last() is ServiceOrderBudgetRejected)
     }
 
     @Test
@@ -105,7 +132,6 @@ class ServiceOrderTest {
             customerId = original.customerId,
             vehicleId = original.vehicleId,
             status = original.status,
-            total = original.total,
             createdAt = original.createdAt,
             startedAt = original.startedAt,
             finishedAt = original.finishedAt,

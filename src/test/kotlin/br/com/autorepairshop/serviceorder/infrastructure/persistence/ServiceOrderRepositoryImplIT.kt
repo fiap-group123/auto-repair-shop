@@ -4,7 +4,6 @@ import br.com.autorepairshop.TestcontainersConfiguration
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
-import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.aggregate.ServiceOrder
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
@@ -54,18 +53,19 @@ class ServiceOrderRepositoryImplIT {
         )
         assertNotNull(orders.findById(id = order.id)?.startedAt)
 
-        order.updateBudgetTotal(total = ServiceOrderFixtures.TOTAL)
         order.finishDiagnosis()
         assertStatusAfterReload(
             order = order,
             expected = ServiceOrderStatus.WAITING_APPROVAL,
         )
-        assertEquals(
-            expected = ServiceOrderFixtures.TOTAL,
-            actual = orders.findById(id = order.id)?.total,
+
+        order.budgetApprove()
+        assertStatusAfterReload(
+            order = order,
+            expected = ServiceOrderStatus.BUDGET_APPROVED,
         )
 
-        order.approve()
+        order.startExecution()
         assertStatusAfterReload(
             order = order,
             expected = ServiceOrderStatus.IN_EXECUTION,
@@ -82,6 +82,23 @@ class ServiceOrderRepositoryImplIT {
         assertStatusAfterReload(
             order = order,
             expected = ServiceOrderStatus.DELIVERED,
+        )
+
+        val rejectedVehicle = CustomerFixtures.vehicle(
+            owner = customer,
+            plate = CustomerFixtures.NATIONAL_PLATE,
+        )
+        vehicles.save(vehicle = rejectedVehicle)
+        val rejected = ServiceOrder.open(
+            customerId = customer.id.value,
+            vehicleId = rejectedVehicle.id.value,
+        )
+        rejected.startDiagnosis()
+        rejected.finishDiagnosis()
+        rejected.budgetReject()
+        assertStatusAfterReload(
+            order = rejected,
+            expected = ServiceOrderStatus.BUDGET_REJECTED,
         )
     }
 

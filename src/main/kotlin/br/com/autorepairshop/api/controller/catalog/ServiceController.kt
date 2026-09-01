@@ -43,7 +43,7 @@ class ServiceController(
     private val listServices: ListServicesUseCase,
     private val listServicesByCustomerId: ListServicesByCustomerIdUseCase,
     private val listServicesByServiceOrderId: ListServicesByServiceOrderIdUseCase,
-    private val averageExecutionTimeUseCase: AverageExecutionTimeUseCase,
+    private val averageExecutionTime: AverageExecutionTimeUseCase,
 ) {
 
     @PostMapping
@@ -80,7 +80,7 @@ class ServiceController(
     @GetMapping("/average-execution-time")
     @Operation(summary = "Average execution time of finished services")
     fun averageExecutionTime(): ResponseEntity<AverageExecutionTimeResponse> =
-        ResponseEntity.ok(averageExecutionTimeUseCase.execute(input = Unit))
+        ResponseEntity.ok(averageExecutionTime.execute(input = Unit))
 
     @GetMapping("/{id}")
     @Operation(summary = "Search for an offered service by id")

@@ -57,3 +57,28 @@ Authorization: Bearer {{token}}
 # Remover servico ainda WAITING
 DELETE {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{token}}
+
+###
+# Iniciar diagnostico (cria o orcamento)
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis
+Authorization: Bearer {{token}}
+
+###
+# Encerrar diagnostico (exige Budget.total > 0)
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis/complete
+Authorization: Bearer {{token}}
+
+###
+# Iniciar execucao (OS em BUDGET_APPROVED)
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/execution
+Authorization: Bearer {{token}}
+
+###
+# Concluir execucao
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/complete
+Authorization: Bearer {{token}}
+
+###
+# Entregar veiculo
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/deliver
+Authorization: Bearer {{token}}

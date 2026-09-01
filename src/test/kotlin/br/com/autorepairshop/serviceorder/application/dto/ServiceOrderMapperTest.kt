@@ -12,10 +12,10 @@ import kotlin.time.toJavaInstant
 class ServiceOrderMapperTest {
 
     @Test
-    fun `lists the ids of the order services and reports the stored total`() {
+    fun `lists the ids of the order services`() {
         val first = CatalogFixtures.activeService(price = "10.00")
         val second = CatalogFixtures.activeService(price = "20.50")
-        val order = ServiceOrderFixtures.inDiagnosisWithBudget()
+        val order = ServiceOrderFixtures.inDiagnosis()
 
         val response = order.toResponse(
             catalog = listOf(element = first).plus(element = second),
@@ -24,10 +24,6 @@ class ServiceOrderMapperTest {
         assertEquals(
             expected = listOf(element = first.id.value).plus(element = second.id.value),
             actual = response.serviceIds,
-        )
-        assertEquals(
-            expected = ServiceOrderFixtures.TOTAL.amount,
-            actual = response.total,
         )
     }
 
@@ -41,10 +37,6 @@ class ServiceOrderMapperTest {
         assertEquals(
             expected = order.createdAt.toJavaInstant(),
             actual = response.createdAt,
-        )
-        assertEquals(
-            expected = "0.00",
-            actual = response.total.toPlainString(),
         )
     }
 }

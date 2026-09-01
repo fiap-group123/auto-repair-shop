@@ -3,7 +3,6 @@ package br.com.autorepairshop.api.controller.serviceorder
 import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
 import br.com.autorepairshop.serviceorder.application.dto.RegisterServiceOrderCommand
 import br.com.autorepairshop.serviceorder.application.dto.ServiceOrderResponse
-import br.com.autorepairshop.serviceorder.application.usecase.ApproveServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.DeliverServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FindServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.FinishDiagnosisUseCase
@@ -12,6 +11,7 @@ import br.com.autorepairshop.serviceorder.application.usecase.ListServiceOrdersB
 import br.com.autorepairshop.serviceorder.application.usecase.ListServiceOrdersUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.RegisterServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.StartDiagnosisUseCase
+import br.com.autorepairshop.serviceorder.application.usecase.StartExecutionUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
@@ -32,15 +32,15 @@ class ServiceOrderController(
     private val findOrder: FindServiceOrderUseCase,
     private val listOrders: ListServiceOrdersUseCase,
     private val listOrdersByCustomerId: ListServiceOrdersByCustomerIdUseCase,
-    private val startDiagnosisUseCase: StartDiagnosisUseCase,
-    private val finishDiagnosisUseCase: FinishDiagnosisUseCase,
-    private val approveOrder: ApproveServiceOrderUseCase,
+    private val startDiagnosis: StartDiagnosisUseCase,
+    private val finishDiagnosis: FinishDiagnosisUseCase,
+    private val startExecution: StartExecutionUseCase,
     private val completeOrder: FinishServiceOrderUseCase,
     private val deliverOrder: DeliverServiceOrderUseCase,
 ) {
 
     @PostMapping
-    @Operation(summary = "Open a service order")
+    @Operation(summary = "Register a service order")
     fun register(@RequestBody request: RegisterServiceOrderRequest): ResponseEntity<ServiceOrderResponse> {
         val order = registerOrder.execute(
             input = RegisterServiceOrderCommand(
@@ -72,19 +72,19 @@ class ServiceOrderController(
     @PostMapping("/{id}/diagnosis")
     @Operation(summary = "Start diagnosis")
     fun startDiagnosis(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
-        ResponseEntity.ok(startDiagnosisUseCase.execute(input = id))
+        ResponseEntity.ok(startDiagnosis.execute(input = id))
 
-    @PostMapping("/{id}/diagnosis/complete")
+    @PostMapping("/{id}/diagnosis/finish")
     @Operation(summary = "Finish diagnosis and wait for approval")
     fun finishDiagnosis(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
-        ResponseEntity.ok(finishDiagnosisUseCase.execute(input = id))
+        ResponseEntity.ok(finishDiagnosis.execute(input = id))
 
-    @PostMapping("/{id}/approve")
-    @Operation(summary = "Approve service order")
-    fun approve(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
-        ResponseEntity.ok(approveOrder.execute(input = id))
+    @PostMapping("/{id}/execution")
+    @Operation(summary = "Start execution after budget approval")
+    fun startExecution(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
+        ResponseEntity.ok(startExecution.execute(input = id))
 
-    @PostMapping("/{id}/complete")
+    @PostMapping("/{id}/finish")
     @Operation(summary = "Complete execution")
     fun complete(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
         ResponseEntity.ok(completeOrder.execute(input = id))

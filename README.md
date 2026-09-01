@@ -93,7 +93,15 @@ Filter-chain auth (`SecurityProblemSupport`) also writes `401` / `403` as Proble
 |---|---|
 | `ServiceOrderNotFound` | `404` |
 | `OpenOrderAlreadyExists`, `VehicleNotOwnedByCustomer` | `409` |
-| `InvalidStatusTransition`, `EmptyBudget`, `InvalidDuration` | `422` |
+| `InvalidStatusTransition`, `InvalidDuration` | `422` |
+
+### Budget
+
+| Exception | Status |
+|---|---|
+| `BudgetNotFound`, `ServiceOrderNotFound` | `404` |
+| `BudgetAlreadyExists` | `409` |
+| `EmptyBudget`, `InvalidBudgetStatusTransition` | `422` |
 
 ### Catalog
 
