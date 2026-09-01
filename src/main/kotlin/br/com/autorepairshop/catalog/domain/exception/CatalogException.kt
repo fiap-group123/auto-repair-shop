@@ -8,4 +8,6 @@ sealed class CatalogException(message: String) : DomainException(message = messa
     class InvalidServiceName(message: String) : CatalogException(message = message)
     class InvalidStatusTransition(message: String) : CatalogException(message = message)
     class InvalidDuration(message: String) : CatalogException(message = message)
+    class ExtraServiceNotFound(message: String) : CatalogException(message = message)
+    class InvalidExtraServiceStatusTransition(message: String) : CatalogException(message = message)
 }

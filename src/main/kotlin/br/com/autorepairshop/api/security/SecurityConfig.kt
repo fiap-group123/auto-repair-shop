@@ -83,6 +83,7 @@ class SecurityConfig {
         configureCustomerRules(requests = requests)
         configureVehicleRules(requests = requests)
         configureServiceRules(requests = requests)
+        configureExtraServiceRules(requests = requests)
         configureOrderRules(requests = requests)
         configureBudgetRules(requests = requests)
         requests.anyRequest().authenticated()
@@ -130,6 +131,18 @@ class SecurityConfig {
             .hasAnyRole("MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.PUT, "/services/**").hasRole("MANAGER")
         requests.requestMatchers(HttpMethod.DELETE, "/services/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+    }
+
+    private fun configureExtraServiceRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
+        requests.requestMatchers(HttpMethod.POST, "/extra-services").hasAnyRole("MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/extra-services/service-order/**", "/extra-services/**")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/extra-services/*/approve", "/extra-services/*/reject")
+            .hasAnyRole("CLIENT", "RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/extra-services/*/in-progress", "/extra-services/*/finish")
+            .hasAnyRole("MECHANIC", "MANAGER")
     }
 
     private fun configureOrderRules(

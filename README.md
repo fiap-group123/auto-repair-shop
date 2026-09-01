@@ -29,6 +29,7 @@ Kotlin, Spring Boot, PostgreSQL, and tactical DDD in a layered monolith. The API
 | Auth requests | [`http/auth.http`](http/auth.http) |
 | Customer / vehicle requests | [`http/customer.http`](http/customer.http) |
 | Service order / catalog requests | [`http/service-order.http`](http/service-order.http) |
+| Extra service requests | [`http/extra-service.http`](http/extra-service.http) |
 
 Authorize Swagger or `.http` files with `Authorization: Bearer <accessToken>` after login. Run [`http/auth.http`](http/auth.http) in order to persist tokens for the rest.
 
@@ -107,9 +108,9 @@ Filter-chain auth (`SecurityProblemSupport`) also writes `401` / `403` as Proble
 
 | Exception | Status |
 |---|---|
-| `ServiceNotFound` | `404` |
+| `ServiceNotFound`, `ExtraServiceNotFound` | `404` |
 | `ServiceAlreadyExists` | `409` |
-| `InvalidServiceName`, `InvalidStatusTransition`, `InvalidDuration` | `422` |
+| `InvalidServiceName`, `InvalidStatusTransition`, `InvalidExtraServiceStatusTransition`, `InvalidDuration` | `422` |
 
 ## Tech stack
 

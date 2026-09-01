@@ -15,14 +15,16 @@ class CatalogApiExceptionHandler {
 
     @ExceptionHandler(CatalogException::class)
     fun handleCatalog(ex: CatalogException): ProblemDetail = when (ex) {
-        is CatalogException.ServiceNotFound ->
-            problem(status = HttpStatus.NOT_FOUND, ex = ex)
+        is CatalogException.ServiceNotFound,
+        is CatalogException.ExtraServiceNotFound,
+        -> problem(status = HttpStatus.NOT_FOUND, ex = ex)
 
         is CatalogException.ServiceAlreadyExists ->
             problem(status = HttpStatus.CONFLICT, ex = ex)
 
         is CatalogException.InvalidServiceName,
         is CatalogException.InvalidStatusTransition,
+        is CatalogException.InvalidExtraServiceStatusTransition,
         is CatalogException.InvalidDuration,
         -> problem(status = HttpStatus.UNPROCESSABLE_CONTENT, ex = ex)
     }

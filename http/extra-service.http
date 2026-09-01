@@ -1,0 +1,44 @@
+@baseUrl = http://localhost:8080
+@token = {{loginToken}}
+
+###
+# Registrar reparo extra (OS em BUDGET_APPROVED ou IN_EXECUTION)
+POST {{baseUrl}}/extra-services
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "name": "Troca de pastilha",
+  "basePrice": 220.00
+}
+
+###
+# Listar extras da OS
+GET {{baseUrl}}/extra-services/service-order/{{serviceOrderId}}
+Authorization: Bearer {{token}}
+
+###
+# Buscar extra
+GET {{baseUrl}}/extra-services/{{extraServiceId}}
+Authorization: Bearer {{token}}
+
+###
+# Aprovar extra (soma no orcamento)
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/approve
+Authorization: Bearer {{token}}
+
+###
+# Rejeitar extra
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/reject
+Authorization: Bearer {{token}}
+
+###
+# Iniciar execucao do extra aprovado
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/in-progress
+Authorization: Bearer {{token}}
+
+###
+# Finalizar extra
+POST {{baseUrl}}/extra-services/{{extraServiceId}}/finish
+Authorization: Bearer {{token}}

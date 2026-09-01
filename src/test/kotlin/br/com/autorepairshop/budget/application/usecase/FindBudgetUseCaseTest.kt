@@ -1,5 +1,6 @@
 package br.com.autorepairshop.budget.application.usecase
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.budget.BudgetFixtures
 import br.com.autorepairshop.budget.domain.exception.BudgetException
 import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
@@ -8,6 +9,7 @@ import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -18,9 +20,11 @@ import kotlin.test.assertFailsWith
 class FindBudgetUseCaseTest {
     private val budgets = mockk<BudgetRepository>()
     private val orders = mockk<ServiceOrderRepository>()
+    private val access = mockk<AccessGuard>(relaxUnitFun = true)
     private val useCase = FindBudgetUseCase(
         budgets = budgets,
         orders = orders,
+        access = access,
     )
 
     @Test
@@ -61,5 +65,6 @@ class FindBudgetUseCaseTest {
             expected = order.id.value,
             actual = response.serviceOrderId,
         )
+        verify { access.requireCustomer(customerId = order.customerId) }
     }
 }

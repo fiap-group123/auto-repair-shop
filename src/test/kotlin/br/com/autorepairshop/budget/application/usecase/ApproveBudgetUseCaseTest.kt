@@ -1,5 +1,6 @@
 package br.com.autorepairshop.budget.application.usecase
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
 import br.com.autorepairshop.budget.BudgetFixtures
 import br.com.autorepairshop.budget.domain.exception.BudgetException
 import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
@@ -22,10 +23,12 @@ class ApproveBudgetUseCaseTest {
     private val budgets = mockk<BudgetRepository>()
     private val orders = mockk<ServiceOrderRepository>()
     private val events = mockk<EventPublisher>(relaxUnitFun = true)
+    private val access = mockk<AccessGuard>(relaxUnitFun = true)
     private val useCase = ApproveBudgetUseCase(
         budgets = budgets,
         orders = orders,
         events = events,
+        access = access,
     )
 
     @Test
