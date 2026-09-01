@@ -31,9 +31,17 @@ class CalculateBudgetTotalUseCase(
         val serviceTotal = services.findByServiceOrderId(serviceOrderId = input)
             .fold(initial = Money.ZERO) { acc, service -> acc.plus(other = service.basePrice) }
         val extraTotal = extras.findByServiceOrderId(serviceOrderId = input)
-            .filter { extra -> extra.status == ExtraServiceStatus.APPROVED }
+            .filter { extra -> extra.status in billedStatuses }
             .fold(initial = Money.ZERO) { acc, extra -> acc.plus(other = extra.basePrice) }
         budget.updateBudgetTotal(newTotal = serviceTotal.plus(other = extraTotal))
         budgets.save(budget)
+    }
+
+    private companion object {
+        val billedStatuses = setOf(
+            ExtraServiceStatus.APPROVED,
+            ExtraServiceStatus.IN_PROGRESS,
+            ExtraServiceStatus.FINISHED,
+        )
     }
 }

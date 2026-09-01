@@ -141,6 +141,8 @@ class SecurityConfig {
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MECHANIC", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/extra-services/*/approve", "/extra-services/*/reject")
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.POST, "/extra-services/*/in-progress", "/extra-services/*/finish")
+            .hasAnyRole("MECHANIC", "MANAGER")
     }
 
     private fun configureOrderRules(

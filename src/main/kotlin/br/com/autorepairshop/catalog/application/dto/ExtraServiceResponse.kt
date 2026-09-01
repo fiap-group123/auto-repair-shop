@@ -11,4 +11,7 @@ data class ExtraServiceResponse(
     val basePrice: BigDecimal,
     val status: String,
     val createdAt: Instant,
+    val startedAt: Instant?,
+    val finishedAt: Instant?,
+    val estimatedTime: Long?,
 )
