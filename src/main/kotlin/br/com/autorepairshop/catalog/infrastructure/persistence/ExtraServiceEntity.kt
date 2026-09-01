@@ -22,8 +22,14 @@ class ExtraServiceEntity(
     @Column(nullable = false, precision = 10, scale = 2)
     var price: BigDecimal,
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 30)
     var status: ExtraServiceStatusColumn,
     @Column(name = "created_at", nullable = false)
     val createdAt: Instant,
+    @Column(name = "started_at")
+    var startedAt: Instant?,
+    @Column(name = "finished_at")
+    var finishedAt: Instant?,
+    @Column(name = "estimated_time_seconds")
+    var estimatedTimeSeconds: Long?,
 )
