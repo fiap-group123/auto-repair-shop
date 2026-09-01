@@ -1,23 +1,66 @@
 @baseUrl = http://localhost:8080
-@token = {{loginToken}}
+
+# Fluxo linear da OS (Civic ABC-1234). Rode de cima para baixo, sem pular.
+# Anterior: http/customer.http. Depois: http/extra-service.http (nova OS no mesmo Civic, ja entregue).
+# Rotas reais: /diagnosis/finish e /finish (nao /complete).
 
 ###
-# Abrir OS (depois de cadastrar cliente e veiculo)
+# 1. Login — gerente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {%
+client.global.set("managerToken", response.body.accessToken);
+client.global.set("managerRefresh", response.body.refreshToken);
+%}
+
+###
+# 2. Carregar Ana
+GET {{baseUrl}}/customers/document/52998224725
+Authorization: Bearer {{managerToken}}
+
+> {%
+client.global.set("customerId", response.body.id);
+client.global.set("document", response.body.documentId);
+%}
+
+###
+# 3. Carregar Civic (veiculo da OS)
+GET {{baseUrl}}/vehicles?plate=ABC-1234
+Authorization: Bearer {{managerToken}}
+
+> {%
+client.global.set("osVehicleId", response.body.id);
+client.global.set("osVehiclePlate", response.body.plate);
+%}
+
+###
+# 4. Abrir OS
 POST {{baseUrl}}/service-orders
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
   "document": "{{document}}",
-  "vehiclePlate": "{{vehiclePlate}}"
+  "vehiclePlate": "{{osVehiclePlate}}"
 }
 
 > {% client.global.set("serviceOrderId", response.body.id); %}
 
 ###
-# Incluir servico
+# 5. Listar todas as OS
+GET {{baseUrl}}/service-orders
+Authorization: Bearer {{managerToken}}
+
+###
+# 6. Incluir servico (permanece na OS)
 POST {{baseUrl}}/services
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -29,56 +72,111 @@ Content-Type: application/json
 > {% client.global.set("serviceId", response.body.id); %}
 
 ###
-# Consultar OS (ids dos servicos em serviceIds)
-GET {{baseUrl}}/service-orders/{{serviceOrderId}}
-Authorization: Bearer {{token}}
+# 7. Buscar servico por id
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Servicos da OS
+# 8. Atualizar preco do servico
+PUT {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "name": "Troca de oleo e filtro",
+  "price": 180.00
+}
+
+###
+# 9. Incluir servico extra so para remover
+POST {{baseUrl}}/services
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "name": "Alinhamento",
+  "basePrice": 80.00
+}
+
+> {% client.global.set("throwawayServiceId", response.body.id); %}
+
+###
+# 10. Remover servico ainda WAITING
+DELETE {{baseUrl}}/services/{{throwawayServiceId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 11. Listar servicos
+GET {{baseUrl}}/services
+Authorization: Bearer {{managerToken}}
+
+###
+# 12. Servicos da OS
 GET {{baseUrl}}/services/service-order/{{serviceOrderId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Servicos do cliente
+# 13. Servicos do cliente
 GET {{baseUrl}}/services/customer/{{customerId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Listar OS do cliente
+# 14. Listar OS do cliente
 GET {{baseUrl}}/service-orders/customer/{{customerId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Tempo medio de execucao
-GET {{baseUrl}}/services/average-execution-time
-Authorization: Bearer {{token}}
+# 15. Consultar OS
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Remover servico ainda WAITING
-DELETE {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{token}}
-
-###
-# Iniciar diagnostico (cria o orcamento)
+# 16. Iniciar diagnostico (cria o orcamento)
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Encerrar diagnostico (exige Budget.total > 0)
-POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis/complete
-Authorization: Bearer {{token}}
+# 17. Encerrar diagnostico (WAITING_APPROVAL)
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis/finish
+Authorization: Bearer {{managerToken}}
 
 ###
-# Iniciar execucao (OS em BUDGET_APPROVED)
+# 18. Consultar orcamento
+GET {{baseUrl}}/budgets/{{serviceOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 19. Aprovar orcamento (BUDGET_APPROVED)
+POST {{baseUrl}}/budgets/{{serviceOrderId}}/approve
+Authorization: Bearer {{managerToken}}
+
+###
+# 20. Iniciar execucao
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/execution
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Concluir execucao
-POST {{baseUrl}}/service-orders/{{serviceOrderId}}/complete
-Authorization: Bearer {{token}}
+# 21. Iniciar o servico
+POST {{baseUrl}}/services/{{serviceId}}/in-progress
+Authorization: Bearer {{managerToken}}
 
 ###
-# Entregar veiculo
+# 22. Finalizar o servico
+POST {{baseUrl}}/services/{{serviceId}}/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 23. Tempo medio de execucao
+GET {{baseUrl}}/services/average-execution-time
+Authorization: Bearer {{managerToken}}
+
+###
+# 24. Concluir execucao da OS
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 25. Entregar veiculo
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/deliver
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}

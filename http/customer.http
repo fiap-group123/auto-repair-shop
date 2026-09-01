@@ -1,8 +1,28 @@
 @baseUrl = http://localhost:8080
 
+# Fluxo linear de cliente e veiculo. Rode de cima para baixo.
+# Anterior: http/auth.http (gerente ja cadastrado). Proximo: http/service-order.http
+# Civic ABC-1234 fica com a Ana para a OS. Corolla e usado so neste arquivo (placa/transferencia).
+
 ###
-# Cadastro — cliente A (CPF)
+# 1. Login — gerente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {%
+client.global.set("managerToken", response.body.accessToken);
+client.global.set("managerRefresh", response.body.refreshToken);
+%}
+
+###
+# 2. Cadastro — cliente A (Ana)
 POST {{baseUrl}}/customers
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -12,14 +32,20 @@ Content-Type: application/json
   "phone": "11987654321"
 }
 
+###
+# 3. Carregar Ana
+GET {{baseUrl}}/customers/document/52998224725
+Authorization: Bearer {{managerToken}}
+
 > {%
 client.global.set("customerId", response.body.id);
-client.global.set("document", response.body.document);
+client.global.set("document", response.body.documentId);
 %}
 
 ###
-# Cadastro — cliente B (para transferência de veículo)
+# 4. Cadastro — cliente B (Bruno, transferencia)
 POST {{baseUrl}}/customers
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -29,23 +55,27 @@ Content-Type: application/json
   "phone": "21987654321"
 }
 
+###
+# 5. Carregar Bruno
+GET {{baseUrl}}/customers/document/11144477735
+Authorization: Bearer {{managerToken}}
+
 > {% client.global.set("newOwnerId", response.body.id); %}
 
 ###
-# Listar clientes
+# 6. Listar clientes
 GET {{baseUrl}}/customers
+Authorization: Bearer {{managerToken}}
 
 ###
-# Buscar por CPF/CNPJ (fluxo da OS)
-GET {{baseUrl}}/customers/document/52998224725
-
-###
-# Buscar por id
+# 7. Buscar Ana por id
 GET {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Atualizar só o nome
+# 8. Atualizar nome
 PUT {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -53,8 +83,9 @@ Content-Type: application/json
 }
 
 ###
-# Atualizar e-mail e telefone
+# 9. Atualizar e-mail e telefone
 PUT {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -63,8 +94,9 @@ Content-Type: application/json
 }
 
 ###
-# Cadastrar veículo do cliente A (Mercosul)
+# 10. Cadastrar Corolla (Mercosul) — demo de placa/transferencia
 POST {{baseUrl}}/vehicles
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -76,14 +108,22 @@ Content-Type: application/json
   "color": "Prata"
 }
 
+###
+# 11. Carregar Corolla pela placa atual (ABC1D23 nesta execucao; XYZ1A23 se ja tiver sido trocada)
+GET {{baseUrl}}/vehicles?plate=ABC1D23
+Authorization: Bearer {{managerToken}}
+
 > {%
-client.global.set("vehicleId", response.body.id);
-client.global.set("vehiclePlate", response.body.plate);
+if (response.body && response.body.id) {
+  client.global.set("vehicleId", response.body.id);
+  client.global.set("vehiclePlate", response.body.plate);
+}
 %}
 
 ###
-# Cadastrar segundo veículo (placa antiga)
+# 12. Cadastrar Civic (placa antiga) — veiculo da OS, nao mexe mais
 POST {{baseUrl}}/vehicles
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -96,20 +136,31 @@ Content-Type: application/json
 }
 
 ###
-# Listar veículos do cliente A
+# 13. Carregar Civic
+GET {{baseUrl}}/vehicles?plate=ABC-1234
+Authorization: Bearer {{managerToken}}
+
+> {%
+if (response.body && response.body.id) {
+  client.global.set("osVehicleId", response.body.id);
+  client.global.set("osVehiclePlate", response.body.plate);
+}
+%}
+
+###
+# 14. Listar veiculos da Ana
 GET {{baseUrl}}/vehicles/owner/{{customerId}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Buscar veículo por id
+# 15. Buscar Corolla por id
 GET {{baseUrl}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Buscar veículo por placa
-GET {{baseUrl}}/vehicles?plate=ABC1D23
-
-###
-# Atualizar só o modelo
+# 16. Atualizar modelo do Corolla
 PUT {{baseUrl}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -117,36 +168,49 @@ Content-Type: application/json
 }
 
 ###
-# Atualizar marca e ano
+# 17. Atualizar marca, ano e cor
 PUT {{baseUrl}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
   "brand": "Toyota",
-  "year": 2025
+  "year": 2025,
+  "color": "Branco"
 }
 
 ###
-# Atualizar só a placa
-PUT {{baseUrl}}/vehicles/{{vehicleId}}
-Content-Type: application/json
-
-{
-  "plate": "XYZ1A23"
-}
-
-###
-# Alterar placa
+# 18. Trocar placa do Corolla
 PATCH {{baseUrl}}/vehicles/{{vehicleId}}/plate
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
   "plate": "XYZ1A23"
 }
 
+> {%
+if (response.body && response.body.plate) {
+  client.global.set("vehiclePlate", response.body.plate);
+}
+%}
+
 ###
-# Transferir veículo para o cliente B
+# 19. Buscar Corolla pela placa nova
+GET {{baseUrl}}/vehicles?plate=XYZ1A23
+Authorization: Bearer {{managerToken}}
+
+> {%
+if (response.body && response.body.id) {
+  client.global.set("vehicleId", response.body.id);
+  client.global.set("vehiclePlate", response.body.plate);
+}
+%}
+
+###
+# 20. Transferir Corolla para o Bruno
 PATCH {{baseUrl}}/vehicles/{{vehicleId}}/owner
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -154,8 +218,32 @@ Content-Type: application/json
 }
 
 ###
+# 21. Devolver Corolla para a Ana
+PATCH {{baseUrl}}/vehicles/{{vehicleId}}/owner
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "newOwnerId": "{{customerId}}"
+}
+
+###
+# 22. Desativar Corolla — espera 204
+DELETE {{baseUrl}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 23. Reativar Corolla — espera 204
+POST {{baseUrl}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# --- Erros ---
+
+###
 # CPF duplicado — espera 409
 POST {{baseUrl}}/customers
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -166,8 +254,9 @@ Content-Type: application/json
 }
 
 ###
-# Documento inválido — espera 422
+# Documento invalido — espera 422
 POST {{baseUrl}}/customers
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -178,8 +267,9 @@ Content-Type: application/json
 }
 
 ###
-# Placa inválida — espera 422
+# Placa invalida — espera 422
 POST {{baseUrl}}/vehicles
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -187,12 +277,14 @@ Content-Type: application/json
   "plate": "XXXX",
   "brand": "Fiat",
   "model": "Uno",
-  "year": 2010
+  "year": 2010,
+  "color": "Branco"
 }
 
 ###
-# Placa duplicada — espera 409
+# Placa duplicada (Civic) — espera 409
 POST {{baseUrl}}/vehicles
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -200,16 +292,19 @@ Content-Type: application/json
   "plate": "ABC-1234",
   "brand": "VW",
   "model": "Gol",
-  "year": 2015
+  "year": 2015,
+  "color": "Prata"
 }
 
 ###
-# Desativar cliente A — espera 204
+# Desativar Ana — espera 204
 DELETE {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Cadastrar veículo em cliente inativo — espera 422
+# Cadastrar veiculo em cliente inativo — espera 422
 POST {{baseUrl}}/vehicles
+Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
@@ -217,5 +312,11 @@ Content-Type: application/json
   "plate": "DEF2B34",
   "brand": "Ford",
   "model": "Ka",
-  "year": 2019
+  "year": 2019,
+  "color": "Vermelho"
 }
+
+###
+# Reativar Ana — espera 204
+POST {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{managerToken}}

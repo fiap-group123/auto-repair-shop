@@ -2,11 +2,15 @@
 
 Base URL: `http://localhost:8080`.
 
-Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html. Pedidos prontos: [`http/auth.http`](../http/auth.http), [`http/customer.http`](../http/customer.http), [`http/service-order.http`](../http/service-order.http), [`http/budget.http`](../http/budget.http), [`http/extra-service.http`](../http/extra-service.http).
+Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html.
+
+Pedidos prontos (linear, de cima para baixo): [`http/auth.http`](../http/auth.http) → [`http/customer.http`](../http/customer.http) → [`http/service-order.http`](../http/service-order.http) → [`http/extra-service.http`](../http/extra-service.http). O [`http/budget.http`](../http/budget.http) é uma OS à parte no Corolla.
 
 Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff vê o que o papel permitir.
 
 ## Convenções
+
+Erros usam RFC 7807. Tabela completa (exceção → status, `detail` típico): [ERRORS.md](ERRORS.md).
 
 | Status | Quando |
 |---|---|
@@ -15,6 +19,7 @@ Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff v�
 | `401` | Sem JWT ou token inválido |
 | `403` | Papel insuficiente ou `CLIENT` acessando outro cliente |
 | `409` | Duplicidade (documento, placa, e-mail, serviço na OS) |
+| `410` | Convite expirado ou já usado |
 | `422` | Regra de domínio (CPF/CNPJ, transição de status, orçamento vazio, cliente inativo) |
 
 ## Auth
@@ -22,7 +27,7 @@ Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff v�
 | Método | Path | Auth | Status | Descrição |
 |---|---|---|---|---|
 | `POST` | `/auth/users` | Público (banco vazio) ou `MANAGER` | `201` | Cadastra staff. O primeiro usuário deve ser `MANAGER`. `CLIENT` é rejeitado. |
-| `POST` | `/auth/login` | Público | `200` | Emite access + refresh. Access ~15 min; refresh ~14 dias. |
+| `POST` | `/auth/login` | Público | `200` | Emite access + refresh. Access ~1 dia; refresh ~14 dias. |
 | `POST` | `/auth/refresh` | Público | `200` | Rotaciona o refresh e emite um novo JWT. |
 | `POST` | `/auth/logout` | Público | `204` | Revoga a sessão de refresh. |
 | `GET` | `/invite/{token}` | Público | `200` | Preview do convite (`customerName`, `expiresAt`). |
@@ -71,7 +76,7 @@ Resposta `200`:
   "accessToken": "<jwt>",
   "refreshToken": "<opaque>",
   "tokenType": "Bearer",
-  "expiresIn": 900
+  "expiresIn": 86400
 }
 ```
 

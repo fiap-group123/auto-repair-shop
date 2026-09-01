@@ -1,27 +1,113 @@
 @baseUrl = http://localhost:8080
-@token = {{loginToken}}
+
+# Fluxo linear do orcamento no Corolla (XYZ1A23), separado da OS do Civic.
+# Anterior: http/customer.http. Nao rode em paralelo com extra-service no mesmo carro.
+# Aqui o caminho e negociar (trade), nao aprovar — o approve esta em service-order.http.
 
 ###
-# Consultar orcamento da OS
-GET {{baseUrl}}/budgets/{{serviceOrderId}}
-Authorization: Bearer {{token}}
+# 1. Login — gerente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {%
+client.global.set("managerToken", response.body.accessToken);
+client.global.set("managerRefresh", response.body.refreshToken);
+%}
 
 ###
-# Aprovar orcamento (OS vai para BUDGET_APPROVED)
-POST {{baseUrl}}/budgets/{{serviceOrderId}}/approve
-Authorization: Bearer {{token}}
+# 2. Carregar Ana
+GET {{baseUrl}}/customers/document/52998224725
+Authorization: Bearer {{managerToken}}
+
+> {%
+client.global.set("customerId", response.body.id);
+client.global.set("document", response.body.documentId);
+%}
 
 ###
-# Rejeitar orcamento (OS vai para BUDGET_REJECTED)
-POST {{baseUrl}}/budgets/{{serviceOrderId}}/reject
-Authorization: Bearer {{token}}
+# 3. Carregar Corolla
+GET {{baseUrl}}/vehicles?plate=XYZ1A23
+Authorization: Bearer {{managerToken}}
+
+> {%
+client.global.set("vehicleId", response.body.id);
+client.global.set("vehiclePlate", response.body.plate);
+%}
 
 ###
-# Negociar orcamento (OS vai para BUDGET_APPROVED)
-POST {{baseUrl}}/budgets/{{serviceOrderId}}/trade
-Authorization: Bearer {{token}}
+# 4. Abrir OS do Corolla
+POST {{baseUrl}}/service-orders
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "document": "{{document}}",
+  "vehiclePlate": "{{vehiclePlate}}"
+}
+
+> {% client.global.set("budgetOrderId", response.body.id); %}
 
 ###
-# Remover orcamento
-DELETE {{baseUrl}}/budgets/{{serviceOrderId}}
-Authorization: Bearer {{token}}
+# 5. Incluir item (total > 0 para fechar diagnostico)
+POST {{baseUrl}}/services
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{budgetOrderId}}",
+  "name": "Revisao",
+  "basePrice": 200.00
+}
+
+###
+# 6. Iniciar diagnostico
+POST {{baseUrl}}/service-orders/{{budgetOrderId}}/diagnosis
+Authorization: Bearer {{managerToken}}
+
+###
+# 7. Encerrar diagnostico
+POST {{baseUrl}}/service-orders/{{budgetOrderId}}/diagnosis/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 8. Consultar orcamento
+GET {{baseUrl}}/budgets/{{budgetOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 9. Negociar orcamento (OS vai para BUDGET_APPROVED)
+POST {{baseUrl}}/budgets/{{budgetOrderId}}/trade
+Authorization: Bearer {{managerToken}}
+
+###
+# 10. Consultar orcamento negociado
+GET {{baseUrl}}/budgets/{{budgetOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# --- Erros / alternativas (OS ja negociada: reject e trade de novo esperam 422) ---
+
+###
+# Rejeitar orcamento ja negociado — espera 422
+POST {{baseUrl}}/budgets/{{budgetOrderId}}/reject
+Authorization: Bearer {{managerToken}}
+
+###
+# Aprovar orcamento ja negociado — espera 422
+POST {{baseUrl}}/budgets/{{budgetOrderId}}/approve
+Authorization: Bearer {{managerToken}}
+
+###
+# Remover orcamento — espera 204
+DELETE {{baseUrl}}/budgets/{{budgetOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# Consultar orcamento removido — espera 404
+GET {{baseUrl}}/budgets/{{budgetOrderId}}
+Authorization: Bearer {{managerToken}}
