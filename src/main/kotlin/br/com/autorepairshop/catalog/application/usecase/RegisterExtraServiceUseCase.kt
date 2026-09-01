@@ -8,10 +8,10 @@ import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceName
-import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
-import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
-import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
+import br.com.autorepairshop.serviceandexecution.domain.exception.ServiceOrderException
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.domain.valueobject.ServiceOrderId
+import br.com.autorepairshop.serviceandexecution.domain.valueobject.ServiceOrderStatus
 import br.com.autorepairshop.shared.application.UseCase
 import br.com.autorepairshop.shared.application.event.EventPublisher
 import br.com.autorepairshop.shared.domain.Money

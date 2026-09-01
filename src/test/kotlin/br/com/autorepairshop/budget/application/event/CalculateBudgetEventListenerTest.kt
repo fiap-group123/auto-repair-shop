@@ -8,6 +8,10 @@ import br.com.autorepairshop.catalog.domain.event.ServiceRegistered
 import br.com.autorepairshop.catalog.domain.event.ServiceRemoved
 import br.com.autorepairshop.catalog.domain.valueobject.ExtraServiceId
 import br.com.autorepairshop.catalog.domain.valueobject.ServiceId
+import br.com.autorepairshop.inputmanagment.domain.event.PartQuantityChanged
+import br.com.autorepairshop.inputmanagment.domain.event.PartRegistered
+import br.com.autorepairshop.inputmanagment.domain.event.PartRemoved
+import br.com.autorepairshop.inputmanagment.domain.valueobject.PartId
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -61,7 +65,28 @@ class CalculateBudgetEventListenerTest {
                 occurredOn = Instant.now(),
             ),
         )
+        listener.on(
+            event = PartRegistered(
+                partId = PartId.generate(),
+                serviceOrderId = serviceOrderId,
+                occurredOn = Instant.now(),
+            ),
+        )
+        listener.on(
+            event = PartQuantityChanged(
+                partId = PartId.generate(),
+                serviceOrderId = serviceOrderId,
+                occurredOn = Instant.now(),
+            ),
+        )
+        listener.on(
+            event = PartRemoved(
+                partId = PartId.generate(),
+                serviceOrderId = serviceOrderId,
+                occurredOn = Instant.now(),
+            ),
+        )
 
-        verify(exactly = 5) { calculateBudgetTotal.execute(input = serviceOrderId) }
+        verify(exactly = 8) { calculateBudgetTotal.execute(input = serviceOrderId) }
     }
 }

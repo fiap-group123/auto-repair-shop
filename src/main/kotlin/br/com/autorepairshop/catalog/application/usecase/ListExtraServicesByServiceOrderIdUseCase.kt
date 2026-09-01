@@ -1,12 +1,12 @@
 package br.com.autorepairshop.catalog.application.usecase
 
-import br.com.autorepairshop.authentication.application.security.AccessGuard
+import br.com.autorepairshop.accessidentity.application.security.AccessGuard
 import br.com.autorepairshop.catalog.application.dto.ExtraServiceResponse
 import br.com.autorepairshop.catalog.application.dto.toResponse
 import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
-import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
-import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
+import br.com.autorepairshop.serviceandexecution.domain.exception.ServiceOrderException
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.shared.application.UseCase
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

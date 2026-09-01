@@ -1,0 +1,32 @@
+package br.com.autorepairshop.serviceandexecution.infrastructure.persistence
+
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.Id
+import jakarta.persistence.Table
+import java.time.Instant
+import java.util.UUID
+
+@Entity
+@Table(name = "service_orders")
+class ServiceOrderEntity(
+    @Id
+    val id: UUID,
+    @Column(name = "customer_id", nullable = false)
+    val customerId: UUID,
+    @Column(name = "vehicle_id", nullable = false)
+    val vehicleId: UUID,
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    var status: ServiceOrderStatusColumn,
+    @Column(name = "created_at", nullable = false)
+    val createdAt: Instant,
+    @Column(name = "started_at")
+    var startedAt: Instant?,
+    @Column(name = "finished_at")
+    var finishedAt: Instant?,
+    @Column(name = "estimated_time_seconds")
+    var estimatedTimeSeconds: Long?,
+)

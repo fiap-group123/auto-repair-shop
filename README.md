@@ -2,7 +2,7 @@
 
 API de um MVP de oficina mecânica (FIAP Tech Challenge).
 
-Monólito Kotlin/Spring Boot com DDD tático: usuários da oficina (JWT), clientes (CPF/CNPJ), veículos (placa brasileira), ordens de serviço, orçamento e itens de serviço. Um único deployável, PostgreSQL, eventos in-process.
+Monólito Kotlin/Spring Boot com DDD tático: usuários da oficina (JWT), clientes (CPF/CNPJ), veículos (placa brasileira), ordens de serviço, orçamento, itens de serviço e estoque (peças e insumos). Um único deployável, PostgreSQL, eventos in-process.
 
 Como subir o projeto: **[Getting started](docs/GETTING_STARTED.md)**.
 
@@ -16,23 +16,25 @@ Como subir o projeto: **[Getting started](docs/GETTING_STARTED.md)**.
 | [CONFIGURATION.md](docs/CONFIGURATION.md)         | Variáveis de ambiente, Compose, secrets do GitHub |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md)           | Camadas, bounded contexts, fluxo, persistência |
 | [ADR 001-postgresql.md](docs/adr/001-postgresql.md) | Por que PostgreSQL |
-| [Auth HTTP](http/auth.http)                       | 1. Staff, login, convite, erros |
-| [Customer HTTP](http/customer.http)               | 2. Cliente, veículos (Civic da OS + Corolla) |
-| [Service Order HTTP](http/service-order.http)     | 3. OS do Civic até a entrega |
+| [Auth HTTP](http/auth.http)                       | 1. Staff, login, convite John Doe |
+| [Customer HTTP](http/customer.http)               | 2. John Doe, Mary Doe, veículos (Civic da OS + Corolla) |
+| [Inventory HTTP](http/inventory.http)             | 3. Catálogo de estoque |
+| [Service Order HTTP](http/service-order.http)     | 4. OS do Civic (serviços + peças) até a entrega |
 | [Budget HTTP](http/budget.http)                   | OS do Corolla: negociar, depois delete |
-| [Extra Service HTTP](http/extra-service.http)     | 4. Nova OS no Civic + extras |
+| [Extra Service HTTP](http/extra-service.http)     | 5. Nova OS no Civic + extras |
 
-Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. Ordem: **auth → customer → service-order → extra-service**. O `budget.http` usa o Corolla (`XYZ1A23`) e pode rodar depois do `customer.http`. No convite, copie o token no [Mailpit](http://localhost:8025).
+Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. Ordem: **auth → customer → inventory → service-order → extra-service**. O `budget.http` usa o Corolla (`XYZ1A23`) e pode rodar depois do `customer.http`. No convite, copie o token no [Mailpit](http://localhost:8025).
 
 ## O que a API cobre
 
 | Contexto | Pacote | Responsabilidade |
 |---|---|---|
-| Authentication | `authentication` | Staff, convite do cliente, JWT + refresh |
+| Authentication | `accessidentity` | Staff, convite do cliente, JWT + refresh |
 | Customer | `customer` | Cliente (CPF/CNPJ) e veículos |
-| Service order | `serviceorder` | Ciclo de vida da OS |
+| Service order | `serviceandexecution` | Ciclo de vida da OS |
 | Budget | `budget` | Total e aprovação do orçamento |
 | Catalog | `catalog` | Itens de diagnóstico (`Service`) e extras (`ExtraService`) |
+| Inventory | `inventory` | Estoque da oficina (`Inventory`) e linhas da OS (`Part`) |
 
 Papéis: `MANAGER`, `RECEPTIONIST`, `MECHANIC`, `CLIENT`. Conta `CLIENT` só nasce pelo convite (e-mail de contato do cliente). Detalhe das rotas: [ENDPOINTS.md](docs/ENDPOINTS.md). Ciclo da OS:
 

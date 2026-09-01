@@ -5,8 +5,8 @@ import br.com.autorepairshop.catalog.domain.event.ExtraServiceRegistered
 import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
-import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.shared.application.mail.EmailSender
 import io.mockk.every
 import io.mockk.mockk

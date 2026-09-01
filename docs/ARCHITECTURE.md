@@ -1,6 +1,6 @@
 # Arquitetura — Auto Repair Shop
 
-Backend API de um MVP de oficina (FIAP Tech Challenge). Um único deployável Kotlin/Spring Boot, com DDD tático em cinco bounded contexts.
+Backend API de um MVP de oficina (FIAP Tech Challenge). Um único deployável Kotlin/Spring Boot, com DDD tático em seis bounded contexts.
 
 Este documento descreve **como o sistema funciona**: camadas, contextos, fluxos e integração. A escolha do banco está em [ADR 0001 — PostgreSQL](adr/001-postgresql.md).
 
@@ -25,6 +25,7 @@ src/main/kotlin/br/com/autorepairshop/
 ├── authentication/       # Usuários, JWT, convites, sessões
 ├── customer/             # Clientes e veículos
 ├── catalog/              # Itens de serviço de uma OS
+├── inventory/            # Estoque da oficina e linhas de peça da OS
 ├── serviceorder/         # Ciclo de vida da OS
 ├── budget/               # Orçamento da OS (total e aprovação)
 └── shared/               # Kernel: AggregateRoot, UseCase, Money, eventos, mail
@@ -44,7 +45,7 @@ Regras e invariantes. Sem anotações de framework.
 |---|---|
 | `AggregateRoot` | Identidade + lista de `DomainEvent` pendentes |
 | `Entity` / `ValueObject` | Identidade vs igualdade por valor |
-| Agregados | `Customer`, `Vehicle`, `ServiceOrder`, `Service`, `ExtraService`, `Budget`, `User`, `CustomerInvite`, `RefreshSession` |
+| Agregados | `Customer`, `Vehicle`, `ServiceOrder`, `Service`, `ExtraService`, `Inventory`, `Part`, `Budget`, `User`, `CustomerInvite`, `RefreshSession` |
 | Value objects | Documento, placa, `Money`, `Role`, status, e-mails de login, etc. |
 | Portas de repositório | Interfaces no domínio (`CustomerRepository`, `UserRepository`, …) |
 | Eventos | Fatos do agregado (`CustomerRegistered`, `ServiceRegistered`, …) |
@@ -113,7 +114,7 @@ Escrita típica (ex.: cadastrar cliente):
 6. Listeners `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` enviam e-mail **depois** do commit.
 7. A API devolve o Response. Exceções de domínio viram `422` (ou o status do handler do contexto).
 
-Leitura: o caso de uso carrega o agregado (ou uma lista), aplica `AccessGuard` se for dado de cliente, e mapeia para Response. Detalhe de OS usa `ServiceOrderAssembler` para incluir os `serviceIds` do catalog.
+Leitura: o caso de uso carrega o agregado (ou uma lista), aplica `AccessGuard` se for dado de cliente, e mapeia para Response. Detalhe de OS usa `ServiceOrderAssembler` para incluir os `serviceIds` do catalog e os `partIds` do inventory.
 
 ## Bounded contexts
 
@@ -200,7 +201,7 @@ RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUT
 
 `RegisterServiceOrderUseCase` lê `CustomerRepository` e `VehicleRepository` na mesma transação (consistência: dono, ativo, placa). Não importa os agregados no domínio da OS — só os IDs.
 
-**Read model:** `ServiceOrderAssembler` busca os `Service` do catalog e preenche `serviceIds` na response. O detalhe da OS não embute nome, preço nem total.
+**Read model:** `ServiceOrderAssembler` busca os `Service` do catalog e os `Part` do inventory e preenche `serviceIds` e `partIds` na response. O detalhe da OS não embute nome, preço nem total.
 
 **Listeners**
 
@@ -215,7 +216,7 @@ RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUT
 
 ### budget
 
-Orçamento de uma OS: um por ordem, total somado dos `Service` da OS mais os `ExtraService` com status `APPROVED`.
+Orçamento de uma OS: um por ordem, total somado dos `Service` da OS, dos `ExtraService` faturáveis e das linhas `Part` (`unitPrice * quantity`).
 
 **Agregado `Budget`**
 
@@ -226,7 +227,7 @@ WAITING_APPROVAL → APPROVED | REJECTED | TRADED
 | Ação | Regra |
 |---|---|
 | registrar | Disparado por `DiagnosisStarted`; OS existe; um budget por OS; total inicia na soma dos itens já cadastrados |
-| recalcular | Soma dos `basePrice` dos `Service` + extras `APPROVED`/`IN_PROGRESS`/`FINISHED`; zero é permitido; um extra aprovado pode aumentar um orçamento já `APPROVED` |
+| recalcular | Soma dos `basePrice` dos `Service` + extras `APPROVED`/`IN_PROGRESS`/`FINISHED` + `Part.unitPrice * quantity`; zero é permitido; um extra aprovado pode aumentar um orçamento já `APPROVED` |
 | aprovar | Só de `WAITING_APPROVAL`; emite `BudgetApproved`; OS → `BUDGET_APPROVED` |
 | rejeitar | Só de `WAITING_APPROVAL`; emite `BudgetRejected`; OS → `BUDGET_REJECTED` |
 | negociar | Só de `WAITING_APPROVAL`; emite `BudgetTraded`; OS → `BUDGET_APPROVED` |
@@ -238,7 +239,7 @@ WAITING_APPROVAL → APPROVED | REJECTED | TRADED
 | Listener | Quando | Transação |
 |---|---|---|
 | `RegisterBudgetEventListener` | `DiagnosisStarted` | Mesmo commit da OS |
-| `CalculateBudgetEventListener` | `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved`, `ExtraServiceApproved`, `ExtraServiceRejected` | Mesmo commit do item |
+| `CalculateBudgetEventListener` | `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved`, `ExtraServiceApproved`, `ExtraServiceRejected`, `PartRegistered`, `PartQuantityChanged`, `PartRemoved` | Mesmo commit do item |
 
 **Persistência:** `budgets`. `service_order_id` único → `service_orders`.
 
@@ -283,7 +284,7 @@ APPROVED → IN_PROGRESS → FINISHED
 
 `AccessGuard.requireCustomer` no find/list/approve/reject (dono da OS).
 
-**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` recalculam o Budget. `ExtraServiceApproved` e `ExtraServiceRejected` também. `PENDING` e `REJECTED` não entram no total; `APPROVED`, `IN_PROGRESS` e `FINISHED` entram.
+**Eventos:** `ServiceRegistered`, `ServicePriceChanged`, `ServiceRemoved` recalculam o Budget. `ExtraServiceApproved` e `ExtraServiceRejected` também. `PENDING` e `REJECTED` não entram no total; `APPROVED`, `IN_PROGRESS` e `FINISHED` entram. `PartRegistered`, `PartQuantityChanged` e `PartRemoved` também recalculam.
 
 **Listeners**
 
@@ -292,6 +293,38 @@ APPROVED → IN_PROGRESS → FINISHED
 | `ExtraServiceRegisteredMailListener` | `ExtraServiceRegistered` | `AFTER_COMMIT`, assíncrono |
 
 **Persistência:** `services` e `extra_services` (`service_order_id` → `service_orders`). Unique `(service_order_id, name)` em cada tabela.
+
+### inventory
+
+Catálogo de estoque da oficina (`Inventory`) e linha da OS (`Part`). O estoque existe **sem** OS. A OS só guarda `partIds`, como `serviceIds`.
+
+**Agregado `Inventory`**
+
+| Ação | Regra |
+|---|---|
+| registrar | Nome único na oficina; `kind` `PART` ou `SUPPLY`; `stock` ≥ 0; nasce `active` |
+| alterar | Nome, preço e kind só com item ativo; nome continua único |
+| estoque | `setStock` (absoluto, PATCH) e `adjustStock` (delta da OS); recusa saldo negativo |
+| desativar | Soft delete (`active = false`); não pode incluir na OS |
+| reativar | Só de inativo |
+
+**Agregado `Part`**
+
+Linha da OS: `serviceOrderId` + `inventoryId` + `quantity` (≥ 1) + `unitPrice` (snapshot do catálogo). Unique `(service_order_id, inventory_id)`. Sem ciclo de execução.
+
+| Ação | Regra |
+|---|---|
+| incluir | OS em `RECEIVED`, `IN_DIAGNOSIS` ou `WAITING_APPROVAL`; inventory ativo; baixa estoque; emite `PartRegistered` |
+| alterar quantidade | Mesmo recorte de status; delta no estoque; emite `PartQuantityChanged` |
+| remover | Mesmo recorte; devolve estoque; emite `PartRemoved` |
+
+**Casos de uso:** `RegisterInventoryUseCase`, `FindInventoryUseCase`, `ListInventoriesUseCase`, `UpdateInventoryUseCase`, `DeactivateInventoryUseCase`, `ReactivateInventoryUseCase`, `AdjustInventoryStockUseCase`, `RegisterPartUseCase`, `FindPartUseCase`, `ListPartsByServiceOrderIdUseCase`, `UpdatePartUseCase`, `DeletePartUseCase`.
+
+`AccessGuard.requireCustomer` no find/list de `Part` (dono da OS).
+
+Fora deste recorte: peça extra depois do orçamento aprovado continua `ExtraService`.
+
+**Persistência:** `inventories` (nome único) e `parts` (`service_order_id` → `service_orders`, `inventory_id` → `inventories`). Unique `(service_order_id, inventory_id)`.
 
 ### api (borda HTTP)
 
@@ -305,8 +338,10 @@ APPROVED → IN_PROGRESS → FINISHED
 | `BudgetController` | `/budgets` | budget |
 | `ServiceController` | `/services` | catalog |
 | `ExtraServiceController` | `/extra-services` | catalog |
+| `InventoryController` | `/inventories` | inventory |
+| `PartController` | `/parts` | inventory |
 
-Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, `BudgetApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
+Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, `InventoryApiExceptionHandler`, `BudgetApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
 
 Rotas públicas: login, refresh, logout, preview/conclusão de convite (`/invite/**`), Swagger, OpenAPI, `/error`. `POST /auth/users` é público só com banco sem usuários; depois exige `MANAGER`.
 
@@ -319,7 +354,7 @@ Três padrões, usados de propósito (não é acaso):
 | Evento in-process | Efeito colateral depois de um fato do agregado | Cliente cadastrado → convite; item criado → recálculo do budget; budget aprovado → OS em execução |
 | Porta anti-corrupção | Um contexto precisa de um recorte do outro | `CustomerAntiLayer` / `CustomerRecord` |
 | Repositório de outro contexto | A transação precisa da verdade agora | Abrir OS valida cliente e veículo; registrar serviço valida a OS |
-| Assembler (leitura) | Response junta dados de dois contextos | `ServiceOrderAssembler` + `ServiceRepository` |
+| Assembler (leitura) | Response junta dados de dois contextos | `ServiceOrderAssembler` + `ServiceRepository` + `PartRepository` |
 
 Não há broker, outbox nem event sourcing. O evento vive na memória do agregado até o `publish` e some.
 
@@ -346,6 +381,8 @@ Flyway é dono do schema (`src/main/resources/db/migration/`). Hibernate só val
 | `budgets` | budget | `service_order_id` único → `service_orders` |
 | `services` | catalog | FK para `service_orders` |
 | `extra_services` | catalog | FK para `service_orders`; unique `(service_order_id, name)` |
+| `inventories` | inventory | nome único; `kind` `PART`/`SUPPLY`; soft delete `active` |
+| `parts` | inventory | FK para `service_orders` e `inventories`; unique `(service_order_id, inventory_id)` |
 
 Timestamps em `TIMESTAMPTZ`. Soft delete de cliente e veículo: coluna `active`, histórico preservado.
 

@@ -6,9 +6,11 @@ import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
 import br.com.autorepairshop.catalog.CatalogFixtures
 import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
-import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
-import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
+import br.com.autorepairshop.inputmanagment.InventoryFixtures
+import br.com.autorepairshop.inputmanagment.domain.repository.PartRepository
+import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.shared.domain.Money
 import io.mockk.every
 import io.mockk.mockk
@@ -24,11 +26,13 @@ class CalculateBudgetTotalUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
     private val services = mockk<ServiceRepository>()
     private val extras = mockk<ExtraServiceRepository>()
+    private val parts = mockk<PartRepository>()
     private val budgets = mockk<BudgetRepository>()
     private val useCase = CalculateBudgetTotalUseCase(
         orders = orders,
         services = services,
         extras = extras,
+        parts = parts,
         budgets = budgets,
     )
 
@@ -61,6 +65,7 @@ class CalculateBudgetTotalUseCaseTest {
         every { budgets.findByServiceOrderId(serviceOrderId = order.id.value) } returns budget
         every { services.findByServiceOrderId(serviceOrderId = order.id.value) } returns emptyList()
         every { extras.findByServiceOrderId(serviceOrderId = order.id.value) } returns emptyList()
+        every { parts.findByServiceOrderId(serviceOrderId = order.id.value) } returns emptyList()
         every { budgets.save(budget = budget) } returns Unit
 
         useCase.execute(input = order.id.value)
@@ -83,6 +88,7 @@ class CalculateBudgetTotalUseCaseTest {
             CatalogFixtures.activeService(name = CatalogFixtures.OTHER_NAME, price = "20.00", serviceOrderId = order.id.value),
         )
         every { extras.findByServiceOrderId(serviceOrderId = order.id.value) } returns emptyList()
+        every { parts.findByServiceOrderId(serviceOrderId = order.id.value) } returns emptyList()
         every { budgets.save(budget = budget) } returns Unit
 
         useCase.execute(input = order.id.value)
@@ -108,12 +114,41 @@ class CalculateBudgetTotalUseCaseTest {
         )
         every { extras.findByServiceOrderId(serviceOrderId = order.id.value) } returns
             listOf(element = pending).plus(element = approved)
+        every { parts.findByServiceOrderId(serviceOrderId = order.id.value) } returns emptyList()
         every { budgets.save(budget = budget) } returns Unit
 
         useCase.execute(input = order.id.value)
 
         assertEquals(
             expected = "110.00",
+            actual = budget.total.amount.toPlainString(),
+        )
+    }
+
+    @Test
+    fun `adds parts line totals to the budget`() {
+        val order = ServiceOrderFixtures.inDiagnosis()
+        val budget = BudgetFixtures.waitingApproval(serviceOrderId = order.id.value, total = Money.ZERO)
+        val inventory = InventoryFixtures.inventory(price = "10.00")
+        every { orders.findById(id = order.id) } returns order
+        every { budgets.findByServiceOrderId(serviceOrderId = order.id.value) } returns budget
+        every { services.findByServiceOrderId(serviceOrderId = order.id.value) } returns listOf(
+            CatalogFixtures.activeService(price = "80.00", serviceOrderId = order.id.value),
+        )
+        every { extras.findByServiceOrderId(serviceOrderId = order.id.value) } returns emptyList()
+        every { parts.findByServiceOrderId(serviceOrderId = order.id.value) } returns listOf(
+            InventoryFixtures.part(
+                serviceOrderId = order.id.value,
+                inventory = inventory,
+                quantity = 2,
+            ),
+        )
+        every { budgets.save(budget = budget) } returns Unit
+
+        useCase.execute(input = order.id.value)
+
+        assertEquals(
+            expected = "100.00",
             actual = budget.total.amount.toPlainString(),
         )
     }

@@ -1,10 +1,10 @@
 package br.com.autorepairshop.api.security
 
-import br.com.autorepairshop.authentication.AuthFixtures
-import br.com.autorepairshop.authentication.application.security.Actor
-import br.com.autorepairshop.authentication.application.usecase.RequireActiveUserUseCase
-import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
-import br.com.autorepairshop.authentication.domain.valueobject.Role
+import br.com.autorepairshop.accessidentity.AuthFixtures
+import br.com.autorepairshop.accessidentity.application.security.Actor
+import br.com.autorepairshop.accessidentity.application.usecase.RequireActiveUserUseCase
+import br.com.autorepairshop.accessidentity.domain.exception.AuthenticationException
+import br.com.autorepairshop.accessidentity.domain.valueobject.Role
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

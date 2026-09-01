@@ -1,6 +1,6 @@
 package br.com.autorepairshop.customer.application.usecase.vehicle
 
-import br.com.autorepairshop.authentication.application.security.AccessGuard
+import br.com.autorepairshop.accessidentity.application.security.AccessGuard
 import br.com.autorepairshop.customer.application.dto.vehicle.VehicleResponse
 import br.com.autorepairshop.customer.application.dto.vehicle.toResponse
 import br.com.autorepairshop.customer.domain.exception.CustomerException

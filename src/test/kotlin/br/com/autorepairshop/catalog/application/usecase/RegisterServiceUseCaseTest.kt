@@ -5,8 +5,8 @@ import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
 import br.com.autorepairshop.catalog.domain.exception.CatalogException
 import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
-import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.shared.application.event.EventPublisher
 import br.com.autorepairshop.shared.domain.exception.DomainException
 import io.mockk.every

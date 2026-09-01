@@ -1,6 +1,6 @@
 @baseUrl = http://localhost:8080
 
-# Fluxo linear do orcamento no Corolla (XYZ1A23), separado da OS do Civic.
+# Fluxo linear do orcamento no Corolla (XYZ1A23) do John Doe, separado da OS do Civic.
 # Anterior: http/customer.http. Nao rode em paralelo com extra-service no mesmo carro.
 # Aqui o caminho e negociar (trade), nao aprovar — o approve esta em service-order.http.
 
@@ -20,7 +20,7 @@ client.global.set("managerRefresh", response.body.refreshToken);
 %}
 
 ###
-# 2. Carregar Ana
+# 2. Carregar John Doe
 GET {{baseUrl}}/customers/document/52998224725
 Authorization: Bearer {{managerToken}}
 

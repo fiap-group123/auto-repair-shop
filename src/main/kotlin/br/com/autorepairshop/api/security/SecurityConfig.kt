@@ -1,7 +1,7 @@
 package br.com.autorepairshop.api.security
 
-import br.com.autorepairshop.authentication.application.usecase.RequireActiveUserUseCase
-import br.com.autorepairshop.authentication.domain.repository.UserRepository
+import br.com.autorepairshop.accessidentity.application.usecase.RequireActiveUserUseCase
+import br.com.autorepairshop.accessidentity.domain.repository.UserRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -84,6 +84,8 @@ class SecurityConfig {
         configureVehicleRules(requests = requests)
         configureServiceRules(requests = requests)
         configureExtraServiceRules(requests = requests)
+        configureInventoryRules(requests = requests)
+        configurePartRules(requests = requests)
         configureOrderRules(requests = requests)
         configureBudgetRules(requests = requests)
         requests.anyRequest().authenticated()
@@ -143,6 +145,26 @@ class SecurityConfig {
             .hasAnyRole("CLIENT", "RECEPTIONIST", "MANAGER")
         requests.requestMatchers(HttpMethod.POST, "/extra-services/*/in-progress", "/extra-services/*/finish")
             .hasAnyRole("MECHANIC", "MANAGER")
+    }
+
+    private fun configureInventoryRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
+        requests.requestMatchers(HttpMethod.POST, "/inventories").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/inventories", "/inventories/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.PUT, "/inventories/**").hasRole("MANAGER")
+        requests.requestMatchers(HttpMethod.PATCH, "/inventories/*/stock").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.PATCH, "/inventories/**").hasRole("MANAGER")
+    }
+
+    private fun configurePartRules(
+        requests: AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry,
+    ) {
+        requests.requestMatchers(HttpMethod.POST, "/parts").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.GET, "/parts/service-order/**", "/parts/**")
+            .hasAnyRole("CLIENT", "MANAGER")
+        requests.requestMatchers(HttpMethod.PUT, "/parts/**").hasAnyRole("RECEPTIONIST", "MANAGER")
+        requests.requestMatchers(HttpMethod.DELETE, "/parts/**").hasAnyRole("RECEPTIONIST", "MANAGER")
     }
 
     private fun configureOrderRules(
