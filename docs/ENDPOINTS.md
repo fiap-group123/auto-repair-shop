@@ -242,6 +242,7 @@ Ciclo: `RECEIVED` → `IN_DIAGNOSIS` → `WAITING_APPROVAL` → `BUDGET_APPROVED
 | `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detalhe (status, timestamps, `serviceIds`). |
 | `POST` | `/service-orders/{id}/diagnosis` | `MECHANIC`, `MANAGER` | `200` | Inicia diagnóstico e cria o orçamento. |
 | `POST` | `/service-orders/{id}/diagnosis/complete` | `MECHANIC`, `MANAGER` | `200` | Fecha diagnóstico e aguarda aprovação (`Budget.total` > 0). |
+| `POST` | `/service-orders/{id}/execution` | `MECHANIC`, `MANAGER` | `200` | Inicia a execução (`BUDGET_APPROVED` → `IN_EXECUTION`). |
 | `POST` | `/service-orders/{id}/complete` | `MECHANIC`, `MANAGER` | `200` | Conclui a execução. |
 | `POST` | `/service-orders/{id}/deliver` | `RECEPTIONIST`, `MANAGER` | `200` | Entrega o veículo. |
 

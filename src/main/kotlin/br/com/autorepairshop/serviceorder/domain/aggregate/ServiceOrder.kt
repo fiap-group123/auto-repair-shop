@@ -6,6 +6,7 @@ import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderApproved
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderBudgetRejected
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderCompleted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderDelivered
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderExecutionStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderOpened
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
@@ -85,9 +86,15 @@ class ServiceOrder private constructor(
         )
     }
 
-    fun startExecution() {
+    fun startExecution(at: Instant = Clock.System.now()) {
         requireStatus(expected = ServiceOrderStatus.BUDGET_APPROVED)
         status = ServiceOrderStatus.IN_EXECUTION
+        registerEvent(
+            event = ServiceOrderExecutionStarted(
+                serviceOrderId = id,
+                occurredOn = at.toJavaInstant(),
+            ),
+        )
     }
 
     fun finish(at: Instant = Clock.System.now()) {

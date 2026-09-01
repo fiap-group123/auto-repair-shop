@@ -14,6 +14,7 @@ import br.com.autorepairshop.serviceorder.application.usecase.ListServiceOrdersB
 import br.com.autorepairshop.serviceorder.application.usecase.ListServiceOrdersUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.RegisterServiceOrderUseCase
 import br.com.autorepairshop.serviceorder.application.usecase.StartDiagnosisUseCase
+import br.com.autorepairshop.serviceorder.application.usecase.StartExecutionUseCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -31,6 +32,7 @@ class ServiceOrderControllerTest {
     private val listOrdersByCustomerId = mockk<ListServiceOrdersByCustomerIdUseCase>()
     private val startDiagnosisUseCase = mockk<StartDiagnosisUseCase>()
     private val finishDiagnosisUseCase = mockk<FinishDiagnosisUseCase>()
+    private val startExecutionUseCase = mockk<StartExecutionUseCase>()
     private val completeOrder = mockk<FinishServiceOrderUseCase>()
     private val deliverOrder = mockk<DeliverServiceOrderUseCase>()
     private val controller = ServiceOrderController(
@@ -40,6 +42,7 @@ class ServiceOrderControllerTest {
         listOrdersByCustomerId = listOrdersByCustomerId,
         startDiagnosis = startDiagnosisUseCase,
         finishDiagnosis = finishDiagnosisUseCase,
+        startExecution = startExecutionUseCase,
         completeOrder = completeOrder,
         deliverOrder = deliverOrder,
     )
@@ -78,6 +81,7 @@ class ServiceOrderControllerTest {
         every { findOrder.execute(input = order.id) } returns order
         every { startDiagnosisUseCase.execute(input = order.id) } returns order
         every { finishDiagnosisUseCase.execute(input = order.id) } returns order
+        every { startExecutionUseCase.execute(input = order.id) } returns order
         every { completeOrder.execute(input = order.id) } returns order
         every { deliverOrder.execute(input = order.id) } returns order
 
@@ -96,6 +100,10 @@ class ServiceOrderControllerTest {
         assertEquals(
             expected = order.id,
             actual = controller.finishDiagnosis(id = order.id).body?.id,
+        )
+        assertEquals(
+            expected = order.id,
+            actual = controller.startExecution(id = order.id).body?.id,
         )
         assertEquals(
             expected = order.id,

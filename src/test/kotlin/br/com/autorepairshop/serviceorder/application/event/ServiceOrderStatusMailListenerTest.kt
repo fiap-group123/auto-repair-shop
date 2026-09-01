@@ -11,6 +11,7 @@ import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderApproved
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderBudgetRejected
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderCompleted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderDelivered
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderExecutionStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderOpened
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.shared.application.mail.EmailSender
@@ -49,10 +50,11 @@ class ServiceOrderStatusMailListenerTest {
         listener.on(event = DiagnosisFinished(serviceOrderId = order.id, occurredOn = occurredOn))
         listener.on(event = ServiceOrderApproved(serviceOrderId = order.id, occurredOn = occurredOn))
         listener.on(event = ServiceOrderBudgetRejected(serviceOrderId = order.id, occurredOn = occurredOn))
+        listener.on(event = ServiceOrderExecutionStarted(serviceOrderId = order.id, occurredOn = occurredOn))
         listener.on(event = ServiceOrderCompleted(serviceOrderId = order.id, occurredOn = occurredOn))
         listener.on(event = ServiceOrderDelivered(serviceOrderId = order.id, occurredOn = occurredOn))
 
-        verify(exactly = 7) {
+        verify(exactly = 8) {
             emails.send(
                 to = customer.contact.email.value,
                 subject = any(),
@@ -73,6 +75,11 @@ class ServiceOrderStatusMailListenerTest {
             emails.send(
                 to = customer.contact.email.value,
                 subject = "Orcamento rejeitado",
+                body = any(),
+            )
+            emails.send(
+                to = customer.contact.email.value,
+                subject = "Ordem de servico em execucao",
                 body = any(),
             )
             emails.send(

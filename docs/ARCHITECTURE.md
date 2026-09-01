@@ -196,7 +196,7 @@ RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUT
 | concluir | `finish` | Status `IN_EXECUTION`; grava duração |
 | entregar | `deliver` | Status `FINISHED` |
 
-**Casos de uso:** `RegisterServiceOrderUseCase`, `FindServiceOrderUseCase`, `ListServiceOrdersUseCase`, `ListServiceOrdersByCustomerIdUseCase`, `StartDiagnosisUseCase`, `FinishDiagnosisUseCase`, `ApproveServiceOrderUseCase`, `RejectServiceOrderUseCase`, `FinishServiceOrderUseCase`, `DeliverServiceOrderUseCase`.
+**Casos de uso:** `RegisterServiceOrderUseCase`, `FindServiceOrderUseCase`, `ListServiceOrdersUseCase`, `ListServiceOrdersByCustomerIdUseCase`, `StartDiagnosisUseCase`, `FinishDiagnosisUseCase`, `ApproveServiceOrderUseCase`, `RejectServiceOrderUseCase`, `StartExecutionUseCase`, `FinishServiceOrderUseCase`, `DeliverServiceOrderUseCase`.
 
 `RegisterServiceOrderUseCase` lê `CustomerRepository` e `VehicleRepository` na mesma transação (consistência: dono, ativo, placa). Não importa os agregados no domínio da OS — só os IDs.
 

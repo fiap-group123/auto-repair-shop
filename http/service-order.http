@@ -69,6 +69,11 @@ POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis/complete
 Authorization: Bearer {{token}}
 
 ###
+# Iniciar execucao (OS em BUDGET_APPROVED)
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/execution
+Authorization: Bearer {{token}}
+
+###
 # Concluir execucao
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/complete
 Authorization: Bearer {{token}}

@@ -10,6 +10,7 @@ import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderApproved
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderBudgetRejected
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderCompleted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderDelivered
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderExecutionStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderOpened
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
@@ -61,6 +62,12 @@ class ServiceOrderStatusMailListener(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun on(event: ServiceOrderBudgetRejected) {
         notify(serviceOrderId = event.serviceOrderId, status = ServiceOrderStatus.BUDGET_REJECTED)
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun on(event: ServiceOrderExecutionStarted) {
+        notify(serviceOrderId = event.serviceOrderId, status = ServiceOrderStatus.IN_EXECUTION)
     }
 
     @Async

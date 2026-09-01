@@ -7,6 +7,7 @@ import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderApproved
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderBudgetRejected
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderCompleted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderDelivered
+import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderExecutionStarted
 import br.com.autorepairshop.serviceorder.domain.event.ServiceOrderOpened
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderStatus
@@ -59,6 +60,7 @@ class ServiceOrderTest {
             expected = ServiceOrderStatus.IN_EXECUTION,
             actual = order.status,
         )
+        assertTrue(order.domainEvents.last() is ServiceOrderExecutionStarted)
 
         order.finish()
         assertEquals(
