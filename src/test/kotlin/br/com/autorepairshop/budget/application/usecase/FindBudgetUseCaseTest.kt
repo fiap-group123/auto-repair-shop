@@ -1,12 +1,12 @@
 package br.com.autorepairshop.budget.application.usecase
 
-import br.com.autorepairshop.authentication.application.security.AccessGuard
+import br.com.autorepairshop.accessidentity.application.security.AccessGuard
 import br.com.autorepairshop.budget.BudgetFixtures
 import br.com.autorepairshop.budget.domain.exception.BudgetException
 import br.com.autorepairshop.budget.domain.repositories.BudgetRepository
-import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
-import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
+import br.com.autorepairshop.serviceandexecution.domain.exception.ServiceOrderException
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

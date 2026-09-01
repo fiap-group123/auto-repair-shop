@@ -1,4 +1,4 @@
-package br.com.autorepairshop.api.dto.authentication
+package br.com.autorepairshop.api.dto.accessidentity
 
 data class LoginRequest(
     val email: String,

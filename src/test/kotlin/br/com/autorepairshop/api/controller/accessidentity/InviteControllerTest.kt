@@ -1,14 +1,14 @@
-package br.com.autorepairshop.api.controller.authentication
+package br.com.autorepairshop.api.controller.accessidentity
 
-import br.com.autorepairshop.api.dto.authentication.CompleteInviteRequest
+import br.com.autorepairshop.api.dto.accessidentity.CompleteInviteRequest
 import br.com.autorepairshop.api.withHttpRequest
-import br.com.autorepairshop.accessindentity.AuthFixtures
-import br.com.autorepairshop.accessindentity.application.dto.CompleteInviteCommand
-import br.com.autorepairshop.accessindentity.application.dto.CustomerInviteResponse
-import br.com.autorepairshop.accessindentity.application.dto.toResponse
-import br.com.autorepairshop.accessindentity.application.usecase.CompleteInviteUseCase
-import br.com.autorepairshop.accessindentity.application.usecase.FindCustomerInviteUseCase
-import br.com.autorepairshop.accessindentity.application.usecase.IssueCustomerInviteUseCase
+import br.com.autorepairshop.accessidentity.AuthFixtures
+import br.com.autorepairshop.accessidentity.application.dto.CompleteInviteCommand
+import br.com.autorepairshop.accessidentity.application.dto.CustomerInviteResponse
+import br.com.autorepairshop.accessidentity.application.dto.toResponse
+import br.com.autorepairshop.accessidentity.application.usecase.CompleteInviteUseCase
+import br.com.autorepairshop.accessidentity.application.usecase.FindCustomerInviteUseCase
+import br.com.autorepairshop.accessidentity.application.usecase.IssueCustomerInviteUseCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

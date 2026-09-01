@@ -7,8 +7,8 @@ import br.com.autorepairshop.budget.domain.valueObject.BudgetStatus
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
-import br.com.autorepairshop.serviceorder.domain.aggregate.ServiceOrder
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.domain.aggregate.ServiceOrder
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

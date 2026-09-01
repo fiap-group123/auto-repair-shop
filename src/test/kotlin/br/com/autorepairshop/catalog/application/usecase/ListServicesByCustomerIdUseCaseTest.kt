@@ -1,10 +1,10 @@
 package br.com.autorepairshop.catalog.application.usecase
 
-import br.com.autorepairshop.authentication.application.security.AccessGuard
+import br.com.autorepairshop.accessidentity.application.security.AccessGuard
 import br.com.autorepairshop.catalog.CatalogFixtures
 import br.com.autorepairshop.catalog.domain.repository.ServiceRepository
-import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Tag

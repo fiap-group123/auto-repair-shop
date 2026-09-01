@@ -2,7 +2,7 @@ package br.com.autorepairshop.budget.application.event
 
 import br.com.autorepairshop.budget.BudgetFixtures
 import br.com.autorepairshop.budget.application.usecase.RegisterBudgetUseCase
-import br.com.autorepairshop.serviceorder.domain.event.DiagnosisStarted
+import br.com.autorepairshop.serviceandexecution.domain.event.DiagnosisStarted
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

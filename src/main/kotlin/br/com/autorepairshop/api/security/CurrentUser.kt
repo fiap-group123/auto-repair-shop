@@ -1,9 +1,9 @@
 package br.com.autorepairshop.api.security
 
-import br.com.autorepairshop.api.dto.authentication.AuthenticatedUser
-import br.com.autorepairshop.authentication.application.security.Actor
-import br.com.autorepairshop.authentication.application.security.ActorProvider
-import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
+import br.com.autorepairshop.api.dto.accessidentity.AuthenticatedUser
+import br.com.autorepairshop.accessidentity.application.security.Actor
+import br.com.autorepairshop.accessidentity.application.security.ActorProvider
+import br.com.autorepairshop.accessidentity.domain.exception.AuthenticationException
 import org.springframework.stereotype.Component
 
 @Component

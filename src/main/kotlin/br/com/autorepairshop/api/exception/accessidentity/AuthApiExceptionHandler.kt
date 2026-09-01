@@ -1,4 +1,4 @@
-package br.com.autorepairshop.api.exception.authentication
+package br.com.autorepairshop.api.exception.accessidentity
 
 import br.com.autorepairshop.api.exception.problem
 import br.com.autorepairshop.accessidentity.domain.exception.AuthenticationException

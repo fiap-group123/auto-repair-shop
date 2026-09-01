@@ -4,8 +4,8 @@ import br.com.autorepairshop.catalog.domain.event.ExtraServiceRegistered
 import br.com.autorepairshop.catalog.domain.repository.ExtraServiceRepository
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.valueobject.customer.CustomerId
-import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
-import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
+import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
+import br.com.autorepairshop.serviceandexecution.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.shared.application.mail.EmailSender
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async

@@ -1,4 +1,4 @@
-package br.com.autorepairshop.api.exception.serviceorder
+package br.com.autorepairshop.api.exception.serviceandexecution
 
 import br.com.autorepairshop.api.exception.problem
 import br.com.autorepairshop.serviceandexecution.domain.exception.ServiceOrderException

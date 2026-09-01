@@ -1,6 +1,6 @@
-package br.com.autorepairshop.api.controller.serviceorder
+package br.com.autorepairshop.api.controller.serviceandexecution
 
-import br.com.autorepairshop.api.dto.serviceorder.RegisterServiceOrderRequest
+import br.com.autorepairshop.api.dto.serviceandexecution.RegisterServiceOrderRequest
 import br.com.autorepairshop.api.withHttpRequest
 import br.com.autorepairshop.customer.CustomerFixtures
 import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
