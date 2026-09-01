@@ -4,7 +4,7 @@ Backend API de um MVP de oficina (FIAP Tech Challenge). Um único deployável Ko
 
 Este documento descreve **como o sistema funciona**: camadas, contextos, fluxos e integração. A escolha do banco está em [ADR 0001 — PostgreSQL](adr/001-postgresql.md).
 
-A lista completa de rotas está em [ENDPOINTS.md](ENDPOINTS.md). Getting started e configuração continuam no [README](../README.md).
+A lista completa de rotas está em [ENDPOINTS.md](ENDPOINTS.md). Erros HTTP: [ERRORS.md](ERRORS.md). Subir o projeto: [GETTING_STARTED.md](GETTING_STARTED.md). Variáveis e Compose: [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Visão geral
 
@@ -325,7 +325,7 @@ Não há broker, outbox nem event sourcing. O evento vive na memória do agregad
 
 ## Segurança
 
-- Sessão HTTP: stateless. Access JWT (~15 min, claim `role`). Refresh persistido (~14 dias), rotacionado.
+- Sessão HTTP: stateless. Access JWT (~1 dia, claim `role`). Refresh persistido (~14 dias), rotacionado.
 - Senha: BCrypt. O JWT é emitido por `NimbusTokenIssuer`.
 - `ActiveUserFilter` recarrega o usuário e bloqueia inativo mesmo com token válido.
 - Papéis na cadeia (`ROLE_*`). Isolamento de dados do `CLIENT`: `AccessGuard` nos casos de uso de leitura por `customerId`.
@@ -351,7 +351,7 @@ Timestamps em `TIMESTAMPTZ`. Soft delete de cliente e veículo: coluna `active`,
 
 ## Qualidade (fronteira arquitetural)
 
-Kover exige cobertura de linha alta em domain, application (casos de uso, mappers, assemblers), adapters de persistência, listeners e controllers. Isso marca o que o projeto considera núcleo.
+Kover exige no mínimo **80%** de cobertura de linha em domain, application (casos de uso, mappers, assemblers), adapters de persistência, listeners e controllers. Isso marca o que o projeto considera núcleo.
 
 Testes: `@Tag("unit")` sem container; `@Tag("integration")` sobe o contexto Spring com PostgreSQL via Testcontainers.
 

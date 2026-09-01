@@ -1,44 +1,157 @@
 @baseUrl = http://localhost:8080
-@token = {{loginToken}}
+
+# Fluxo linear de extra-service. Rode de cima para baixo.
+# Anterior: http/service-order.http (Civic ja entregue, pode abrir nova OS).
+# Extra so entra com OS em BUDGET_APPROVED ou IN_EXECUTION.
 
 ###
-# Registrar reparo extra (OS em BUDGET_APPROVED ou IN_EXECUTION)
-POST {{baseUrl}}/extra-services
-Authorization: Bearer {{token}}
+# 1. Login — gerente
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "serviceOrderId": "{{serviceOrderId}}",
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {%
+client.global.set("managerToken", response.body.accessToken);
+client.global.set("managerRefresh", response.body.refreshToken);
+%}
+
+###
+# 2. Carregar Ana
+GET {{baseUrl}}/customers/document/52998224725
+Authorization: Bearer {{managerToken}}
+
+> {%
+client.global.set("customerId", response.body.id);
+client.global.set("document", response.body.documentId);
+%}
+
+###
+# 3. Carregar Civic
+GET {{baseUrl}}/vehicles?plate=ABC-1234
+Authorization: Bearer {{managerToken}}
+
+> {%
+client.global.set("osVehiclePlate", response.body.plate);
+%}
+
+###
+# 4. Abrir OS para extras
+POST {{baseUrl}}/service-orders
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "document": "{{document}}",
+  "vehiclePlate": "{{osVehiclePlate}}"
+}
+
+> {% client.global.set("extraOrderId", response.body.id); %}
+
+###
+# 5. Incluir diagnostico
+POST {{baseUrl}}/services
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{extraOrderId}}",
+  "name": "Diagnostico eletrico",
+  "basePrice": 120.00
+}
+
+###
+# 6. Iniciar diagnostico
+POST {{baseUrl}}/service-orders/{{extraOrderId}}/diagnosis
+Authorization: Bearer {{managerToken}}
+
+###
+# 7. Encerrar diagnostico
+POST {{baseUrl}}/service-orders/{{extraOrderId}}/diagnosis/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 8. Aprovar orcamento
+POST {{baseUrl}}/budgets/{{extraOrderId}}/approve
+Authorization: Bearer {{managerToken}}
+
+###
+# 9. Iniciar execucao (extras permitidos)
+POST {{baseUrl}}/service-orders/{{extraOrderId}}/execution
+Authorization: Bearer {{managerToken}}
+
+###
+# 10. Registrar extra (PENDING)
+POST {{baseUrl}}/extra-services
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{extraOrderId}}",
   "name": "Troca de pastilha",
   "basePrice": 220.00
 }
 
-###
-# Listar extras da OS
-GET {{baseUrl}}/extra-services/service-order/{{serviceOrderId}}
-Authorization: Bearer {{token}}
+> {% client.global.set("extraServiceId", response.body.id); %}
 
 ###
-# Buscar extra
+# 11. Registrar extra que sera rejeitado
+POST {{baseUrl}}/extra-services
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{extraOrderId}}",
+  "name": "Troca de palheta",
+  "basePrice": 40.00
+}
+
+> {% client.global.set("rejectedExtraId", response.body.id); %}
+
+###
+# 12. Listar extras da OS
+GET {{baseUrl}}/extra-services/service-order/{{extraOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 13. Buscar extra por id
 GET {{baseUrl}}/extra-services/{{extraServiceId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Aprovar extra (soma no orcamento)
+# 14. Aprovar pastilha (entra no orcamento)
 POST {{baseUrl}}/extra-services/{{extraServiceId}}/approve
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Rejeitar extra
-POST {{baseUrl}}/extra-services/{{extraServiceId}}/reject
-Authorization: Bearer {{token}}
+# 15. Rejeitar palheta (nao entra no total)
+POST {{baseUrl}}/extra-services/{{rejectedExtraId}}/reject
+Authorization: Bearer {{managerToken}}
 
 ###
-# Iniciar execucao do extra aprovado
+# 16. Iniciar execucao da pastilha
 POST {{baseUrl}}/extra-services/{{extraServiceId}}/in-progress
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
 
 ###
-# Finalizar extra
+# 17. Finalizar pastilha
 POST {{baseUrl}}/extra-services/{{extraServiceId}}/finish
-Authorization: Bearer {{token}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 18. Consultar orcamento com o extra aprovado
+GET {{baseUrl}}/budgets/{{extraOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 19. Concluir OS
+POST {{baseUrl}}/service-orders/{{extraOrderId}}/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 20. Entregar veiculo
+POST {{baseUrl}}/service-orders/{{extraOrderId}}/deliver
+Authorization: Bearer {{managerToken}}
