@@ -1,12 +1,12 @@
 package br.com.autorepairshop.api.controller.accessidentity
 
-import br.com.autorepairshop.api.dto.accessidentity.CompleteInviteRequest
 import br.com.autorepairshop.accessidentity.application.dto.CompleteInviteCommand
 import br.com.autorepairshop.accessidentity.application.dto.CustomerInviteResponse
 import br.com.autorepairshop.accessidentity.application.dto.UserResponse
 import br.com.autorepairshop.accessidentity.application.usecase.CompleteInviteUseCase
 import br.com.autorepairshop.accessidentity.application.usecase.FindCustomerInviteUseCase
 import br.com.autorepairshop.accessidentity.application.usecase.IssueCustomerInviteUseCase
+import br.com.autorepairshop.api.dto.accessidentity.CompleteInviteRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirements
 import io.swagger.v3.oas.annotations.tags.Tag

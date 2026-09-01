@@ -1,8 +1,5 @@
 package br.com.autorepairshop.api.controller.accessidentity
 
-import br.com.autorepairshop.api.dto.accessidentity.LoginRequest
-import br.com.autorepairshop.api.dto.accessidentity.RefreshTokenRequest
-import br.com.autorepairshop.api.dto.accessidentity.RegisterUserRequest
 import br.com.autorepairshop.accessidentity.application.dto.LoginCommand
 import br.com.autorepairshop.accessidentity.application.dto.RefreshTokenCommand
 import br.com.autorepairshop.accessidentity.application.dto.RegisterUserCommand
@@ -12,6 +9,9 @@ import br.com.autorepairshop.accessidentity.application.usecase.LoginUseCase
 import br.com.autorepairshop.accessidentity.application.usecase.LogoutUseCase
 import br.com.autorepairshop.accessidentity.application.usecase.RefreshTokenUseCase
 import br.com.autorepairshop.accessidentity.application.usecase.RegisterUserUseCase
+import br.com.autorepairshop.api.dto.accessidentity.LoginRequest
+import br.com.autorepairshop.api.dto.accessidentity.RefreshTokenRequest
+import br.com.autorepairshop.api.dto.accessidentity.RegisterUserRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirements
 import io.swagger.v3.oas.annotations.tags.Tag

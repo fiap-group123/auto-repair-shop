@@ -2,8 +2,8 @@ package br.com.autorepairshop.inputmanagment.domain.aggregate
 
 import br.com.autorepairshop.inputmanagment.domain.exception.InventoryException
 import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryId
-import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryType
 import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryName
+import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryType
 import br.com.autorepairshop.shared.domain.AggregateRoot
 import br.com.autorepairshop.shared.domain.Money
 import kotlin.time.Clock

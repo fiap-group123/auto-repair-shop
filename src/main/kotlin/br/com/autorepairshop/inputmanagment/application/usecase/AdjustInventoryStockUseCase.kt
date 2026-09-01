@@ -1,7 +1,7 @@
 package br.com.autorepairshop.inputmanagment.application.usecase
 
-import br.com.autorepairshop.inputmanagment.application.dto.InventoryResponse
 import br.com.autorepairshop.inputmanagment.application.dto.AdjustInventoryStockCommand
+import br.com.autorepairshop.inputmanagment.application.dto.InventoryResponse
 import br.com.autorepairshop.inputmanagment.application.dto.toResponse
 import br.com.autorepairshop.inputmanagment.domain.exception.InventoryException
 import br.com.autorepairshop.inputmanagment.domain.repository.InventoryRepository

@@ -11,11 +11,10 @@ class ServiceOrderAssembler(
     private val parts: PartRepository,
 ) {
 
-    fun toResponse(order: ServiceOrder): ServiceOrderResponse =
-        order.toResponse(
-            catalog = services.findByServiceOrderId(serviceOrderId = order.id.value),
-            parts = parts.findByServiceOrderId(serviceOrderId = order.id.value),
-        )
+    fun toResponse(order: ServiceOrder): ServiceOrderResponse = order.toResponse(
+        catalog = services.findByServiceOrderId(serviceOrderId = order.id.value),
+        parts = parts.findByServiceOrderId(serviceOrderId = order.id.value),
+    )
 
     fun toResponses(orders: List<ServiceOrder>): List<ServiceOrderResponse> {
         val orderIds = orders.map { it.id.value }

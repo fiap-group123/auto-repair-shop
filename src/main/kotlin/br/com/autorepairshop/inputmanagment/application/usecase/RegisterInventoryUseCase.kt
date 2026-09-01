@@ -6,8 +6,8 @@ import br.com.autorepairshop.inputmanagment.application.dto.toResponse
 import br.com.autorepairshop.inputmanagment.domain.aggregate.Inventory
 import br.com.autorepairshop.inputmanagment.domain.exception.InventoryException
 import br.com.autorepairshop.inputmanagment.domain.repository.InventoryRepository
-import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryType
 import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryName
+import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryType
 import br.com.autorepairshop.shared.application.UseCase
 import br.com.autorepairshop.shared.domain.Money
 import org.springframework.stereotype.Service
@@ -34,6 +34,5 @@ class RegisterInventoryUseCase(private val inventories: InventoryRepository) :
     }
 }
 
-internal fun kindOf(raw: String): InventoryType =
-    InventoryType.entries.find { kind -> kind.name == raw }
-        ?: throw InventoryException.InvalidInventoryName(message = "Unknown inventory kind $raw.")
+internal fun kindOf(raw: String): InventoryType = InventoryType.entries.find { kind -> kind.name == raw }
+    ?: throw InventoryException.InvalidInventoryName(message = "Unknown inventory kind $raw.")

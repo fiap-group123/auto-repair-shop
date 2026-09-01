@@ -3,8 +3,8 @@ package br.com.autorepairshop.inputmanagment.infrastructure.persistence
 import br.com.autorepairshop.inputmanagment.domain.aggregate.Inventory
 import br.com.autorepairshop.inputmanagment.domain.repository.InventoryRepository
 import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryId
-import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryType
 import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryName
+import br.com.autorepairshop.inputmanagment.domain.valueobject.InventoryType
 import br.com.autorepairshop.shared.domain.Money
 import org.springframework.stereotype.Repository
 import kotlin.time.toJavaInstant

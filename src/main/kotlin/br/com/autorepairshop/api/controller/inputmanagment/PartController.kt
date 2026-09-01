@@ -59,8 +59,7 @@ class PartController(
 
     @GetMapping("/{id}")
     @Operation(summary = "Find a part by id")
-    fun findById(@PathVariable id: UUID): ResponseEntity<PartResponse> =
-        ResponseEntity.ok(findPart.execute(input = id))
+    fun findById(@PathVariable id: UUID): ResponseEntity<PartResponse> = ResponseEntity.ok(findPart.execute(input = id))
 
     @PutMapping("/{id}")
     @Operation(summary = "Change the quantity of a part on the order")
