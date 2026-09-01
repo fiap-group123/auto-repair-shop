@@ -4,4 +4,6 @@ enum class ExtraServiceStatus {
     PENDING,
     APPROVED,
     REJECTED,
+    IN_PROGRESS,
+    FINISHED,
 }
