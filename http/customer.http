@@ -1,8 +1,8 @@
 @baseUrl = http://localhost:8080
 
 # Fluxo linear de cliente e veiculo. Rode de cima para baixo.
-# Anterior: http/auth.http (gerente ja cadastrado). Proximo: http/service-order.http
-# Civic ABC-1234 fica com a Ana para a OS. Corolla e usado so neste arquivo (placa/transferencia).
+# Anterior: http/auth.http (gerente ja cadastrado). Proximo: http/inventory.http
+# Civic ABC-1234 fica com o John Doe para a OS. Corolla e usado so neste arquivo (placa/transferencia).
 
 ###
 # 1. Login — gerente
@@ -20,20 +20,20 @@ client.global.set("managerRefresh", response.body.refreshToken);
 %}
 
 ###
-# 2. Cadastro — cliente A (Ana)
+# 2. Cadastro — cliente A (John Doe)
 POST {{baseUrl}}/customers
 Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
   "documentId": "529.982.247-25",
-  "name": "Ana Souza",
-  "email": "ana.souza@email.com",
+  "name": "John Doe",
+  "email": "john.doe@email.com",
   "phone": "11987654321"
 }
 
 ###
-# 3. Carregar Ana
+# 3. Carregar John Doe
 GET {{baseUrl}}/customers/document/52998224725
 Authorization: Bearer {{managerToken}}
 
@@ -43,20 +43,20 @@ client.global.set("document", response.body.documentId);
 %}
 
 ###
-# 4. Cadastro — cliente B (Bruno, transferencia)
+# 4. Cadastro — cliente B (Mary Doe, transferencia)
 POST {{baseUrl}}/customers
 Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
   "documentId": "111.444.777-35",
-  "name": "Bruno Lima",
-  "email": "bruno.lima@email.com",
+  "name": "Mary Doe",
+  "email": "mary.doe@email.com",
   "phone": "21987654321"
 }
 
 ###
-# 5. Carregar Bruno
+# 5. Carregar Mary Doe
 GET {{baseUrl}}/customers/document/11144477735
 Authorization: Bearer {{managerToken}}
 
@@ -68,7 +68,7 @@ GET {{baseUrl}}/customers
 Authorization: Bearer {{managerToken}}
 
 ###
-# 7. Buscar Ana por id
+# 7. Buscar John Doe por id
 GET {{baseUrl}}/customers/{{customerId}}
 Authorization: Bearer {{managerToken}}
 
@@ -79,7 +79,7 @@ Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
-  "name": "Ana Souza Silva"
+  "name": "Jonathan Doe"
 }
 
 ###
@@ -89,7 +89,7 @@ Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
-  "email": "ana.silva@email.com",
+  "email": "john.a.doe@email.com",
   "phone": "11988887777"
 }
 
@@ -148,7 +148,7 @@ if (response.body && response.body.id) {
 %}
 
 ###
-# 14. Listar veiculos da Ana
+# 14. Listar veiculos do John Doe
 GET {{baseUrl}}/vehicles/owner/{{customerId}}
 Authorization: Bearer {{managerToken}}
 
@@ -208,7 +208,7 @@ if (response.body && response.body.id) {
 %}
 
 ###
-# 20. Transferir Corolla para o Bruno
+# 20. Transferir Corolla para a Mary Doe
 PATCH {{baseUrl}}/vehicles/{{vehicleId}}/owner
 Authorization: Bearer {{managerToken}}
 Content-Type: application/json
@@ -218,7 +218,7 @@ Content-Type: application/json
 }
 
 ###
-# 21. Devolver Corolla para a Ana
+# 21. Devolver Corolla para o John Doe
 PATCH {{baseUrl}}/vehicles/{{vehicleId}}/owner
 Authorization: Bearer {{managerToken}}
 Content-Type: application/json
@@ -248,7 +248,7 @@ Content-Type: application/json
 
 {
   "documentId": "529.982.247-25",
-  "name": "Ana Clone",
+  "name": "John Clone",
   "email": "clone@email.com",
   "phone": "11999999999"
 }
@@ -297,7 +297,7 @@ Content-Type: application/json
 }
 
 ###
-# Desativar Ana — espera 204
+# Desativar John Doe — espera 204
 DELETE {{baseUrl}}/customers/{{customerId}}
 Authorization: Bearer {{managerToken}}
 
@@ -317,6 +317,6 @@ Content-Type: application/json
 }
 
 ###
-# Reativar Ana — espera 204
+# Reativar John Doe — espera 204
 POST {{baseUrl}}/customers/{{customerId}}
 Authorization: Bearer {{managerToken}}

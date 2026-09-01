@@ -4,7 +4,7 @@ Base URL: `http://localhost:8080`.
 
 Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html.
 
-Pedidos prontos (linear, de cima para baixo): [`http/auth.http`](../http/auth.http) → [`http/customer.http`](../http/customer.http) → [`http/service-order.http`](../http/service-order.http) → [`http/extra-service.http`](../http/extra-service.http). O [`http/budget.http`](../http/budget.http) é uma OS à parte no Corolla.
+Pedidos prontos (linear, de cima para baixo): [`http/auth.http`](../http/auth.http) → [`http/customer.http`](../http/customer.http) → [`http/inventory.http`](../http/inventory.http) → [`http/service-order.http`](../http/service-order.http) → [`http/extra-service.http`](../http/extra-service.http). O [`http/budget.http`](../http/budget.http) é uma OS à parte no Corolla do John Doe.
 
 Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff vê o que o papel permitir.
 
@@ -94,7 +94,7 @@ Refresh devolve o mesmo formato de `POST /auth/login`. Logout não tem body de r
 
 ```json
 {
-  "customerName": "Ana Souza",
+  "customerName": "John Doe",
   "expiresAt": "2026-09-02T12:00:00Z"
 }
 ```
@@ -103,7 +103,7 @@ Refresh devolve o mesmo formato de `POST /auth/login`. Logout não tem body de r
 
 ```json
 {
-  "email": "ana.souza@email.com",
+  "email": "john.doe@email.com",
   "password": "senha123"
 }
 ```
@@ -127,8 +127,8 @@ Resposta `201`: `UserResponse` com `role` `CLIENT` e `customerId` preenchido.
 ```json
 {
   "documentId": "529.982.247-25",
-  "name": "Ana Souza",
-  "email": "ana.souza@email.com",
+  "name": "John Doe",
+  "email": "john.doe@email.com",
   "phone": "11987654321"
 }
 ```
@@ -140,8 +140,8 @@ Resposta `201` / `200` (também nas buscas e no `PUT`):
   "id": "00000000-0000-0000-0000-000000000000",
   "documentId": "529.982.247-25",
   "documentType": "CPF",
-  "name": "Ana Souza",
-  "email": "ana.souza@email.com",
+  "name": "John Doe",
+  "email": "john.doe@email.com",
   "phone": "11987654321",
   "active": true,
   "createdAt": "2026-08-30T12:00:00Z"
@@ -154,8 +154,8 @@ Todos os campos opcionais:
 
 ```json
 {
-  "name": "Ana Souza Silva",
-  "email": "ana.silva@email.com",
+  "name": "Jonathan Doe",
+  "email": "john.a.doe@email.com",
   "phone": "11988887777"
 }
 ```
@@ -244,7 +244,7 @@ Ciclo: `RECEIVED` → `IN_DIAGNOSIS` → `WAITING_APPROVAL` → `BUDGET_APPROVED
 | `POST` | `/service-orders` | `RECEPTIONIST`, `MANAGER` | `201` | Abre OS (CPF/CNPJ + `vehiclePlate`). Status `RECEIVED`. |
 | `GET` | `/service-orders` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista todas. |
 | `GET` | `/service-orders/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista por cliente. `CLIENT` precisa ser o dono. |
-| `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detalhe (status, timestamps, `serviceIds`). |
+| `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detalhe (status, timestamps, `serviceIds`, `partIds`). |
 | `POST` | `/service-orders/{id}/diagnosis` | `MECHANIC`, `MANAGER` | `200` | Inicia diagnóstico e cria o orçamento. |
 | `POST` | `/service-orders/{id}/diagnosis/complete` | `MECHANIC`, `MANAGER` | `200` | Fecha diagnóstico e aguarda aprovação (`Budget.total` > 0). |
 | `POST` | `/service-orders/{id}/execution` | `MECHANIC`, `MANAGER` | `200` | Inicia a execução (`BUDGET_APPROVED` → `IN_EXECUTION`). |
@@ -272,6 +272,7 @@ Resposta `201` / `200`:
   "customerId": "00000000-0000-0000-0000-000000000000",
   "vehicleId": "00000000-0000-0000-0000-000000000000",
   "serviceIds": [],
+  "partIds": [],
   "status": "RECEIVED",
   "createdAt": "2026-08-30T12:00:00Z",
   "startedAt": null,
@@ -280,7 +281,7 @@ Resposta `201` / `200`:
 }
 ```
 
-O detalhe da OS só devolve `serviceIds`. Nome, preço e status dos itens saem em `/services`. Extras saem em `/extra-services`. O total sai em `GET /budgets/{serviceOrderId}`.
+O detalhe da OS só devolve `serviceIds` e `partIds`. Nome, preço e status dos itens saem em `/services`. Peças saem em `/parts`. Extras saem em `/extra-services`. O total sai em `GET /budgets/{serviceOrderId}`.
 
 ## Budgets
 
@@ -290,7 +291,7 @@ O orçamento é criado ao iniciar o diagnóstico (`POST /service-orders/{id}/dia
 
 | Método | Path | Papéis | Status | Descrição |
 |---|---|---|---|---|
-| `GET` | `/budgets/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca pelo id da OS. Total = itens do diagnóstico + extras `APPROVED`. |
+| `GET` | `/budgets/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Busca pelo id da OS. Total = serviços + extras faturáveis + peças. |
 | `POST` | `/budgets/{id}/approve` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Aprova o orçamento e passa a OS para `BUDGET_APPROVED`. |
 | `POST` | `/budgets/{id}/reject` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Rejeita o orçamento e passa a OS para `BUDGET_REJECTED`. |
 | `POST` | `/budgets/{id}/trade` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Negocia o orçamento e passa a OS para `BUDGET_APPROVED`. |
@@ -421,6 +422,108 @@ Resposta `201` / `200`:
   "startedAt": null,
   "finishedAt": null,
   "estimatedTime": null
+}
+```
+
+## Inventory (catálogo da oficina)
+
+Estoque da oficina, **sem** OS. Soft delete via `active`. Nome único. `kind`: `PART` ou `SUPPLY`.
+
+| Método | Path | Papéis | Status | Descrição |
+|---|---|---|---|---|
+| `POST` | `/inventories` | `RECEPTIONIST`, `MANAGER` | `201` | Cadastra item de estoque. |
+| `GET` | `/inventories` | `MANAGER` | `200` | Lista o catálogo. |
+| `GET` | `/inventories/{id}` | `MANAGER` | `200` | Busca um item. |
+| `PUT` | `/inventories/{id}` | `MANAGER` | `200` | Atualiza nome, preço e/ou kind. |
+| `PATCH` | `/inventories/{id}/deactivate` | `MANAGER` | `200` | Soft delete. |
+| `PATCH` | `/inventories/{id}/reactivate` | `MANAGER` | `200` | Reativa. |
+| `PATCH` | `/inventories/{id}/stock` | `RECEPTIONIST`, `MANAGER` | `200` | Define o saldo absoluto (`quantity` ≥ 0). |
+
+### `POST /inventories`
+
+```json
+{
+  "name": "Filtro de oleo",
+  "kind": "PART",
+  "unitPrice": 45.00,
+  "stock": 10
+}
+```
+
+Resposta `201` / `200`:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "name": "Filtro de oleo",
+  "kind": "PART",
+  "unitPrice": 45.00,
+  "stock": 10,
+  "active": true,
+  "createdAt": "2026-09-01T12:00:00Z"
+}
+```
+
+### `PUT /inventories/{id}`
+
+Todos os campos opcionais:
+
+```json
+{
+  "name": "Filtro de oleo premium",
+  "unitPrice": 52.00,
+  "kind": "PART"
+}
+```
+
+### `PATCH /inventories/{id}/stock`
+
+```json
+{
+  "quantity": 8
+}
+```
+
+## Parts (linha da OS)
+
+Peça ou insumo **na OS**. Snapshot do `unitPrice` na inclusão. Unique `(serviceOrderId, inventoryId)`. Só com OS em `RECEIVED`, `IN_DIAGNOSIS` ou `WAITING_APPROVAL`. Incluir baixa o estoque; remover devolve.
+
+| Método | Path | Papéis | Status | Descrição |
+|---|---|---|---|---|
+| `POST` | `/parts` | `RECEPTIONIST`, `MANAGER` | `201` | Inclui na OS, baixa estoque e recalcula o orçamento. |
+| `GET` | `/parts/service-order/{serviceOrderId}` | `CLIENT`, `MANAGER` | `200` | Lista peças da OS. `CLIENT` precisa ser dono da OS. |
+| `GET` | `/parts/{id}` | `CLIENT`, `MANAGER` | `200` | Busca uma linha. `CLIENT` precisa ser dono da OS. |
+| `PUT` | `/parts/{id}` | `RECEPTIONIST`, `MANAGER` | `200` | Altera quantidade (delta no estoque) e recalcula o orçamento. |
+| `DELETE` | `/parts/{id}` | `RECEPTIONIST`, `MANAGER` | `204` | Remove, devolve estoque e recalcula o orçamento. |
+
+### `POST /parts`
+
+```json
+{
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000",
+  "inventoryId": "00000000-0000-0000-0000-000000000000",
+  "quantity": 2
+}
+```
+
+Resposta `201` / `200`:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000",
+  "inventoryId": "00000000-0000-0000-0000-000000000000",
+  "quantity": 2,
+  "unitPrice": 45.00,
+  "createdAt": "2026-09-01T12:00:00Z"
+}
+```
+
+### `PUT /parts/{id}`
+
+```json
+{
+  "quantity": 3
 }
 ```
 

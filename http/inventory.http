@@ -1,0 +1,91 @@
+@baseUrl = http://localhost:8080
+
+# Catalogo de estoque. Rode de cima para baixo.
+# Anterior: http/customer.http. Proximo: http/service-order.http (usa inventoryId e supplyId).
+# Nao depende de OS.
+
+###
+# 1. Login — gerente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {%
+client.global.set("managerToken", response.body.accessToken);
+%}
+
+###
+# 2. Cadastrar peca
+POST {{baseUrl}}/inventories
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "name": "Filtro de oleo",
+  "kind": "PART",
+  "unitPrice": 45.00,
+  "stock": 10
+}
+
+> {% client.global.set("inventoryId", response.body.id); %}
+
+###
+# 3. Cadastrar insumo
+POST {{baseUrl}}/inventories
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "name": "Oleo 5W30",
+  "kind": "SUPPLY",
+  "unitPrice": 38.00,
+  "stock": 20
+}
+
+> {% client.global.set("supplyId", response.body.id); %}
+
+###
+# 4. Listar catalogo
+GET {{baseUrl}}/inventories
+Authorization: Bearer {{managerToken}}
+
+###
+# 5. Buscar peca por id
+GET {{baseUrl}}/inventories/{{inventoryId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 6. Atualizar nome e preco
+PUT {{baseUrl}}/inventories/{{inventoryId}}
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "name": "Filtro de oleo premium",
+  "unitPrice": 52.00,
+  "kind": "PART"
+}
+
+###
+# 7. Ajustar estoque absoluto
+PATCH {{baseUrl}}/inventories/{{inventoryId}}/stock
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "quantity": 8
+}
+
+###
+# 8. Desativar peca
+PATCH {{baseUrl}}/inventories/{{inventoryId}}/deactivate
+Authorization: Bearer {{managerToken}}
+
+###
+# 9. Reativar peca
+PATCH {{baseUrl}}/inventories/{{inventoryId}}/reactivate
+Authorization: Bearer {{managerToken}}

@@ -80,20 +80,20 @@ Content-Type: application/json
 }
 
 ###
-# 7. Cadastro — cliente Ana (convite vai para o Mailpit)
+# 7. Cadastro — cliente John Doe (convite vai para o Mailpit)
 POST {{baseUrl}}/customers
 Authorization: Bearer {{managerToken}}
 Content-Type: application/json
 
 {
   "documentId": "529.982.247-25",
-  "name": "Ana Souza",
-  "email": "ana.souza@email.com",
+  "name": "John Doe",
+  "email": "john.doe@email.com",
   "phone": "11987654321"
 }
 
 ###
-# 8. Carregar customerId da Ana
+# 8. Carregar customerId do John Doe
 GET {{baseUrl}}/customers/document/52998224725
 Authorization: Bearer {{managerToken}}
 
@@ -109,15 +109,15 @@ Authorization: Bearer {{managerToken}}
 
 ###
 # 10. Preview do convite — cole o token do Mailpit (http://localhost:8025)
-GET {{baseUrl}}/invite/o6p-uTRZEt76HP5Ear2V0dohuHPYPa91CZLVBt6_HVU
+GET {{baseUrl}}/invite/j5YYcFfGEA5EOYq0JSn45zwESeLKnHeTnyhKi2Dtdnw
 
 ###
 # 11. Cliente cria login a partir do convite — mesmo token
-POST {{baseUrl}}/invite/o6p-uTRZEt76HP5Ear2V0dohuHPYPa91CZLVBt6_HVU
+POST {{baseUrl}}/invite/j5YYcFfGEA5EOYq0JSn45zwESeLKnHeTnyhKi2Dtdnw
 Content-Type: application/json
 
 {
-  "email": "ana.souza@email.com",
+  "email": "john.doe@email.com",
   "password": "senha123"
 }
 
@@ -157,7 +157,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "ana.souza@email.com",
+  "email": "john.doe@email.com",
   "password": "senha123"
 }
 

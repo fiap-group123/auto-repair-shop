@@ -1,8 +1,9 @@
 @baseUrl = http://localhost:8080
 
-# Fluxo linear da OS (Civic ABC-1234). Rode de cima para baixo, sem pular.
-# Anterior: http/customer.http. Depois: http/extra-service.http (nova OS no mesmo Civic, ja entregue).
-# Rotas reais: /diagnosis/finish e /finish (nao /complete).
+# Fluxo linear da OS (Civic ABC-1234 do John Doe). Rode de cima para baixo, sem pular.
+# Anterior: http/inventory.http (Filtro premium + Oleo 5W30). Depois: http/extra-service.http
+# (nova OS no mesmo Civic, ja entregue). Rotas reais: /diagnosis/finish e /finish (nao /complete).
+# Peca so entra com OS em RECEIVED, IN_DIAGNOSIS ou WAITING_APPROVAL.
 
 ###
 # 1. Login — gerente
@@ -20,7 +21,7 @@ client.global.set("managerRefresh", response.body.refreshToken);
 %}
 
 ###
-# 2. Carregar Ana
+# 2. Carregar John Doe
 GET {{baseUrl}}/customers/document/52998224725
 Authorization: Bearer {{managerToken}}
 
@@ -88,7 +89,60 @@ Content-Type: application/json
 }
 
 ###
-# 9. Incluir servico extra so para remover
+# 9. Incluir peca do catalogo (baixa estoque; unitPrice snapshot 52.00)
+POST {{baseUrl}}/parts
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "inventoryId": "{{inventoryId}}",
+  "quantity": 2
+}
+
+> {% client.global.set("partId", response.body.id); %}
+
+###
+# 10. Listar pecas da OS
+GET {{baseUrl}}/parts/service-order/{{serviceOrderId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 11. Buscar peca por id
+GET {{baseUrl}}/parts/{{partId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 12. Alterar quantidade (delta no estoque)
+PUT {{baseUrl}}/parts/{{partId}}
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "quantity": 3
+}
+
+###
+# 13. Incluir insumo so para remover
+POST {{baseUrl}}/parts
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "inventoryId": "{{supplyId}}",
+  "quantity": 1
+}
+
+> {% client.global.set("throwawayPartId", response.body.id); %}
+
+###
+# 14. Remover peca (devolve estoque)
+DELETE {{baseUrl}}/parts/{{throwawayPartId}}
+Authorization: Bearer {{managerToken}}
+
+###
+# 15. Incluir servico extra so para remover
 POST {{baseUrl}}/services
 Authorization: Bearer {{managerToken}}
 Content-Type: application/json
@@ -102,81 +156,81 @@ Content-Type: application/json
 > {% client.global.set("throwawayServiceId", response.body.id); %}
 
 ###
-# 10. Remover servico ainda WAITING
+# 16. Remover servico ainda WAITING
 DELETE {{baseUrl}}/services/{{throwawayServiceId}}
 Authorization: Bearer {{managerToken}}
 
 ###
-# 11. Listar servicos
+# 17. Listar servicos
 GET {{baseUrl}}/services
 Authorization: Bearer {{managerToken}}
 
 ###
-# 12. Servicos da OS
+# 18. Servicos da OS
 GET {{baseUrl}}/services/service-order/{{serviceOrderId}}
 Authorization: Bearer {{managerToken}}
 
 ###
-# 13. Servicos do cliente
+# 19. Servicos do cliente
 GET {{baseUrl}}/services/customer/{{customerId}}
 Authorization: Bearer {{managerToken}}
 
 ###
-# 14. Listar OS do cliente
+# 20. Listar OS do cliente
 GET {{baseUrl}}/service-orders/customer/{{customerId}}
 Authorization: Bearer {{managerToken}}
 
 ###
-# 15. Consultar OS
+# 21. Consultar OS (serviceIds + partIds)
 GET {{baseUrl}}/service-orders/{{serviceOrderId}}
 Authorization: Bearer {{managerToken}}
 
 ###
-# 16. Iniciar diagnostico (cria o orcamento)
+# 22. Iniciar diagnostico (cria o orcamento: 180 + 3*52)
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis
 Authorization: Bearer {{managerToken}}
 
 ###
-# 17. Encerrar diagnostico (WAITING_APPROVAL)
+# 23. Encerrar diagnostico (WAITING_APPROVAL)
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis/finish
 Authorization: Bearer {{managerToken}}
 
 ###
-# 18. Consultar orcamento
+# 24. Consultar orcamento
 GET {{baseUrl}}/budgets/{{serviceOrderId}}
 Authorization: Bearer {{managerToken}}
 
 ###
-# 19. Aprovar orcamento (BUDGET_APPROVED)
+# 25. Aprovar orcamento (BUDGET_APPROVED)
 POST {{baseUrl}}/budgets/{{serviceOrderId}}/approve
 Authorization: Bearer {{managerToken}}
 
 ###
-# 20. Iniciar execucao
+# 26. Iniciar execucao
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/execution
 Authorization: Bearer {{managerToken}}
 
 ###
-# 21. Iniciar o servico
+# 27. Iniciar o servico
 POST {{baseUrl}}/services/{{serviceId}}/in-progress
 Authorization: Bearer {{managerToken}}
 
 ###
-# 22. Finalizar o servico
+# 28. Finalizar o servico
 POST {{baseUrl}}/services/{{serviceId}}/finish
 Authorization: Bearer {{managerToken}}
 
 ###
-# 23. Tempo medio de execucao
+# 29. Tempo medio de execucao
 GET {{baseUrl}}/services/average-execution-time
 Authorization: Bearer {{managerToken}}
 
 ###
-# 24. Concluir execucao da OS
+# 30. Concluir execucao da OS
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/finish
 Authorization: Bearer {{managerToken}}
 
 ###
-# 25. Entregar veiculo
+# 31. Entregar veiculo
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/deliver
 Authorization: Bearer {{managerToken}}

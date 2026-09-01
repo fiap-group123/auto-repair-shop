@@ -146,6 +146,25 @@ Handler: `CatalogApiExceptionHandler`. Extra duplicado também usa `ServiceAlrea
 
 Serviço de diagnóstico só entra com OS em `RECEIVED`, `IN_DIAGNOSIS` ou `WAITING_APPROVAL`. Extra só com OS em `BUDGET_APPROVED` ou `IN_EXECUTION`.
 
+## Inventory (catálogo e linha da OS)
+
+Handler: `InventoryApiExceptionHandler`.
+
+| Exceção | Status | Quando | `detail` típico |
+|---|---|---|---|
+| `InventoryNotFound` | 404 | Item de estoque inexistente | `Inventory <id> was not found.` |
+| `PartNotFound` | 404 | Linha da OS inexistente | `Part <id> was not found.` |
+| `InventoryAlreadyExists` | 409 | Nome já usado no catálogo | `Inventory <nome> already exists.` |
+| `PartAlreadyExists` | 409 | Mesmo `inventoryId` já naquela OS | `Part <nome> already exists on this order.` |
+| `InsufficientStock` | 422 | Saldo ficaria negativo | `Insufficient stock for <nome>.` / `Stock cannot be negative.` |
+| `InventoryInactive` | 422 | Incluir/alterar item desativado | `Inventory item <nome> is inactive.` |
+| `InventoryAlreadyActive` | 422 | Reativar item já ativo | `Inventory item is already active.` |
+| `InvalidInventoryName` | 422 | Nome fora de 2–60 caracteres, ou `kind` desconhecido | `Inventory name must be between 2 and 60 characters.` |
+| `InvalidQuantity` | 422 | Quantidade da linha < 1 | `Quantity must be at least 1.` |
+| `InvalidStatusTransition` | 422 | OS fora de `RECEIVED` / `IN_DIAGNOSIS` / `WAITING_APPROVAL` | `Cannot register a part from BUDGET_APPROVED.` |
+
+Peça na OS só entra (e só sai) com a ordem em `RECEIVED`, `IN_DIAGNOSIS` ou `WAITING_APPROVAL`.
+
 ## Shared (sem handler próprio)
 
 | Exceção | Status | Quando | `detail` típico |

@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:8080
 
 # Fluxo linear de extra-service. Rode de cima para baixo.
-# Anterior: http/service-order.http (Civic ja entregue, pode abrir nova OS).
+# Anterior: http/service-order.http (Civic do John Doe ja entregue, pode abrir nova OS).
 # Extra so entra com OS em BUDGET_APPROVED ou IN_EXECUTION.
 
 ###
@@ -20,7 +20,7 @@ client.global.set("managerRefresh", response.body.refreshToken);
 %}
 
 ###
-# 2. Carregar Ana
+# 2. Carregar John Doe
 GET {{baseUrl}}/customers/document/52998224725
 Authorization: Bearer {{managerToken}}
 
