@@ -4,7 +4,7 @@ Base URL: `http://localhost:8080`.
 
 Enviar `Authorization: Bearer <accessToken>` em toda rota autenticada. Swagger: http://localhost:8080/swagger-ui.html.
 
-Pedidos prontos (linear, de cima para baixo): [`http/auth.http`](../http/auth.http) → [`http/customer.http`](../http/customer.http) → [`http/inventory.http`](../http/inventory.http) → [`http/service-order.http`](../http/service-order.http) → [`http/extra-service.http`](../http/extra-service.http). O [`http/budget.http`](../http/budget.http) é uma OS à parte no Corolla do John Doe.
+Pedidos prontos (linear, de cima para baixo): [`http/auth.http`](../http/auth.http) → [`http/customer.http`](../http/customer.http) → [`http/inventory.http`](../http/inventory.http) → [`http/service-order.http`](../http/service-order.http) → [`http/extra-service.http`](../http/extra-service.http). O [`http/budget.http`](../http/budget.http) é uma OS à parte.
 
 Um `CLIENT` só acessa **os próprios** cliente, veículos, OS e itens. Staff vê o que o papel permitir.
 
@@ -94,7 +94,7 @@ Refresh devolve o mesmo formato de `POST /auth/login`. Logout não tem body de r
 
 ```json
 {
-  "customerName": "John Doe",
+  "customerName": "Cliente",
   "expiresAt": "2026-09-02T12:00:00Z"
 }
 ```
@@ -103,7 +103,7 @@ Refresh devolve o mesmo formato de `POST /auth/login`. Logout não tem body de r
 
 ```json
 {
-  "email": "john.doe@email.com",
+  "email": "cliente@email.com",
   "password": "senha123"
 }
 ```
@@ -127,8 +127,8 @@ Resposta `201`: `UserResponse` com `role` `CLIENT` e `customerId` preenchido.
 ```json
 {
   "documentId": "529.982.247-25",
-  "name": "John Doe",
-  "email": "john.doe@email.com",
+  "name": "Cliente",
+  "email": "cliente@email.com",
   "phone": "11987654321"
 }
 ```
@@ -140,8 +140,8 @@ Resposta `201` / `200` (também nas buscas e no `PUT`):
   "id": "00000000-0000-0000-0000-000000000000",
   "documentId": "529.982.247-25",
   "documentType": "CPF",
-  "name": "John Doe",
-  "email": "john.doe@email.com",
+  "name": "Cliente",
+  "email": "cliente@email.com",
   "phone": "11987654321",
   "active": true,
   "createdAt": "2026-08-30T12:00:00Z"
@@ -154,8 +154,8 @@ Todos os campos opcionais:
 
 ```json
 {
-  "name": "Jonathan Doe",
-  "email": "john.a.doe@email.com",
+  "name": "Cliente Atualizado",
+  "email": "cliente.novo@email.com",
   "phone": "11988887777"
 }
 ```
@@ -182,8 +182,8 @@ Placa: Mercosul (`ABC1D23`) ou formato antigo (`ABC-1234`). Não se cadastra ve�
 {
   "ownerId": "00000000-0000-0000-0000-000000000000",
   "plate": "ABC1D23",
-  "brand": "Toyota",
-  "model": "Corolla",
+  "brand": "Marca",
+  "model": "Modelo",
   "year": 2024,
   "color": "Prata"
 }
@@ -197,8 +197,8 @@ Resposta `201` / `200`:
   "ownerId": "00000000-0000-0000-0000-000000000000",
   "plate": "ABC1D23",
   "plateType": "MERCOSUL",
-  "brand": "Toyota",
-  "model": "Corolla",
+  "brand": "Marca",
+  "model": "Modelo",
   "year": 2024,
   "color": "Prata",
   "active": true,
@@ -212,8 +212,8 @@ Todos os campos opcionais:
 
 ```json
 {
-  "brand": "Toyota",
-  "model": "Corolla Cross",
+  "brand": "Marca",
+  "model": "Modelo",
   "year": 2025,
   "color": "Preto"
 }

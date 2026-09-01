@@ -16,14 +16,14 @@ Como subir o projeto: **[Getting started](docs/GETTING_STARTED.md)**.
 | [CONFIGURATION.md](docs/CONFIGURATION.md)         | Variáveis de ambiente, Compose, secrets do GitHub |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md)           | Camadas, bounded contexts, fluxo, persistência |
 | [ADR 001-postgresql.md](docs/adr/001-postgresql.md) | Por que PostgreSQL |
-| [Auth HTTP](http/auth.http)                       | 1. Staff, login, convite John Doe |
-| [Customer HTTP](http/customer.http)               | 2. John Doe, Mary Doe, veículos (Civic da OS + Corolla) |
+| [Auth HTTP](http/auth.http)                       | 1. Staff, login, convite |
+| [Customer HTTP](http/customer.http)               | 2. Cliente e veículos |
 | [Inventory HTTP](http/inventory.http)             | 3. Catálogo de estoque |
-| [Service Order HTTP](http/service-order.http)     | 4. OS do Civic (serviços + peças) até a entrega |
-| [Budget HTTP](http/budget.http)                   | OS do Corolla: negociar, depois delete |
-| [Extra Service HTTP](http/extra-service.http)     | 5. Nova OS no Civic + extras |
+| [Service Order HTTP](http/service-order.http)     | 4. OS até a entrega (serviços + peças) |
+| [Budget HTTP](http/budget.http)                   | OS à parte: negociar, depois delete |
+| [Extra Service HTTP](http/extra-service.http)     | 5. Nova OS + extras |
 
-Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. Ordem: **auth → customer → inventory → service-order → extra-service**. O `budget.http` usa o Corolla (`XYZ1A23`) e pode rodar depois do `customer.http`. No convite, copie o token no [Mailpit](http://localhost:8025).
+Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. Ordem: **auth → customer → inventory → service-order → extra-service**. O `budget.http` pode rodar depois do `customer.http`. No convite, copie o token no [Mailpit](http://localhost:8025).
 
 ## O que a API cobre
 
