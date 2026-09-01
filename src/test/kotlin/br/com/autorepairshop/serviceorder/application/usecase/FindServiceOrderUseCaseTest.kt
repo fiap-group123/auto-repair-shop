@@ -1,5 +1,7 @@
 package br.com.autorepairshop.serviceorder.application.usecase
 
+import br.com.autorepairshop.authentication.application.security.AccessGuard
+import br.com.autorepairshop.authentication.domain.exception.AuthenticationException
 import br.com.autorepairshop.serviceorder.ServiceOrderFixtures
 import br.com.autorepairshop.serviceorder.domain.exception.ServiceOrderException
 import br.com.autorepairshop.serviceorder.domain.repository.ServiceOrderRepository
@@ -7,6 +9,7 @@ import br.com.autorepairshop.serviceorder.domain.valueobject.ServiceOrderId
 import br.com.autorepairshop.serviceorder.serviceOrderAssembler
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -16,9 +19,11 @@ import kotlin.test.assertFailsWith
 @Tag("unit")
 class FindServiceOrderUseCaseTest {
     private val orders = mockk<ServiceOrderRepository>()
+    private val access = mockk<AccessGuard>(relaxUnitFun = true)
     private val useCase = FindServiceOrderUseCase(
         orders = orders,
         responses = serviceOrderAssembler(),
+        access = access,
     )
 
     @Test
@@ -46,5 +51,18 @@ class FindServiceOrderUseCaseTest {
             expected = order.customerId,
             actual = response.customerId,
         )
+        verify { access.requireCustomer(customerId = order.customerId) }
+    }
+
+    @Test
+    fun `throws when the client does not own the order`() {
+        val order = ServiceOrderFixtures.received()
+        every { orders.findById(id = order.id) } returns order
+        every { access.requireCustomer(customerId = order.customerId) } throws
+            AuthenticationException.Forbidden(message = "Cannot access another customer.")
+
+        assertFailsWith<AuthenticationException.Forbidden> {
+            useCase.execute(input = order.id.value)
+        }
     }
 }
