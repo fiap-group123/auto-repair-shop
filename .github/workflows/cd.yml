@@ -40,11 +40,13 @@ jobs:
       - name: Login to Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
 
-      - name: Ensure ECR repository
+      - name: Ensure ECR public repository
         run: |
-          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" \
-            || aws ecr create-repository --repository-name "$ECR_REPOSITORY" --image-scanning-configuration scanOnPush=true
+          aws ecr-public describe-repositories --region us-east-1 --repository-names "$ECR_REPOSITORY" \
+            || aws ecr-public create-repository --region us-east-1 --repository-name "$ECR_REPOSITORY"
 
       - name: Image version
         id: image
