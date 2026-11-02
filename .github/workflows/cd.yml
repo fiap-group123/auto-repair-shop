@@ -57,7 +57,7 @@ jobs:
             version="sha-${GITHUB_SHA::12}"
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "name=${{ steps.ecr.outputs.registry }}/$ECR_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "name=${{ steps.ecr.outputs.registry }}/${{ steps.ecr.outputs.registry-alias }}/$ECR_REPOSITORY" >> "$GITHUB_OUTPUT"
 
       - name: Build image
         run: docker build -t auto-repair-shop:local -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" .
