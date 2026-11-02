@@ -137,6 +137,8 @@ Em pull request (e `workflow_dispatch`), [`.github/workflows/pull-request-checks
 
 [`.github/workflows/sonar.yml`](../.github/workflows/sonar.yml) analisa `main` no SonarQube Cloud (`fiap-group123_auto-repair-shop`). Dependabot atualiza Gradle, Actions e Docker semanalmente / mensalmente.
 
+[`.github/workflows/cd.yml`](../.github/workflows/cd.yml) roda no `main`/`master`, em tags `v*` e em `workflow_dispatch`: reexecuta as checagens, publica a imagem versionada no Amazon ECR, sobe um cluster kind com Terraform (Postgres incluso) e aplica os manifestos em [`k8s/`](../k8s). O passo a passo local está na seção **Fase 2** do [README](../README.md). A role da AWS está em [CONFIGURATION.md](CONFIGURATION.md#github-actions).
+
 Variáveis e secrets do GitHub: [CONFIGURATION.md](CONFIGURATION.md#github-actions).
 
 ## Troubleshooting

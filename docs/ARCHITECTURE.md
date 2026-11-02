@@ -197,7 +197,11 @@ RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUT
 | concluir | `finish` | Status `IN_EXECUTION`; grava duração |
 | entregar | `deliver` | Status `FINISHED` |
 
-**Casos de uso:** `RegisterServiceOrderUseCase`, `FindServiceOrderUseCase`, `ListServiceOrdersUseCase`, `ListServiceOrdersByCustomerIdUseCase`, `StartDiagnosisUseCase`, `FinishDiagnosisUseCase`, `ApproveServiceOrderUseCase`, `RejectServiceOrderUseCase`, `StartExecutionUseCase`, `FinishServiceOrderUseCase`, `DeliverServiceOrderUseCase`.
+**Casos de uso:** `RegisterServiceOrderUseCase`, `OpenServiceOrderUseCase`, `FindServiceOrderUseCase`, `GetServiceOrderStatusUseCase`, `ListServiceOrdersUseCase`, `ListServiceOrdersByCustomerIdUseCase`, `StartDiagnosisUseCase`, `FinishDiagnosisUseCase`, `ApproveServiceOrderUseCase`, `RejectServiceOrderUseCase`, `StartExecutionUseCase`, `FinishServiceOrderUseCase`, `DeliverServiceOrderUseCase`.
+
+`OpenServiceOrderUseCase` é a abertura da fase 2: reutiliza cliente e veículo que já existem (documento e placa) ou cadastra os que faltam, abre a OS e inclui serviços e peças na mesma transação. `RegisterServiceOrderUseCase` continua sendo o passo que só abre a OS.
+
+`ListServiceOrdersUseCase` devolve a fila da oficina: esconde `FINISHED` e `DELIVERED` (continuam no banco) e ordena `IN_EXECUTION`, `BUDGET_APPROVED`, `WAITING_APPROVAL`, `IN_DIAGNOSIS`, `RECEIVED`, `BUDGET_REJECTED`, mais antigas primeiro dentro do mesmo status. A lista por cliente não aplica esse recorte.
 
 `RegisterServiceOrderUseCase` lê `CustomerRepository` e `VehicleRepository` na mesma transação (consistência: dono, ativo, placa). Não importa os agregados no domínio da OS — só os IDs.
 
@@ -232,7 +236,9 @@ WAITING_APPROVAL → APPROVED | REJECTED | TRADED
 | rejeitar | Só de `WAITING_APPROVAL`; emite `BudgetRejected`; OS → `BUDGET_REJECTED` |
 | negociar | Só de `WAITING_APPROVAL`; emite `BudgetTraded`; OS → `BUDGET_APPROVED` |
 
-**Casos de uso:** `RegisterBudgetUseCase`, `FindBudgetUseCase`, `ApproveBudgetUseCase`, `RejectBudgetUseCase`, `TradeBudgetUseCase`, `DeleteBudgetUseCase`, `CalculateBudgetTotalUseCase`.
+**Casos de uso:** `RegisterBudgetUseCase`, `FindBudgetUseCase`, `ApproveBudgetUseCase`, `RejectBudgetUseCase`, `TradeBudgetUseCase`, `DeleteBudgetUseCase`, `CalculateBudgetTotalUseCase`, `ReceiveBudgetDecisionUseCase`.
+
+`ReceiveBudgetDecisionUseCase` atende `POST /integrations/budget-decisions`. Não passa pelo `AccessGuard`: o chamador é um sistema externo autenticado pelo header `X-Notification-Token`. `APPROVED` e `REJECTED` publicam o mesmo evento do approve/reject autenticado, então a OS muda de status e o e-mail de status sai depois do commit.
 
 **Listeners**
 
@@ -336,6 +342,7 @@ Fora deste recorte: peça extra depois do orçamento aprovado continua `ExtraSer
 | `VehicleController` | `/vehicles` | customer |
 | `ServiceOrderController` | `/service-orders` | serviceandexecution |
 | `BudgetController` | `/budgets` | budget |
+| `BudgetNotificationController` | `/integrations/budget-decisions` | budget |
 | `ServiceController` | `/services` | catalog |
 | `ExtraServiceController` | `/extra-services` | catalog |
 | `InventoryController` | `/inventories` | inputmanagment |
@@ -343,7 +350,7 @@ Fora deste recorte: peça extra depois do orçamento aprovado continua `ExtraSer
 
 Handlers: `AuthApiExceptionHandler`, `CustomerApiExceptionHandler`, `ServiceOrderApiExceptionHandler`, `CatalogApiExceptionHandler`, `InventoryApiExceptionHandler`, `BudgetApiExceptionHandler`, mais `ApiExceptionHandler` genérico (`DomainException` → `422`).
 
-Rotas públicas: login, refresh, logout, preview/conclusão de convite (`/invite/**`), Swagger, OpenAPI, `/error`. `POST /auth/users` é público só com banco sem usuários; depois exige `MANAGER`.
+Rotas públicas: login, refresh, logout, preview/conclusão de convite (`/invite/**`), Swagger, OpenAPI, health do Actuator (`/actuator/health/**`), notificação externa de orçamento (`POST /integrations/budget-decisions`, token no header) e `/error`. `POST /auth/users` é público só com banco sem usuários; depois exige `MANAGER`.
 
 ## Integração entre contextos
 
