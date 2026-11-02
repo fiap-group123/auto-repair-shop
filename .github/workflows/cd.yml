@@ -2,8 +2,18 @@ name: CD
 
 on:
   workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
   push:
-    branches: [main, master]
+    branches: [main]
     tags: ["v*"]
 
 concurrency:
@@ -11,25 +21,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-#  verify:
-#    permissions:
-#      contents: read
-#      actions: write
-#      issues: write
-#      pull-requests: write
-#    uses: ./.github/workflows/pull-request-checks.yml
+  verify:
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/pull-request-checks.yml
 
   deliver:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
-      contents: read
+      contents: write
       id-token: write
     env:
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'auto-repair-shop' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -50,27 +64,95 @@ jobs:
 
       - name: Image version
         id: image
+        env:
+          BUMP: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || '' }}
         run: |
+          set -euo pipefail
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/}"
+            echo "create_release=false" >> "$GITHUB_OUTPUT"
           else
-            version="sha-${GITHUB_SHA::12}"
+            latest=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
+            if [[ -n "$BUMP" ]]; then
+              level="$BUMP"
+            else
+              if [[ -n "$latest" ]]; then
+                log=$(git log "${latest}..HEAD" --format='%s%n%b')
+              else
+                log=$(git log -1 --format='%s%n%b')
+              fi
+              if echo "$log" | grep -Eq '(^|[[:space:]])[a-zA-Z]+(\([^)]+\))?!:|BREAKING[[:space:]]CHANGE'; then
+                level=major
+              elif echo "$log" | grep -Eq '(^|[[:space:]])feat(\([^)]+\))?:'; then
+                level=minor
+              else
+                level=patch
+              fi
+            fi
+            if [[ -z "$latest" ]]; then
+              if [[ "$level" == "major" ]]; then
+                version="v1.0.0"
+              else
+                version="v0.1.0"
+              fi
+            else
+              ver="${latest#v}"
+              major="${ver%%.*}"
+              rest="${ver#*.}"
+              minor="${rest%%.*}"
+              patch="${rest#*.}"
+              case "$level" in
+                major) version=$(printf 'v%d.0.0' "$((major + 1))") ;;
+                minor) version=$(printf 'v%d.%d.0' "$major" "$((minor + 1))") ;;
+                *) version=$(printf 'v%d.%d.%d' "$major" "$minor" "$((patch + 1))") ;;
+              esac
+            fi
+            echo "level=$level" >> "$GITHUB_OUTPUT"
+            echo "create_release=true" >> "$GITHUB_OUTPUT"
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           registry=$(aws ecr-public describe-registries --region us-east-1 --query 'registries[0].registryUri' --output text)
           echo "name=${registry}/$ECR_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "Resolved ${registry}/$ECR_REPOSITORY:$version"
 
       - name: Build image
-        run: docker build -t auto-repair-shop:local -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" .
+        run: |
+          docker build \
+            --label "org.opencontainers.image.version=${{ steps.image.outputs.version }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            -t auto-repair-shop:local \
+            -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" .
 
       - name: Push image
         run: |
           docker push "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
-          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF" == refs/heads/master ]]; then
+          if [[ "${{ steps.image.outputs.create_release }}" == "true" ]]; then
             docker tag "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" "${{ steps.image.outputs.name }}:latest"
             docker push "${{ steps.image.outputs.name }}:latest"
           fi
           echo "Published ${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
+
+      - name: Publish Git tag and release
+        if: steps.image.outputs.create_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.image.outputs.version }}
+          IMAGE: ${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists"
+          else
+            git tag -a "$VERSION" -m "Release $VERSION" "$GITHUB_SHA"
+            git push origin "refs/tags/$VERSION"
+          fi
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists"
+            exit 0
+          fi
+          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes "Imagem Docker: ${IMAGE}"
 
       - name: Install kind
         run: |
