@@ -1,0 +1,117 @@
+name: CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    uses: ./.github/workflows/pull-request-checks.yml
+
+  deliver:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'auto-repair-shop' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR repository
+        run: |
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" \
+            || aws ecr create-repository --repository-name "$ECR_REPOSITORY" --image-scanning-configuration scanOnPush=true
+
+      - name: Image version
+        id: image
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF#refs/tags/}"
+          else
+            version="sha-${GITHUB_SHA::12}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "name=${{ steps.ecr.outputs.registry }}/$ECR_REPOSITORY" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        run: docker build -t auto-repair-shop:local -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" .
+
+      - name: Push image
+        run: |
+          docker push "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
+          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF" == refs/heads/master ]]; then
+            docker tag "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" "${{ steps.image.outputs.name }}:latest"
+            docker push "${{ steps.image.outputs.name }}:latest"
+          fi
+          echo "Published ${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
+
+      - name: Install kind
+        run: |
+          curl -fsSL -o kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
+          chmod +x kind
+          sudo mv kind /usr/local/bin/kind
+          kind version
+
+      - name: Install kubectl
+        run: |
+          version="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+          curl -fsSL -o kubectl "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Ensure Terraform state bucket
+        run: bash scripts/ensure-tfstate-bucket.sh
+
+      - name: Provision cluster and database
+        working-directory: infra
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Load image into kind
+        run: kind load docker-image auto-repair-shop:local --name autorepairshop
+
+      - name: Apply manifests
+        run: |
+          kubectl apply -k k8s --context kind-autorepairshop
+          if ! kubectl --context kind-autorepairshop -n auto-repair-shop rollout status deployment/api --timeout=300s; then
+            kubectl --context kind-autorepairshop -n auto-repair-shop get pods
+            kubectl --context kind-autorepairshop -n auto-repair-shop describe pods
+            kubectl --context kind-autorepairshop -n auto-repair-shop logs -l app=api --tail=200 || true
+            exit 1
+          fi
+
+      - name: Smoke test
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/actuator/health/readiness; then
+              echo
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
