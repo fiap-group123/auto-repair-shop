@@ -42,3 +42,11 @@ out/
 ### Secrets ###
 .env
 application-local.properties
+
+### Terraform ###
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
