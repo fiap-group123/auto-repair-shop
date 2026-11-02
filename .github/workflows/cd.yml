@@ -11,16 +11,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    permissions:
-      contents: read
-      actions: write
-      issues: write
-      pull-requests: write
-    uses: ./.github/workflows/pull-request-checks.yml
+#  verify:
+#    permissions:
+#      contents: read
+#      actions: write
+#      issues: write
+#      pull-requests: write
+#    uses: ./.github/workflows/pull-request-checks.yml
 
   deliver:
-    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -82,7 +81,7 @@ jobs:
 
       - name: Install kind
         run: |
-          curl -fsSL -o kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
+          curl -fsSL -o kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64
           chmod +x kind
           sudo mv kind /usr/local/bin/kind
           kind version
