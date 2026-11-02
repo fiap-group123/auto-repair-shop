@@ -80,11 +80,11 @@ O CD autentica na AWS com OIDC e envia a imagem para `<conta>.dkr.ecr.<região>.
 
 Versões:
 
-| Disparo | Tags no ECR |
+| Disparo | Tag da imagem e da release |
 |---|---|
-| Push em `main` ou `master` | `sha-<12 caracteres do commit>` e `latest` |
-| Tag Git `v1.2.3` | `v1.2.3` |
-| `workflow_dispatch` numa branch | `sha-<12 caracteres do commit>` |
+| Push em `main` | o pipeline calcula a próxima tag a partir dos commits (`feat:` sobe minor, mudança incompatível sobe major, o resto sobe patch) e publica `latest` |
+| Disparo manual | a escolha patch, minor ou major define a próxima tag, e também publica `latest` |
+| Push de uma tag Git `v*` | a mesma tag, sem abrir outra release |
 
 O clique a clique da conta AWS (provedor OIDC, policy, role e o que copiar para o GitHub) está em [AWS.md](AWS.md).
 

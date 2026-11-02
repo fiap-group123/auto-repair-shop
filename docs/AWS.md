@@ -162,7 +162,7 @@ Não crie access key da AWS no GitHub. A variável `ECR_REPOSITORY` só é neces
 1. Faça push na `main` ou abra **Actions** → **CD** → **Run workflow**.
 2. Espere o job `deliver` terminar.
 3. No console AWS, abra **ECR** → **Repositories** → `auto-repair-shop`.
-4. A imagem deve ter a tag `sha-` seguida de 12 caracteres do commit. Na `main`, também aparece `latest`.
+4. A imagem deve ter a tag criada pelo pipeline, por exemplo `v0.1.0`, e também `latest`. A mesma tag aparece em **Releases** no GitHub.
 
 O banco não é criado na AWS. O PostgreSQL sobe só no cluster kind do job e some quando o runner termina.
 
