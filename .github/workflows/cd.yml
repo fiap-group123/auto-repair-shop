@@ -57,7 +57,8 @@ jobs:
             version="sha-${GITHUB_SHA::12}"
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "name=${{ steps.ecr.outputs.registry }}/${{ steps.ecr.outputs.registry-alias }}/$ECR_REPOSITORY" >> "$GITHUB_OUTPUT"
+          registry=$(aws ecr-public describe-registries --region us-east-1 --query 'registries[0].registryUri' --output text)
+          echo "name=${registry}/$ECR_REPOSITORY" >> "$GITHUB_OUTPUT"
 
       - name: Build image
         run: docker build -t auto-repair-shop:local -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" .
