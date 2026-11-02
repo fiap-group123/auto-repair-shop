@@ -63,8 +63,10 @@ Pré-requisitos e o fluxo com Gradle estão em [Getting started](docs/GETTING_ST
 
 ```bash
 cp .env.example .env
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 ```
+
+Esse comando constrói a API a partir do código. `docker compose up` sobe a imagem publicada em `docker-compose.yml`.
 
 API em http://localhost:8080. Swagger em http://localhost:8080/swagger-ui.html. Mailpit em http://localhost:8025.
 
@@ -116,7 +118,7 @@ Para o vídeo da escala, [`scripts/simulate-load.sh`](scripts/simulate-load.sh) 
 
 Pull request: [`.github/workflows/pull-request-checks.yml`](.github/workflows/pull-request-checks.yml) compila, roda o Detekt e os testes com cobertura.
 
-`main`, uma tag `v*` ou o disparo manual: [`.github/workflows/cd.yml`](.github/workflows/cd.yml) repete essas checagens, constrói a imagem e publica no Amazon ECR. Na branch, a tag é `sha-<12 caracteres do commit>` e também `latest`. Numa tag Git `v1.2.3`, a imagem recebe essa mesma versão. O deploy de demonstração no kind do runner continua usando a imagem local. Variáveis `JAVA_VERSION` (`17`), `GRADLE_VERSION` (`9.5.1`), `AWS_REGION` e o secret `AWS_ROLE_ARN` estão em [CONFIGURATION.md](docs/CONFIGURATION.md#github-actions).
+`main`, uma tag `v*` ou o disparo manual: [`.github/workflows/cd.yml`](.github/workflows/cd.yml) repete essas checagens, constrói a imagem e publica no Amazon ECR Public. O pipeline lê a última tag e calcula a próxima: um commit `feat:` sobe o minor (`v0.1.3` vira `v0.2.0`), uma mudança incompatível sobe o major (`v1.0.0`) e o restante sobe o patch. No disparo manual dá para escolher patch, minor ou major. A imagem e a release usam essa tag, e a estável também publica `latest`. O deploy de demonstração no kind do runner continua usando a imagem local. Variáveis `JAVA_VERSION` (`17`), `GRADLE_VERSION` (`9.5.1`), `AWS_REGION` e o secret `AWS_ROLE_ARN` estão em [CONFIGURATION.md](docs/CONFIGURATION.md#github-actions).
 
 ## Documentação
 
@@ -136,7 +138,7 @@ Pull request: [`.github/workflows/pull-request-checks.yml`](.github/workflows/pu
 | [Extra Service HTTP](http/extra-service.http)     | 5. Nova OS + extras |
 | [Fase 2 HTTP](http/phase2.http)                   | Abertura completa, status, fila e notificação externa |
 
-Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. Ordem: **auth → customer → inventory → service-order → extra-service**. O `budget.http` pode rodar depois do `customer.http`. O `phase2.http` é independente e cadastra o próprio estoque. No convite, copie o token no [Mailpit](http://localhost:8025).
+Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. Ordem: **auth → customer → inventory → service-order → extra-service**. O `budget.http` pode rodar depois do `customer.http`. O `phase2.http` é independente: no banco vazio ele cria o gerente e cadastra o próprio estoque. No convite, copie o token no [Mailpit](http://localhost:8025).
 
 ## O que a API cobre
 
