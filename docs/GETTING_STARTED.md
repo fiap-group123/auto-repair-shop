@@ -18,13 +18,23 @@ cp .env.example .env
 
 ## Subir o stack
 
-Na raiz do repositório:
+Na raiz do repositório, para construir a API a partir deste código:
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 ```
 
-Isso constrói o [Dockerfile](../Dockerfile) e sobe:
+O [`docker-compose.local.yml`](../docker-compose.local.yml) usa o [Dockerfile](../Dockerfile) e grava a imagem `auto-repair-shop:local`. Postgres e Mailpit vêm do Compose principal.
+
+Para usar a imagem já publicada, sem compilar:
+
+```bash
+docker compose up
+```
+
+Esse comando sobe a imagem definida em `docker-compose.yml`.
+
+Os dois comandos sobem:
 
 | Serviço | Porta | O que é |
 |---|---|---|

@@ -22,7 +22,7 @@ services:
       - "8025:8025"
 
   api:
-    build: .
+    image: public.ecr.aws/w2x8c5h2/auto-repair-shop:v0.1.0
     ports:
       - "8080:8080"
     environment:

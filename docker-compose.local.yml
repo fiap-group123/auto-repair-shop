@@ -1,0 +1,7 @@
+# Sobe a API a partir do código deste repositório.
+# docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+services:
+  api:
+    image: auto-repair-shop:local
+    build: .
+    pull_policy: build
