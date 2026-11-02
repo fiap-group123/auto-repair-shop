@@ -42,5 +42,11 @@ class ServiceOrderApiExceptionHandlerTest {
                 ex = ServiceOrderException.InvalidDuration(message = "duration"),
             ).status,
         )
+        assertEquals(
+            expected = HttpStatus.UNPROCESSABLE_CONTENT.value(),
+            actual = handler.handleServiceOrder(
+                ex = ServiceOrderException.InvalidOpening(message = "opening"),
+            ).status,
+        )
     }
 }

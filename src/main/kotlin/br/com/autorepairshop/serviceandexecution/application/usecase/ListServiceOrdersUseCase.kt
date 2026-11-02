@@ -1,5 +1,6 @@
 package br.com.autorepairshop.serviceandexecution.application.usecase
 
+import br.com.autorepairshop.serviceandexecution.application.ServiceOrderQueue
 import br.com.autorepairshop.serviceandexecution.application.dto.ServiceOrderAssembler
 import br.com.autorepairshop.serviceandexecution.application.dto.ServiceOrderResponse
 import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
@@ -14,5 +15,7 @@ class ListServiceOrdersUseCase(
 ) : UseCase<Unit, List<ServiceOrderResponse>> {
 
     @Transactional(readOnly = true)
-    override fun execute(input: Unit): List<ServiceOrderResponse> = responses.toResponses(orders = orders.findAll())
+    override fun execute(input: Unit): List<ServiceOrderResponse> = responses.toResponses(
+        orders = ServiceOrderQueue.arrange(orders = orders.findAll()),
+    )
 }
