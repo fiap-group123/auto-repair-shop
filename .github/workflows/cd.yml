@@ -12,6 +12,11 @@ concurrency:
 
 jobs:
   verify:
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+      pull-requests: write
     uses: ./.github/workflows/pull-request-checks.yml
 
   deliver:
