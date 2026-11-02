@@ -76,6 +76,8 @@ class SecurityConfig {
             "/swagger-ui.html",
             "/v3/api-docs/**",
         ).permitAll()
+        requests.requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+        requests.requestMatchers(HttpMethod.POST, "/integrations/budget-decisions").permitAll()
         requests.requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
         requests.requestMatchers(HttpMethod.POST, "/auth/users").access(bootstrapOrManager(users = users))
         requests.requestMatchers(HttpMethod.POST, "/invite/customer/**").hasAnyRole("RECEPTIONIST", "MANAGER")

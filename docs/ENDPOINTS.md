@@ -241,9 +241,10 @@ Ciclo: `RECEIVED` → `IN_DIAGNOSIS` → `WAITING_APPROVAL` → `BUDGET_APPROVED
 
 | Método | Path | Papéis | Status | Descrição |
 |---|---|---|---|---|
-| `POST` | `/service-orders` | `RECEPTIONIST`, `MANAGER` | `201` | Abre OS (CPF/CNPJ + `vehiclePlate`). Status `RECEIVED`. |
-| `GET` | `/service-orders` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista todas. |
-| `GET` | `/service-orders/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Lista por cliente. `CLIENT` precisa ser o dono. |
+| `POST` | `/service-orders` | `RECEPTIONIST`, `MANAGER` | `201` | Abre a OS. Aceita documento + placa de quem já existe, ou o cadastro completo do cliente e do veículo, mais serviços e peças. Status `RECEIVED`. |
+| `GET` | `/service-orders` | `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Fila da oficina. Sem `FINISHED` e `DELIVERED`. Ordem: `IN_EXECUTION`, `BUDGET_APPROVED`, `WAITING_APPROVAL`, `IN_DIAGNOSIS`, `RECEIVED`, `BUDGET_REJECTED`. Mais antigas primeiro dentro do mesmo status. |
+| `GET` | `/service-orders/customer/{customerId}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Histórico do cliente, inclusive finalizadas e entregues. `CLIENT` precisa ser o dono. |
+| `GET` | `/service-orders/{id}/status` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Situação atual (`status` + `label`). |
 | `GET` | `/service-orders/{id}` | `CLIENT`, `RECEPTIONIST`, `MECHANIC`, `MANAGER` | `200` | Detalhe (status, timestamps, `serviceIds`, `partIds`). |
 | `POST` | `/service-orders/{id}/diagnosis` | `MECHANIC`, `MANAGER` | `200` | Inicia diagnóstico e cria o orçamento. |
 | `POST` | `/service-orders/{id}/diagnosis/complete` | `MECHANIC`, `MANAGER` | `200` | Fecha diagnóstico e aguarda aprovação (`Budget.total` > 0). |
@@ -253,7 +254,30 @@ Ciclo: `RECEIVED` → `IN_DIAGNOSIS` → `WAITING_APPROVAL` → `BUDGET_APPROVED
 
 Transições de status não têm body. Cada mudança envia e-mail ao contato do cliente (Mailpit local: http://localhost:8025).
 
+`GET /service-orders/{id}/status`:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "status": "IN_DIAGNOSIS",
+  "label": "Diagnóstico"
+}
+```
+
+| `status` | `label` |
+|---|---|
+| `RECEIVED` | Recebida |
+| `IN_DIAGNOSIS` | Diagnóstico |
+| `WAITING_APPROVAL` | Aguardando Aprovação |
+| `BUDGET_APPROVED` | Orçamento aprovado |
+| `IN_EXECUTION` | Execução |
+| `FINISHED` | Finalizada |
+| `DELIVERED` | Entregue |
+| `BUDGET_REJECTED` | Orçamento recusado |
+
 ### `POST /service-orders`
+
+Cliente e veículo que já existem:
 
 ```json
 {
@@ -262,7 +286,33 @@ Transições de status não têm body. Cada mudança envia e-mail ao contato do 
 }
 ```
 
-`document` aceita CPF/CNPJ formatado ou só dígitos. `vehiclePlate` aceita Mercosul ou formato antigo. Uma OS aberta por veículo. O veículo precisa pertencer ao cliente e o cliente precisa estar ativo.
+Abertura completa. Cliente ou veículo novo é cadastrado; se o documento ou a placa já existem, o cadastro é reutilizado (nome e ficha do veículo não são alterados). Serviços e peças são opcionais e entram na OS ainda `RECEIVED`. A peça precisa existir no estoque.
+
+```json
+{
+  "customer": {
+    "documentId": "111.444.777-35",
+    "name": "Ana Souza",
+    "email": "ana.souza@email.com",
+    "phone": "11988887777"
+  },
+  "vehicle": {
+    "plate": "BRA2E19",
+    "brand": "Honda",
+    "model": "Civic",
+    "year": 2022,
+    "color": "Prata"
+  },
+  "services": [
+    { "name": "Troca de oleo", "basePrice": 150.00 }
+  ],
+  "parts": [
+    { "inventoryId": "00000000-0000-0000-0000-000000000000", "quantity": 1 }
+  ]
+}
+```
+
+`document` / `customer.documentId` aceitam CPF/CNPJ formatado ou só dígitos. A placa aceita Mercosul ou formato antigo. Uma OS aberta por veículo. O veículo precisa pertencer ao cliente e o cliente precisa estar ativo. A resposta é o mesmo `ServiceOrderResponse` abaixo, com `serviceIds` e `partIds` preenchidos quando houver linhas.
 
 Resposta `201` / `200`:
 
@@ -296,6 +346,21 @@ O orçamento é criado ao iniciar o diagnóstico (`POST /service-orders/{id}/dia
 | `POST` | `/budgets/{id}/reject` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Rejeita o orçamento e passa a OS para `BUDGET_REJECTED`. |
 | `POST` | `/budgets/{id}/trade` | `CLIENT`, `RECEPTIONIST`, `MANAGER` | `200` | Negocia o orçamento e passa a OS para `BUDGET_APPROVED`. |
 | `DELETE` | `/budgets/{id}` | `MANAGER` | `204` | Remove o orçamento da OS. |
+
+Notificação externa (sem JWT). Header `X-Notification-Token` com o valor de `BUDGET_NOTIFICATION_TOKEN`. Não envie `Authorization`.
+
+| Método | Path | Auth | Status | Descrição |
+|---|---|---|---|---|
+| `POST` | `/integrations/budget-decisions` | Header `X-Notification-Token` | `200` | Aprova ou recusa o orçamento. A OS segue para `BUDGET_APPROVED` ou `BUDGET_REJECTED` e o cliente recebe e-mail. |
+
+```json
+{
+  "serviceOrderId": "00000000-0000-0000-0000-000000000000",
+  "decision": "APPROVED"
+}
+```
+
+`decision`: `APPROVED` ou `REJECTED`. A OS precisa estar em `WAITING_APPROVAL` (diagnóstico já encerrado). Token ausente ou diferente devolve `401`.
 
 ### `GET /budgets/{id}`
 

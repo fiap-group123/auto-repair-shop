@@ -20,6 +20,7 @@ Copie [`.env.example`](../.env.example) para `.env` (gitignored). O Compose carr
 | `spring.mail.password` | `MAIL_PASSWORD` | vazio | Não | Idem. |
 | `app.mail.from` | `MAIL_FROM` | `oficina@localhost` | Sim | Remetente. |
 | `app.mail.invite-base-url` | `INVITE_BASE_URL` | `http://localhost:8080/invite` | Sim | Prefixo do link do convite (`/{token}` se a base não tiver `?`). O default aponta para o `GET /invite/{token}` público. |
+| `app.notifications.budget-token` | `BUDGET_NOTIFICATION_TOKEN` | `local-budget-notification-token` | Sim | Segredo do header `X-Notification-Token` em `POST /integrations/budget-decisions`. Troque fora do ambiente local. |
 
 O serviço `postgres` do Compose também recebe `POSTGRES_DB=autorepairshop`, `POSTGRES_USER` de `DATABASE_USERNAME` e `POSTGRES_PASSWORD` de `DATABASE_PASSWORD`.
 
@@ -68,7 +69,26 @@ Crie em **Settings → Secrets and variables → Actions**. Os workflows leem `$
 |---|---|---|---|
 | `JAVA_VERSION` | Variable | `17` | Sim. [`.github/actions/setup`](../.github/actions/setup). |
 | `GRADLE_VERSION` | Variable | `9.5.1` | Sim. Igual ao Gradle Wrapper. |
+| `AWS_REGION` | Variable | `us-east-1` | Sim para o CD publicar no ECR. |
+| `ECR_REPOSITORY` | Variable | `auto-repair-shop` | Não. Esse é o default do workflow. |
+| `AWS_ROLE_ARN` | Secret | `arn:aws:iam::<conta>:role/github-auto-repair-shop` | Sim para o CD. A role é assumida por OIDC, sem access key no GitHub. |
 | `SONAR_TOKEN` | Secret | \*\*\* | Sim para o job Sonar. 403 costuma ser token ausente, errado ou sem Execute Analysis. |
+
+### Amazon ECR
+
+O CD autentica na AWS com OIDC e envia a imagem para `<conta>.dkr.ecr.<região>.amazonaws.com/auto-repair-shop`.
+
+Versões:
+
+| Disparo | Tags no ECR |
+|---|---|
+| Push em `main` ou `master` | `sha-<12 caracteres do commit>` e `latest` |
+| Tag Git `v1.2.3` | `v1.2.3` |
+| `workflow_dispatch` numa branch | `sha-<12 caracteres do commit>` |
+
+O clique a clique da conta AWS (provedor OIDC, policy, role e o que copiar para o GitHub) está em [AWS.md](AWS.md).
+
+O workflow cria o repositório ECR se ele ainda não existir. O cluster kind do CD continua subindo a imagem local; a versão publicada para consumo fica no ECR.
 
 Não crie `GITHUB_TOKEN`: o GitHub injeta sozinho (comentário de cobertura no PR, checkout, decoração Sonar).
 

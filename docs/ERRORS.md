@@ -43,7 +43,7 @@ Handler: `AuthApiExceptionHandler`. Também trata `AuthenticationException` do S
 | Exceção | Status | Quando | `detail` típico |
 |---|---|---|---|
 | `InvalidCredentials` | 401 | E-mail inexistente ou senha errada no login | `Invalid credentials.` |
-| `Unauthenticated` | 401 | Staff tentando cadastrar usuário sem ator (depois do bootstrap) | `Authentication required.` |
+| `Unauthenticated` | 401 | Staff tentando cadastrar usuário sem ator (depois do bootstrap); token de notificação externa ausente ou diferente | `Authentication required.` / `Invalid notification token.` |
 | `InvalidRefresh` | 401 | Refresh inexistente, revogado ou expirado | `Refresh token was not found.` / `…revoked.` / `…has expired.` |
 | `RefreshReuse` | 401 | Refresh já rotacionado (reuso) | `Refresh token was reused.` |
 | Spring `AuthenticationException`, `JwtException` | 401 | Cadeia OAuth2 / JWT | `Authentication required.` / `Invalid or expired token.` |
@@ -113,6 +113,7 @@ Handler: `ServiceOrderApiExceptionHandler`.
 | `VehicleNotOwnedByCustomer` | 409 | Placa não pertence ao documento informado | — |
 | `InvalidStatusTransition` | 422 | Método de ciclo chamado no status errado | `Cannot transition from <STATUS>.` (mensagem do agregado) |
 | `InvalidDuration` | 422 | Duração inválida ao concluir a OS | — |
+| `InvalidOpening` | 422 | Abertura sem documento, sem placa, ou cadastro novo sem os dados obrigatórios | `Customer document is required.` / `Vehicle plate is required.` / `Customer name, email and phone are required when the document is new.` / `Vehicle brand, model, color and year are required when the plate is new.` |
 
 Transições válidas: [ARCHITECTURE.md](ARCHITECTURE.md#serviceandexecution) e [ENDPOINTS.md](ENDPOINTS.md#service-orders).
 
@@ -128,7 +129,7 @@ Handler: `BudgetApiExceptionHandler`. O `{id}` das rotas `/budgets/{id}` é o **
 | `ServiceOrderNotFound` | 404 | OS do orçamento não existe | — |
 | `BudgetAlreadyExists` | 409 | Segundo orçamento na mesma OS (diagnóstico duplicado) | — |
 | `EmptyBudget` | 422 | Encerrar diagnóstico com total ≤ 0 | `Cannot send an empty budget for approval.` |
-| `InvalidBudgetStatusTransition` | 422 | Aprovar/rejeitar/negociar fora de `WAITING_APPROVAL` | `Cannot transition from <STATUS>.` |
+| `InvalidBudgetStatusTransition` | 422 | Aprovar/rejeitar/negociar fora de `WAITING_APPROVAL`, ou `decision` diferente de `APPROVED`/`REJECTED` na notificação externa | `Cannot transition from <STATUS>.` / `Decision must be APPROVED or REJECTED.` |
 
 ## Catalog (Service e ExtraService)
 

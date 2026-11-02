@@ -1,15 +1,21 @@
 package br.com.autorepairshop.api.controller.serviceandexecution
 
 import br.com.autorepairshop.api.dto.serviceandexecution.RegisterServiceOrderRequest
-import br.com.autorepairshop.serviceandexecution.application.dto.RegisterServiceOrderCommand
+import br.com.autorepairshop.serviceandexecution.application.dto.CustomerOpening
+import br.com.autorepairshop.serviceandexecution.application.dto.OpenServiceOrderCommand
+import br.com.autorepairshop.serviceandexecution.application.dto.PartOpening
+import br.com.autorepairshop.serviceandexecution.application.dto.ServiceOpening
 import br.com.autorepairshop.serviceandexecution.application.dto.ServiceOrderResponse
+import br.com.autorepairshop.serviceandexecution.application.dto.ServiceOrderStatusResponse
+import br.com.autorepairshop.serviceandexecution.application.dto.VehicleOpening
 import br.com.autorepairshop.serviceandexecution.application.usecase.DeliverServiceOrderUseCase
 import br.com.autorepairshop.serviceandexecution.application.usecase.FindServiceOrderUseCase
 import br.com.autorepairshop.serviceandexecution.application.usecase.FinishDiagnosisUseCase
 import br.com.autorepairshop.serviceandexecution.application.usecase.FinishServiceOrderUseCase
+import br.com.autorepairshop.serviceandexecution.application.usecase.GetServiceOrderStatusUseCase
 import br.com.autorepairshop.serviceandexecution.application.usecase.ListServiceOrdersByCustomerIdUseCase
 import br.com.autorepairshop.serviceandexecution.application.usecase.ListServiceOrdersUseCase
-import br.com.autorepairshop.serviceandexecution.application.usecase.RegisterServiceOrderUseCase
+import br.com.autorepairshop.serviceandexecution.application.usecase.OpenServiceOrderUseCase
 import br.com.autorepairshop.serviceandexecution.application.usecase.StartDiagnosisUseCase
 import br.com.autorepairshop.serviceandexecution.application.usecase.StartExecutionUseCase
 import io.swagger.v3.oas.annotations.Operation
@@ -28,8 +34,9 @@ import java.util.UUID
 @RequestMapping("/service-orders")
 @Tag(name = "ServiceOrder", description = "Service order lifecycle (bounded context Service Order)")
 class ServiceOrderController(
-    private val registerOrder: RegisterServiceOrderUseCase,
+    private val openOrder: OpenServiceOrderUseCase,
     private val findOrder: FindServiceOrderUseCase,
+    private val orderStatus: GetServiceOrderStatusUseCase,
     private val listOrders: ListServiceOrdersUseCase,
     private val listOrdersByCustomerId: ListServiceOrdersByCustomerIdUseCase,
     private val startDiagnosis: StartDiagnosisUseCase,
@@ -40,14 +47,9 @@ class ServiceOrderController(
 ) {
 
     @PostMapping
-    @Operation(summary = "Register a service order")
+    @Operation(summary = "Open a service order with customer, vehicle, services and parts")
     fun register(@RequestBody request: RegisterServiceOrderRequest): ResponseEntity<ServiceOrderResponse> {
-        val order = registerOrder.execute(
-            input = RegisterServiceOrderCommand(
-                document = request.document,
-                vehiclePlate = request.vehiclePlate,
-            ),
-        )
+        val order = openOrder.execute(input = request.toCommand())
         val location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(order.id)
@@ -56,13 +58,18 @@ class ServiceOrderController(
     }
 
     @GetMapping
-    @Operation(summary = "List service orders")
+    @Operation(summary = "List the work queue, oldest first, without finished or delivered orders")
     fun list(): ResponseEntity<List<ServiceOrderResponse>> = ResponseEntity.ok(listOrders.execute(input = Unit))
 
     @GetMapping("/customer/{customerId}")
     @Operation(summary = "List service orders by customer id")
     fun listByCustomerId(@PathVariable customerId: UUID): ResponseEntity<List<ServiceOrderResponse>> =
         ResponseEntity.ok(listOrdersByCustomerId.execute(input = customerId))
+
+    @GetMapping("/{id}/status")
+    @Operation(summary = "Read the current service order status")
+    fun status(@PathVariable id: UUID): ResponseEntity<ServiceOrderStatusResponse> =
+        ResponseEntity.ok(orderStatus.execute(input = id))
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a service order by id")
@@ -94,3 +101,37 @@ class ServiceOrderController(
     fun deliver(@PathVariable id: UUID): ResponseEntity<ServiceOrderResponse> =
         ResponseEntity.ok(deliverOrder.execute(input = id))
 }
+
+private fun RegisterServiceOrderRequest.toCommand() = OpenServiceOrderCommand(
+    document = document,
+    vehiclePlate = vehiclePlate,
+    customer = customer?.let { opening ->
+        CustomerOpening(
+            documentId = opening.documentId,
+            name = opening.name,
+            email = opening.email,
+            phone = opening.phone,
+        )
+    },
+    vehicle = vehicle?.let { opening ->
+        VehicleOpening(
+            plate = opening.plate,
+            brand = opening.brand,
+            model = opening.model,
+            year = opening.year,
+            color = opening.color,
+        )
+    },
+    services = services.map { line ->
+        ServiceOpening(
+            name = line.name,
+            basePrice = line.basePrice,
+        )
+    },
+    parts = parts.map { line ->
+        PartOpening(
+            inventoryId = line.inventoryId,
+            quantity = line.quantity,
+        )
+    },
+)

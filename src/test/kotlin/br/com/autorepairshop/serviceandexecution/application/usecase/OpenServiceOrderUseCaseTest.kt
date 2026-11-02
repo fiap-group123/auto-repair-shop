@@ -1,20 +1,35 @@
 package br.com.autorepairshop.serviceandexecution.application.usecase
 
+import br.com.autorepairshop.catalog.application.dto.RegisterServiceCommand
+import br.com.autorepairshop.catalog.application.usecase.RegisterServiceUseCase
 import br.com.autorepairshop.customer.CustomerFixtures
+import br.com.autorepairshop.customer.application.dto.customer.CustomerResponse
+import br.com.autorepairshop.customer.application.dto.customer.RegisterCustomerCommand
+import br.com.autorepairshop.customer.application.dto.vehicle.RegisterVehicleCommand
+import br.com.autorepairshop.customer.application.usecase.customer.RegisterCustomerUseCase
+import br.com.autorepairshop.customer.application.usecase.vehicle.RegisterVehicleUseCase
 import br.com.autorepairshop.customer.domain.exception.CustomerException
-import br.com.autorepairshop.customer.domain.exception.VehicleException
 import br.com.autorepairshop.customer.domain.repository.CustomerRepository
 import br.com.autorepairshop.customer.domain.repository.VehicleRepository
+import br.com.autorepairshop.inputmanagment.application.dto.RegisterPartCommand
+import br.com.autorepairshop.inputmanagment.application.usecase.RegisterPartUseCase
+import br.com.autorepairshop.serviceandexecution.ServiceOrderFixtures
+import br.com.autorepairshop.serviceandexecution.application.dto.CustomerOpening
+import br.com.autorepairshop.serviceandexecution.application.dto.OpenServiceOrderCommand
+import br.com.autorepairshop.serviceandexecution.application.dto.PartOpening
 import br.com.autorepairshop.serviceandexecution.application.dto.RegisterServiceOrderCommand
+import br.com.autorepairshop.serviceandexecution.application.dto.ServiceOpening
+import br.com.autorepairshop.serviceandexecution.application.dto.VehicleOpening
+import br.com.autorepairshop.serviceandexecution.application.dto.toResponse
 import br.com.autorepairshop.serviceandexecution.domain.exception.ServiceOrderException
-import br.com.autorepairshop.serviceandexecution.domain.repository.ServiceOrderRepository
-import br.com.autorepairshop.serviceandexecution.domain.valueobject.ServiceOrderStatus
-import br.com.autorepairshop.shared.application.event.EventPublisher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
+import java.time.Instant
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -22,123 +37,225 @@ import kotlin.test.assertFailsWith
 class OpenServiceOrderUseCaseTest {
     private val customers = mockk<CustomerRepository>()
     private val vehicles = mockk<VehicleRepository>()
-    private val orders = mockk<ServiceOrderRepository>()
-    private val events = mockk<EventPublisher>()
-    private val useCase = RegisterServiceOrderUseCase(
+    private val registerCustomer = mockk<RegisterCustomerUseCase>()
+    private val registerVehicle = mockk<RegisterVehicleUseCase>()
+    private val registerOrder = mockk<RegisterServiceOrderUseCase>()
+    private val registerService = mockk<RegisterServiceUseCase>(relaxed = true)
+    private val registerPart = mockk<RegisterPartUseCase>(relaxed = true)
+    private val findOrder = mockk<FindServiceOrderUseCase>()
+    private val useCase = OpenServiceOrderUseCase(
         customers = customers,
         vehicles = vehicles,
-        orders = orders,
-        events = events,
+        registerCustomer = registerCustomer,
+        registerVehicle = registerVehicle,
+        registerOrder = registerOrder,
+        registerService = registerService,
+        registerPart = registerPart,
+        findOrder = findOrder,
     )
 
     @Test
-    fun `throws when the document is invalid`() {
-        assertFailsWith<CustomerException.InvalidDocument> {
-            useCase.execute(input = command(documentId = CustomerFixtures.INVALID_CPF))
+    fun `reuses an existing customer and vehicle`() {
+        val customer = CustomerFixtures.activeCustomer()
+        val vehicle = CustomerFixtures.vehicle(owner = customer)
+        val opened = ServiceOrderFixtures.received(
+            customerId = customer.id.value,
+            vehicleId = vehicle.id.value,
+        ).toResponse()
+        every { customers.findByDocumentId(id = any()) } returns customer
+        every { vehicles.findByPlate(plate = any()) } returns vehicle
+        every { registerOrder.execute(input = any()) } returns opened
+        every { findOrder.execute(input = opened.id) } returns opened
+
+        val response = useCase.execute(
+            input = OpenServiceOrderCommand(
+                document = CustomerFixtures.VALID_CPF,
+                vehiclePlate = CustomerFixtures.PLATE,
+            ),
+        )
+
+        assertEquals(expected = opened.id, actual = response.id)
+        verify(exactly = 0) { registerCustomer.execute(input = any()) }
+        verify(exactly = 0) { registerVehicle.execute(input = any()) }
+        verify {
+            registerOrder.execute(
+                input = RegisterServiceOrderCommand(
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
+                ),
+            )
         }
     }
 
     @Test
-    fun `throws when customer is missing`() {
+    fun `creates the customer vehicle services and parts when they are new`() {
+        val customerId = UUID.randomUUID()
+        val inventoryId = UUID.randomUUID()
+        val opened = ServiceOrderFixtures.received(customerId = customerId).toResponse()
+        every { customers.findByDocumentId(id = any()) } returns null
+        every { vehicles.findByPlate(plate = any()) } returns null
+        every { registerCustomer.execute(input = any()) } returns customerResponse(id = customerId)
+        every { registerVehicle.execute(input = any()) } returns mockk(relaxed = true)
+        every { registerOrder.execute(input = any()) } returns opened
+        every { findOrder.execute(input = opened.id) } returns opened
+
+        useCase.execute(input = fullCommand(inventoryId = inventoryId))
+
+        verify {
+            registerCustomer.execute(
+                input = RegisterCustomerCommand(
+                    documentId = CustomerFixtures.VALID_CPF,
+                    name = CustomerFixtures.NAME,
+                    email = CustomerFixtures.EMAIL,
+                    phone = CustomerFixtures.PHONE,
+                ),
+            )
+        }
+        verify {
+            registerVehicle.execute(
+                input = RegisterVehicleCommand(
+                    ownerId = customerId,
+                    plate = CustomerFixtures.PLATE,
+                    brand = CustomerFixtures.BRAND,
+                    model = CustomerFixtures.MODEL,
+                    color = CustomerFixtures.COLOR,
+                    year = CustomerFixtures.YEAR,
+                ),
+            )
+        }
+        verify {
+            registerService.execute(
+                input = RegisterServiceCommand(
+                    serviceOrderId = opened.id,
+                    name = "Troca de oleo",
+                    basePrice = BigDecimal("150.00"),
+                ),
+            )
+        }
+        verify {
+            registerPart.execute(
+                input = RegisterPartCommand(
+                    serviceOrderId = opened.id,
+                    inventoryId = inventoryId,
+                    quantity = 2,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `rejects an opening without a customer or a vehicle`() {
+        assertFailsWith<ServiceOrderException.InvalidOpening> {
+            useCase.execute(input = OpenServiceOrderCommand())
+        }
+    }
+
+    @Test
+    fun `rejects an opening without a plate`() {
+        assertFailsWith<ServiceOrderException.InvalidOpening> {
+            useCase.execute(
+                input = OpenServiceOrderCommand(document = CustomerFixtures.VALID_CPF),
+            )
+        }
+    }
+
+    @Test
+    fun `rejects a new document without customer details`() {
         every { customers.findByDocumentId(id = any()) } returns null
 
-        assertFailsWith<CustomerException.CustomerNotFound> {
-            useCase.execute(input = command())
+        assertFailsWith<ServiceOrderException.InvalidOpening> {
+            useCase.execute(
+                input = OpenServiceOrderCommand(
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
+                ),
+            )
         }
     }
 
     @Test
-    fun `throws when customer is inactive`() {
-        val customer = CustomerFixtures.inactiveCustomer()
-        every { customers.findByDocumentId(id = customer.document) } returns customer
-
-        assertFailsWith<CustomerException.InvalidDocument> {
-            useCase.execute(input = command(documentId = CustomerFixtures.VALID_CPF))
-        }
-    }
-
-    @Test
-    fun `throws when the plate is invalid`() {
+    fun `rejects a new plate without vehicle details`() {
         val customer = CustomerFixtures.activeCustomer()
-        every { customers.findByDocumentId(id = customer.document) } returns customer
-
-        assertFailsWith<VehicleException.InvalidLicensePlate> {
-            useCase.execute(input = command(vehiclePlate = "INVALID"))
-        }
-    }
-
-    @Test
-    fun `throws when vehicle is missing`() {
-        val customer = CustomerFixtures.activeCustomer()
-        every { customers.findByDocumentId(id = customer.document) } returns customer
+        every { customers.findByDocumentId(id = any()) } returns customer
         every { vehicles.findByPlate(plate = any()) } returns null
 
-        assertFailsWith<VehicleException.VehicleNotFound> {
-            useCase.execute(input = command())
+        assertFailsWith<ServiceOrderException.InvalidOpening> {
+            useCase.execute(
+                input = OpenServiceOrderCommand(
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
+                ),
+            )
         }
     }
 
     @Test
-    fun `throws when vehicle belongs to another customer`() {
+    fun `rejects an inactive customer`() {
+        every { customers.findByDocumentId(id = any()) } returns CustomerFixtures.inactiveCustomer()
+
+        assertFailsWith<CustomerException.InvalidDocument> {
+            useCase.execute(
+                input = OpenServiceOrderCommand(
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `rejects a vehicle owned by someone else`() {
         val customer = CustomerFixtures.activeCustomer()
         val other = CustomerFixtures.activeCustomer(documentId = CustomerFixtures.OTHER_CPF)
-        val vehicle = CustomerFixtures.vehicle(owner = other)
-        every { customers.findByDocumentId(id = customer.document) } returns customer
-        every { vehicles.findByPlate(plate = vehicle.plate) } returns vehicle
+        every { customers.findByDocumentId(id = any()) } returns customer
+        every { vehicles.findByPlate(plate = any()) } returns CustomerFixtures.vehicle(owner = other)
 
         assertFailsWith<ServiceOrderException.VehicleNotOwnedByCustomer> {
-            useCase.execute(input = command(vehiclePlate = CustomerFixtures.PLATE))
+            useCase.execute(
+                input = OpenServiceOrderCommand(
+                    document = CustomerFixtures.VALID_CPF,
+                    vehiclePlate = CustomerFixtures.PLATE,
+                ),
+            )
         }
-        verify(exactly = 0) { orders.save(order = any()) }
     }
 
-    @Test
-    fun `throws when the vehicle already has an open order`() {
-        val customer = CustomerFixtures.activeCustomer()
-        val vehicle = CustomerFixtures.vehicle(owner = customer)
-        every { customers.findByDocumentId(id = customer.document) } returns customer
-        every { vehicles.findByPlate(plate = vehicle.plate) } returns vehicle
-        every { orders.existsOpenByVehicleId(vehicleId = vehicle.id.value) } returns true
+    private fun fullCommand(inventoryId: UUID) = OpenServiceOrderCommand(
+        customer = CustomerOpening(
+            documentId = CustomerFixtures.VALID_CPF,
+            name = CustomerFixtures.NAME,
+            email = CustomerFixtures.EMAIL,
+            phone = CustomerFixtures.PHONE,
+        ),
+        vehicle = VehicleOpening(
+            plate = CustomerFixtures.PLATE,
+            brand = CustomerFixtures.BRAND,
+            model = CustomerFixtures.MODEL,
+            year = CustomerFixtures.YEAR,
+            color = CustomerFixtures.COLOR,
+        ),
+        services = listOf(
+            ServiceOpening(
+                name = "Troca de oleo",
+                basePrice = BigDecimal("150.00"),
+            ),
+        ),
+        parts = listOf(
+            PartOpening(
+                inventoryId = inventoryId,
+                quantity = 2,
+            ),
+        ),
+    )
 
-        assertFailsWith<ServiceOrderException.OpenOrderAlreadyExists> {
-            useCase.execute(input = command())
-        }
-        verify(exactly = 0) { orders.save(order = any()) }
-    }
-
-    @Test
-    fun `opens a received order for an active owner`() {
-        val customer = CustomerFixtures.activeCustomer()
-        val vehicle = CustomerFixtures.vehicle(owner = customer)
-        every { customers.findByDocumentId(id = customer.document) } returns customer
-        every { vehicles.findByPlate(plate = vehicle.plate) } returns vehicle
-        every { orders.existsOpenByVehicleId(vehicleId = vehicle.id.value) } returns false
-        every { orders.save(order = any()) } returns Unit
-        every { events.publish(aggregate = any()) } returns Unit
-
-        val response = useCase.execute(input = command())
-
-        assertEquals(
-            expected = customer.id.value,
-            actual = response.customerId,
-        )
-        assertEquals(
-            expected = vehicle.id.value,
-            actual = response.vehicleId,
-        )
-        assertEquals(
-            expected = ServiceOrderStatus.RECEIVED.name,
-            actual = response.status,
-        )
-        verify { orders.save(order = any()) }
-        verify { events.publish(aggregate = any()) }
-    }
-
-    private fun command(
-        documentId: String = CustomerFixtures.VALID_CPF,
-        vehiclePlate: String = CustomerFixtures.PLATE,
-    ) = RegisterServiceOrderCommand(
-        document = documentId,
-        vehiclePlate = vehiclePlate,
+    private fun customerResponse(id: UUID) = CustomerResponse(
+        id = id,
+        documentId = CustomerFixtures.VALID_CPF,
+        documentType = "CPF",
+        name = CustomerFixtures.NAME,
+        email = CustomerFixtures.EMAIL,
+        phone = CustomerFixtures.PHONE,
+        active = true,
+        createdAt = Instant.parse("2026-01-01T00:00:00Z"),
     )
 }
