@@ -38,6 +38,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      pull-requests: write
     env:
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'auto-repair-shop' }}
     steps:
@@ -47,24 +48,49 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Skip a push that only records the published tag
+        id: gate
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" != "push" || "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          latest=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
+          if [[ -z "$latest" ]]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "$latest" HEAD)
+          if [[ "$changed" == "k8s/app/kustomization.yaml" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "This push only stores the published image tag."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Configure AWS credentials
+        if: steps.gate.outputs.skip != 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        if: steps.gate.outputs.skip != 'true'
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registry-type: public
 
       - name: Ensure ECR public repository
+        if: steps.gate.outputs.skip != 'true'
         run: |
           aws ecr-public describe-repositories --region us-east-1 --repository-names "$ECR_REPOSITORY" \
             || aws ecr-public create-repository --region us-east-1 --repository-name "$ECR_REPOSITORY"
 
       - name: Image version
+        if: steps.gate.outputs.skip != 'true'
         id: image
         env:
           BUMP: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || '' }}
@@ -118,6 +144,7 @@ jobs:
           echo "Resolved ${registry}/$ECR_REPOSITORY:$version"
 
       - name: Build image
+        if: steps.gate.outputs.skip != 'true'
         run: |
           docker build \
             --label "org.opencontainers.image.version=${{ steps.image.outputs.version }}" \
@@ -125,6 +152,7 @@ jobs:
             -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" .
 
       - name: Push image
+        if: steps.gate.outputs.skip != 'true'
         run: |
           docker push "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
           if [[ "${{ steps.image.outputs.create_release }}" == "true" ]]; then
@@ -134,24 +162,39 @@ jobs:
           echo "Published ${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
 
       - name: Record published version
-        if: steps.image.outputs.create_release == 'true'
+        if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'
         env:
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.image.outputs.version }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           sed -i -E "s/^([[:space:]]*newTag:).*/\\1 ${VERSION}/" k8s/app/kustomization.yaml
-          git add k8s/app/kustomization.yaml
-          if git diff --cached --quiet; then
+          if git diff --quiet -- k8s/app/kustomization.yaml; then
             echo "newTag already ${VERSION}"
             exit 0
           fi
+          branch="chore/published-image-${VERSION}"
+          git checkout -b "$branch"
+          git add k8s/app/kustomization.yaml
           git commit -m "chore: record published image ${VERSION}"
-          git push origin HEAD:main
+          git push origin "HEAD:${branch}"
+          if ! gh pr view "$branch" --json url --jq .url >/dev/null 2>&1; then
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "chore: record published image ${VERSION}" \
+              --body "The image ${VERSION} is on ECR Public. This stores that tag in \`newTag\` so the local cluster uses the published image. Squash-merge this pull request so the next push does not publish another version."
+          fi
+          if gh pr merge "$branch" --auto --squash --subject "chore: record published image ${VERSION}"; then
+            echo "Auto-merge enabled for ${branch}"
+          else
+            echo "Pull request opened for ${branch}. Main rejects direct pushes, so merge the pull request after the required checks."
+          fi
 
       - name: Publish Git tag and release
-        if: steps.image.outputs.create_release == 'true'
+        if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.image.outputs.version }}
@@ -173,6 +216,7 @@ jobs:
           gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes "Imagem Docker: ${IMAGE}"
 
       - name: Install kind
+        if: steps.gate.outputs.skip != 'true'
         run: |
           curl -fsSL -o kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64
           chmod +x kind
@@ -180,6 +224,7 @@ jobs:
           kind version
 
       - name: Install kubectl
+        if: steps.gate.outputs.skip != 'true'
         run: |
           version="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
           curl -fsSL -o kubectl "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
@@ -188,12 +233,15 @@ jobs:
           kubectl version --client
 
       - name: Setup Terraform
+        if: steps.gate.outputs.skip != 'true'
         uses: hashicorp/setup-terraform@v3
 
       - name: Ensure Terraform state bucket
+        if: steps.gate.outputs.skip != 'true'
         run: bash scripts/ensure-tfstate-bucket.sh
 
       - name: Provision cluster and database
+        if: steps.gate.outputs.skip != 'true'
         working-directory: infra
         run: |
           terraform init
@@ -205,6 +253,7 @@ jobs:
           terraform apply -auto-approve
 
       - name: Apply manifests
+        if: steps.gate.outputs.skip != 'true'
         run: |
           kubectl apply -k k8s --context kind-autorepairshop
           kubectl --context kind-autorepairshop -n auto-repair-shop set image deployment/api \
@@ -217,6 +266,7 @@ jobs:
           fi
 
       - name: Smoke test
+        if: steps.gate.outputs.skip != 'true'
         run: |
           for attempt in $(seq 1 30); do
             if curl -fsS http://localhost:8080/actuator/health/readiness; then
