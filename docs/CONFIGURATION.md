@@ -33,7 +33,7 @@ Hibernate: `ddl-auto=validate` (Flyway é dono do schema). `open-in-view=false`.
 | Arquivo | Papel |
 |---|---|
 | [`docker-compose.yml`](../docker-compose.yml) | Código local. Constrói o Dockerfile, grava `auto-repair-shop:local` e sobe Postgres e Mailpit |
-| [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml) | Imagem publicada. `newName` é o registro e `newTag` é a versão. O CD abre um pull request com a tag que acabou de publicar |
+| [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml) | Imagem publicada. `newName` é o registro e `newTag` é a versão. A action grava em `newTag` a tag que acabou de publicar |
 | [`infra/kind-config.yaml`](../infra/kind-config.yaml) | Nó do kind local: `kindest/node:v1.37.0`, API no host `30080` e Mailpit no host `30025` |
 | [`scripts/up-cluster.sh`](../scripts/up-cluster.sh) | Sobe esse kind, aplica os manifestos e nomeia o nó com a versão do Kubernetes |
 
@@ -101,7 +101,7 @@ O alias `w2x8c5h2` vem de `aws ecr-public describe-registries`. O workflow cria 
 | Disparo manual | a escolha patch, minor ou major define a próxima tag, e também publica `latest` |
 | Push de uma tag Git `v*` | a mesma tag, sem abrir outra release |
 
-O cluster kind do CD baixa a tag publicada naquele job. Depois do push da imagem, o mesmo job abre um pull request com essa tag em `newTag` de [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml). A `main` só muda por pull request. O cluster local usa o `newTag` que estiver na `main`. O passo a passo da conta está em [AWS.md](AWS.md).
+O cluster kind do CD baixa a tag publicada naquele job. Depois do push da imagem, a action grava essa tag em `newTag` de [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml) e envia o commit para a `main`. O cluster local usa esse valor. O passo a passo da conta está em [AWS.md](AWS.md).
 
 Não crie `GITHUB_TOKEN`: o GitHub injeta sozinho (comentário de cobertura no PR, checkout, decoração Sonar).
 

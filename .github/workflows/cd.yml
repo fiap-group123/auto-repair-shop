@@ -38,7 +38,6 @@ jobs:
     permissions:
       contents: write
       id-token: write
-      pull-requests: write
     env:
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'auto-repair-shop' }}
     steps:
@@ -171,27 +170,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           sed -i -E "s/^([[:space:]]*newTag:).*/\\1 ${VERSION}/" k8s/app/kustomization.yaml
-          if git diff --quiet -- k8s/app/kustomization.yaml; then
+          git add k8s/app/kustomization.yaml
+          if git diff --cached --quiet; then
             echo "newTag already ${VERSION}"
             exit 0
           fi
-          branch="chore/published-image-${VERSION}"
-          git checkout -b "$branch"
-          git add k8s/app/kustomization.yaml
           git commit -m "chore: record published image ${VERSION}"
-          git push origin "HEAD:${branch}"
-          if ! gh pr view "$branch" --json url --jq .url >/dev/null 2>&1; then
-            gh pr create \
-              --base main \
-              --head "$branch" \
-              --title "chore: record published image ${VERSION}" \
-              --body "The image ${VERSION} is on ECR Public. This stores that tag in \`newTag\` so the local cluster uses the published image. Squash-merge this pull request so the next push does not publish another version."
-          fi
-          if gh pr merge "$branch" --auto --squash --subject "chore: record published image ${VERSION}"; then
-            echo "Auto-merge enabled for ${branch}"
-          else
-            echo "Pull request opened for ${branch}. Main rejects direct pushes, so merge the pull request after the required checks."
-          fi
+          git push origin HEAD:main
 
       - name: Publish Git tag and release
         if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'
