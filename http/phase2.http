@@ -1,0 +1,117 @@
+@baseUrl = http://localhost:8080
+@notificationToken = local-budget-notification-token
+
+# Fase 2 — banco vazio, de cima para baixo, sem pular.
+#   docker compose down -v
+#   docker compose up --build
+#
+# Cria o primeiro MANAGER, a peca, a OS completa, consulta status e fila,
+# encerra o diagnostico e aprova o orcamento pelo token externo.
+# O e-mail da aprovacao cai em http://localhost:8025.
+# Nao envie Authorization no request da notificacao.
+
+###
+# 1. Primeiro usuario — MANAGER (so funciona com banco vazio)
+POST {{baseUrl}}/auth/users
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123",
+  "role": "MANAGER"
+}
+
+###
+# 2. Login — gerente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gerente@oficina.com",
+  "password": "senha123"
+}
+
+> {%
+client.global.set("managerToken", response.body.accessToken);
+%}
+
+###
+# 3. Estoque — a peca precisa existir antes da OS
+POST {{baseUrl}}/inventories
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "name": "Filtro de oleo",
+  "kind": "PART",
+  "unitPrice": 50.00,
+  "stock": 10
+}
+
+> {% client.global.set("inventoryId", response.body.id); %}
+
+###
+# 4. Abrir OS — cliente, veiculo, servico e peca na mesma chamada. Status RECEIVED
+POST {{baseUrl}}/service-orders
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "customer": {
+    "documentId": "111.444.777-35",
+    "name": "Ana Souza",
+    "email": "ana.souza@email.com",
+    "phone": "11988887777"
+  },
+  "vehicle": {
+    "plate": "BRA2E19",
+    "brand": "Honda",
+    "model": "Civic",
+    "year": 2022,
+    "color": "Prata"
+  },
+  "services": [
+    { "name": "Troca de oleo", "basePrice": 150.00 }
+  ],
+  "parts": [
+    { "inventoryId": "{{inventoryId}}", "quantity": 1 }
+  ]
+}
+
+> {% client.global.set("serviceOrderId", response.body.id); %}
+
+###
+# 5. Status — espera label "Recebida"
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}/status
+Authorization: Bearer {{managerToken}}
+
+###
+# 6. Fila — sem finalizadas e entregues
+GET {{baseUrl}}/service-orders
+Authorization: Bearer {{managerToken}}
+
+###
+# 7. Iniciar diagnostico — cria o orcamento
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis
+Authorization: Bearer {{managerToken}}
+
+###
+# 8. Encerrar diagnostico — WAITING_APPROVAL
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/diagnosis/finish
+Authorization: Bearer {{managerToken}}
+
+###
+# 9. Aprovacao externa — sem JWT. OS vai para BUDGET_APPROVED
+POST {{baseUrl}}/integrations/budget-decisions
+X-Notification-Token: {{notificationToken}}
+Content-Type: application/json
+
+{
+  "serviceOrderId": "{{serviceOrderId}}",
+  "decision": "APPROVED"
+}
+
+###
+# 10. Status — espera label "Orçamento aprovado"
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}/status
+Authorization: Bearer {{managerToken}}
