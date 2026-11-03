@@ -160,18 +160,9 @@ jobs:
           fi
           echo "Published ${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
 
-      - name: Create CD app token
-        if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'
-        id: cd-app
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.CD_APP_ID }}
-          private-key: ${{ secrets.CD_APP_PRIVATE_KEY }}
-
       - name: Record published version
         if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'
         env:
-          APP_TOKEN: ${{ steps.cd-app.outputs.token }}
           VERSION: ${{ steps.image.outputs.version }}
         run: |
           set -euo pipefail
@@ -188,16 +179,7 @@ jobs:
             exit 0
           fi
           git commit -m "chore: record published image ${VERSION}"
-          echo "Pushing with GitHub App installation ${{ steps.cd-app.outputs.installation-id }}"
-          header=$(git config --local --get http.https://github.com/.extraheader || true)
-          git config --local --unset-all http.https://github.com/.extraheader || true
-          git config --local --unset-all http.extraheader || true
-          git \
-            -c credential.helper= \
-            push "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${GITHUB_REF_NAME}"
-          if [[ -n "${header}" ]]; then
-            git config --local http.https://github.com/.extraheader "${header}"
-          fi
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Publish Git tag and release
         if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'
