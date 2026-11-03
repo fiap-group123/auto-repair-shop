@@ -175,8 +175,12 @@ jobs:
             echo "newTag already ${VERSION}"
             exit 0
           fi
+          if [[ "$GITHUB_REF" != refs/heads/* ]]; then
+            echo "Ref ${GITHUB_REF} is not a branch. Skipping the version commit."
+            exit 0
+          fi
           git commit -m "chore: record published image ${VERSION}"
-          git push origin HEAD:main
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Publish Git tag and release
         if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'

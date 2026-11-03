@@ -101,7 +101,7 @@ O alias `w2x8c5h2` vem de `aws ecr-public describe-registries`. O workflow cria 
 | Disparo manual | a escolha patch, minor ou major define a próxima tag, e também publica `latest` |
 | Push de uma tag Git `v*` | a mesma tag, sem abrir outra release |
 
-O cluster kind do CD baixa a tag publicada naquele job. Depois do push da imagem, a action grava essa tag em `newTag` de [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml) e envia o commit para a `main`. O cluster local usa esse valor. O passo a passo da conta está em [AWS.md](AWS.md).
+O cluster kind do CD baixa a tag publicada naquele job. Depois do push da imagem, a action grava essa tag em `newTag` de [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml) e envia o commit para a branch que disparou o workflow. O cluster local usa esse valor. O passo a passo da conta está em [AWS.md](AWS.md).
 
 Não crie `GITHUB_TOKEN`: o GitHub injeta sozinho (comentário de cobertura no PR, checkout, decoração Sonar).
 
