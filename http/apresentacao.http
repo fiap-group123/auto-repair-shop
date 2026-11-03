@@ -6,8 +6,8 @@
 # o Civic do John Doe entra na oficina e sai entregue.
 #
 # Pre-requisito: banco vazio.
-#   docker compose -f docker-compose.yml -f docker-compose.local.yml down -v
-#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+#   docker compose down -v
+#   docker compose up --build
 #
 # Pausa unica: depois do POST /customers, abra http://localhost:8025,
 # copie o token do link /invite/{token} e cole em @inviteToken abaixo.

@@ -1,83 +1,50 @@
 # Getting started
 
-Como subir a API, cadastrar o primeiro usuário, rodar testes e o que o CI espera. Configuração detalhada (env, Compose, secrets): [CONFIGURATION.md](CONFIGURATION.md). Rotas: [ENDPOINTS.md](ENDPOINTS.md).
+Como colocar a oficina no ar, percorrer o atendimento e rodar a suíte. O mapa do projeto está no [README](../README.md). Variáveis e segredos: [CONFIGURATION.md](CONFIGURATION.md). Rotas: [ENDPOINTS.md](ENDPOINTS.md).
 
 ## Pré-requisitos
 
-- **JDK 17** (Temurin ou equivalente)
-- **Docker Desktop** com o engine rodando
+- JDK 17 (Temurin ou equivalente), para `bootRun` e testes no host
+- Docker Desktop com o engine em execução
 - Git
 
-O Gradle Wrapper está no repositório (`gradlew` / `gradlew.bat`). Não é preciso instalar Gradle no host.
-
-Copie [`.env.example`](../.env.example) para `.env` na raiz. O Compose lê esse arquivo automaticamente. Não commite o `.env`.
+O Gradle Wrapper está no repositório (`gradlew` e `gradlew.bat`). Não é preciso instalar o Gradle.
 
 ```bash
 cp .env.example .env
 ```
 
-## Subir o stack
+O Compose lê o `.env` sozinho. Não commite esse arquivo.
 
-Na raiz do repositório, para construir a API a partir deste código:
+## Duas formas de subir
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
-```
-
-O [`docker-compose.local.yml`](../docker-compose.local.yml) usa o [Dockerfile](../Dockerfile) e grava a imagem `auto-repair-shop:local`. Postgres e Mailpit vêm do Compose principal.
-
-Para usar a imagem já publicada, sem compilar:
-
-```bash
-docker compose up
-```
-
-Esse comando sobe a imagem definida em `docker-compose.yml`.
-
-Os dois comandos sobem:
-
-| Serviço | Porta | O que é |
+| Modo | Comando | Quando usar |
 |---|---|---|
-| `api` | `8080` | Spring Boot |
-| `postgres` | `5432` | PostgreSQL 16, banco `autorepairshop` |
-| `mailpit` | SMTP `1025`, UI `8025` | Caixa de e-mail local (convites e status da OS) |
+| Compose | `docker compose up --build` | Código deste repositório. A imagem fica `auto-repair-shop:local`, em http://localhost:8080 |
+| Cluster | `bash scripts/up-cluster.sh` | Imagem publicada `public.ecr.aws/w2x8c5h2/auto-repair-shop:v0.1.0`, com HPA, em http://localhost:30080. Recria o kind se ele não responder |
+| API no host | `docker compose up -d postgres mailpit` e depois `./gradlew bootRun` | Depurar no IDE. A API fala com `localhost` |
 
-Espere o `api` ficar up (`docker compose ps`). A API só sobe depois do healthcheck do Postgres.
+O Compose sobe Postgres 16 (`autorepairshop`) e Mailpit junto com a API local. O cluster tem o próprio Postgres e o próprio Mailpit.
 
-- Swagger: http://localhost:8080/swagger-ui.html
-- Mailpit: http://localhost:8025
+A API só sobe depois do healthcheck do Postgres. Confira com `docker compose ps`.
 
-### Parar
+| Serviço | Porta |
+|---|---|
+| API | http://localhost:8080 |
+| Swagger | http://localhost:8080/swagger-ui.html |
+| OpenAPI | http://localhost:8080/v3/api-docs |
+| Postgres | `5432` |
+| Mailpit | http://localhost:8025 (SMTP `1025`) |
 
-```bash
-docker compose down
-```
+No Windows CMD ou PowerShell, troque `./gradlew` por `gradlew.bat`. A classe principal é `src/main/kotlin/br/com/autorepairshop/AutoRepairShopApplication.kt`.
 
-`docker compose down -v` também apaga o volume do Postgres (dados locais somem).
+`docker compose down` para os containers. `docker compose down -v` também apaga o volume do Postgres.
 
-## Só a API no host (Gradle)
+Dentro do Compose a API usa os hostnames `postgres` e `mailpit`. No `bootRun` os defaults são `localhost`. O serviço `api` do Compose já força a URL interna. Detalhe em [CONFIGURATION.md](CONFIGURATION.md).
 
-Útil para debug no IDE. O Postgres e o Mailpit continuam no Docker:
+## Primeiro atendimento
 
-```bash
-docker compose up -d postgres mailpit
-./gradlew bootRun
-```
-
-No Windows CMD/PowerShell: `gradlew.bat bootRun`. Quando aparecer `Tomcat started on port 8080`, a API está no ar.
-
-O `bootRun` no host usa `DATABASE_URL=jdbc:postgresql://localhost:5432/autorepairshop` e `MAIL_HOST=localhost` (defaults de [`application.properties`](../src/main/resources/application.properties) / `.env`). Dentro do Compose a API usa o hostname `postgres` e `mailpit` — não `localhost`. Ver [CONFIGURATION.md](CONFIGURATION.md).
-
-### IDE
-
-1. `docker compose up -d postgres mailpit`
-2. Rode `src/main/kotlin/br/com/autorepairshop/AutoRepairShopApplication.kt`
-
-Não use `bootTestRun` a menos que o Docker esteja ligado: esse perfil sobe Postgres via Testcontainers e falha se o engine estiver parado.
-
-## Primeiro uso
-
-Banco vazio: `POST /auth/users` é público **somente** até existir o primeiro usuário, e esse usuário **precisa** ser `MANAGER`. Depois a rota exige `ROLE_MANAGER`. Conta `CLIENT` não se cadastra aqui — só pelo convite.
+Banco vazio: `POST /auth/users` é público somente até existir o primeiro usuário, e esse usuário precisa ser `MANAGER`.
 
 ```bash
 curl -s -X POST http://localhost:8080/auth/users \
@@ -85,94 +52,98 @@ curl -s -X POST http://localhost:8080/auth/users \
   -d "{\"email\":\"gerente@oficina.com\",\"password\":\"senha123\",\"role\":\"MANAGER\"}"
 ```
 
-Login (access ~1 dia, refresh ~14 dias):
-
 ```bash
 curl -s -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"gerente@oficina.com\",\"password\":\"senha123\"}"
 ```
 
-Use o `accessToken` em `Authorization: Bearer <token>`. Senha: no mínimo 8 caracteres, com letra e dígito (`senha123` passa).
+Guarde o `accessToken` e envie `Authorization: Bearer <token>`. A senha tem no mínimo 8 caracteres, com letra e dígito. O access dura cerca de 1 dia. O refresh dura cerca de 14 dias.
 
-Fluxo típico depois disso:
+A partir daí o atendimento segue esta ordem:
 
-1. Cadastre um cliente (`POST /customers`) — o sistema emite convite e manda e-mail (veja no Mailpit).
-2. Abra o link `GET /invite/{token}` e complete com `POST /invite/{token}` (`email` + `password`) para criar o `CLIENT`.
-3. Cadastre um veículo, abra uma OS, adicione itens, inicie o diagnóstico, aprove o orçamento.
+1. O gerente cadastra recepção e mecânico em `POST /auth/users`, agora autenticado.
+2. A recepção cadastra o cliente em `POST /customers`. O convite cai no Mailpit.
+3. O cliente abre `GET /invite/{token}` e conclui com `POST /invite/{token}`, informando e-mail e senha. Nasce o usuário `CLIENT`.
+4. A recepção cadastra o veículo e, se a OS for usar peça, um item em `POST /inventories`.
+5. A OS abre em `POST /service-orders`. Com documento e placa de quem já existe, ou com cliente, veículo, serviços e peças no mesmo body. A resposta traz o id.
+6. O mecânico chama `POST /service-orders/{id}/diagnosis` e, ao terminar, `POST /service-orders/{id}/diagnosis/finish`. A OS fica `WAITING_APPROVAL`.
+7. O cliente aprova em `POST /budgets/{id}/approve`, ou um sistema externo envia `POST /integrations/budget-decisions` com o header `X-Notification-Token: local-budget-notification-token`.
+8. O mecânico inicia a execução, conclui, e a recepção entrega: `POST /service-orders/{id}/execution`, `/finish` e `/deliver`.
+9. `GET /service-orders` é a fila, sem finalizadas e entregues. `GET /service-orders/{id}/status` devolve o rótulo em português.
 
-Pedidos prontos (IntelliJ HTTP Client / VS Code REST Client): rode [`http/auth.http`](../http/auth.http) na ordem para gravar tokens e ids nas variáveis globais.
+Cada mudança de status manda e-mail ao contato do cliente. Leia a caixa em http://localhost:8025.
+
+As collections prontas estão em [`http/`](../http/). Rode de cima para baixo. Para a fase 2, com o volume zerado, basta [`http/phase2.http`](../http/phase2.http): ele cria o gerente, o estoque, a OS completa, consulta status e fila e aprova o orçamento pelo token externo.
 
 ## Testes
 
 ```bash
-./gradlew unitTest          # @Tag("unit") — sem Testcontainers
-./gradlew test              # unitários + integração (precisa Docker)
+./gradlew unitTest
+./gradlew test
 ./gradlew koverHtmlReport koverVerify
-./gradlew check             # testes + Detekt
+./gradlew check
 ```
 
-- Unitários (`@Tag("unit")`): domínio, casos de uso com MockK, handlers — não sobem Spring nem Postgres.
-- Integração (`@Tag("integration")`): contexto Spring + PostgreSQL via Testcontainers. O engine do Docker precisa estar up.
-- Relatório HTML do Kover: `build/reports/kover/html`.
-- `koverVerify` falha se a cobertura de **linha** no núcleo cair abaixo de **80%**.
+- `unitTest` roda o que está marcado com `@Tag("unit")`: domínio, casos de uso com MockK e handlers. Não sobe Spring nem Postgres.
+- `test` inclui a integração (`@Tag("integration")`): contexto Spring e PostgreSQL via Testcontainers. O Docker precisa estar ligado.
+- O HTML do Kover sai em `build/reports/kover/html`.
+- `koverVerify` falha se a cobertura de linha do núcleo ficar abaixo de 80%. O núcleo é domain, application, adapters de persistência, listeners e controllers. Entidades JPA e alguns value objects de identidade ficam de fora. O filtro está em [`build.gradle.kts`](../build.gradle.kts).
 
-O núcleo coberto pelo Kover é domain, application, adapters de persistência e controllers HTTP dos bounded contexts (mais `shared.domain`). Entidades JPA, `*JpaRepository` e alguns value objects de identidade estão excluídos. Filtros em [`build.gradle.kts`](../build.gradle.kts) (`kover { reports { filters { … } } }`).
+Os testes leem [`src/test/resources/application.properties`](../src/test/resources/application.properties), com um JWT próprio. Não usam o `.env`.
 
-Testes usam [`src/test/resources/application.properties`](../src/test/resources/application.properties) (JWT próprio). Não dependem do `.env`.
+`bootTestRun` sobe o Postgres por Testcontainers. Sem o Docker, esse perfil falha.
 
 ## Qualidade
 
-Detekt usa convenções Kotlin + ktlint + type resolution em `main`. Relatório HTML: `build/reports/detekt/`.
-
 ```bash
-./gradlew detekt
 ./gradlew detektMain
 ./gradlew detekt --auto-correct
 ./gradlew check
 ```
 
-`check` inclui `detektMain` e falha em finding. `--auto-correct` aplica correções do ktlint.
+O Detekt usa as convenções Kotlin, o ktlint e a resolução de tipos em `main`. O HTML sai em `build/reports/detekt/`. O `check` inclui `detektMain`. O ArchUnit, dentro da suíte de testes, vigia a direção das dependências entre camadas.
 
-ArchUnit entra na suíte de testes (regras de dependência entre camadas).
+O CI roda `detektMain`. A tarefa `detekt` completa também analisa testes e ainda encontra achados antigos fora do que o pipeline barra.
 
 ## CI
 
-Em pull request (e `workflow_dispatch`), [`.github/workflows/pull-request-checks.yml`](../.github/workflows/pull-request-checks.yml):
+Em pull request, [`.github/workflows/pull-request-checks.yml`](../.github/workflows/pull-request-checks.yml) compila, roda `detektMain` e a cobertura, publica o HTML como artifact e comenta a porcentagem no PR.
 
-1. Compila Kotlin
-2. Roda `detektMain`
-3. Roda testes com Kover, sobe o HTML de cobertura como artifact
-4. Comenta no PR a porcentagem (o comentário anterior é substituído)
+[`.github/workflows/cd.yml`](../.github/workflows/cd.yml) roda no push da `main`, em tags `v*` e no disparo manual. Ele repete as checagens, publica a imagem no ECR Public, cria a tag e a GitHub Release, sobe um kind com Terraform (Postgres incluso) e aplica [`k8s/`](../k8s). Esse cluster existe só durante o job.
 
-[`.github/workflows/sonar.yml`](../.github/workflows/sonar.yml) analisa `main` no SonarQube Cloud (`fiap-group123_auto-repair-shop`). Dependabot atualiza Gradle, Actions e Docker semanalmente / mensalmente.
+[`.github/workflows/sonar.yml`](../.github/workflows/sonar.yml) analisa a `main` no SonarQube Cloud. O Dependabot atualiza Gradle, Actions e Docker.
 
-[`.github/workflows/cd.yml`](../.github/workflows/cd.yml) roda no `main`/`master`, em tags `v*` e em `workflow_dispatch`: reexecuta as checagens, publica a imagem versionada no Amazon ECR, sobe um cluster kind com Terraform (Postgres incluso) e aplica os manifestos em [`k8s/`](../k8s). O passo a passo local está na seção **Fase 2** do [README](../README.md). A role da AWS está em [CONFIGURATION.md](CONFIGURATION.md#github-actions).
+Variáveis e secrets: [CONFIGURATION.md](CONFIGURATION.md#github-actions). Conta AWS: [AWS.md](AWS.md).
 
-Variáveis e secrets do GitHub: [CONFIGURATION.md](CONFIGURATION.md#github-actions).
-
-## Troubleshooting
+## Problemas comuns
 
 **`Could not find a valid Docker environment`**  
-Abra o Docker Desktop e espere ficar healthy. Depois `docker compose up -d` de novo. Integração e `bootTestRun` também precisam do engine.
+Abra o Docker Desktop e espere o engine ficar saudável. Testes de integração também precisam dele.
 
-**Porta 5432 ou 8080 em uso**  
-Outro Postgres ou API já está bound. Pare o processo, ou mude a porta no `docker-compose.yml` / `server.port`.
+**Porta 5432 ou 8080 ocupada**  
+Outro Postgres ou outra API já está escutando. Pare o processo, ou mude a porta no `docker-compose.yml`.
 
-**Flyway / connection refused**  
-O Postgres ainda não passou no healthcheck. `docker compose ps` — espere `healthy`. Se você subiu só o banco, rode o `bootRun` depois.
+**Flyway ou connection refused**  
+O Postgres ainda não passou no healthcheck. Espere `healthy` em `docker compose ps` antes do `bootRun`.
 
-**API no Docker não conecta no banco**  
-Dentro da rede do Compose o host do Postgres é `postgres`, não `localhost`. O serviço `api` já injeta `DATABASE_URL=jdbc:postgresql://postgres:5432/autorepairshop`. Não sobrescreva isso com o valor do `.env` feito para o host.
+**A API no container não alcança o banco**  
+Dentro da rede do Compose o host é `postgres`. O serviço `api` já injeta `jdbc:postgresql://postgres:5432/autorepairshop`. Um `DATABASE_URL` com `localhost` serve para o Gradle, não para o container.
 
-**401 em cliente/veículo/OS**  
-Faça login (`POST /auth/login`) e envie `Authorization: Bearer <accessToken>`. Papéis: [ENDPOINTS.md](ENDPOINTS.md). Mapeamento: [ERRORS.md](ERRORS.md).
+**401 em `POST /auth/login` com `Invalid credentials`**  
+O banco não tem esse usuário. No volume vazio, crie o gerente com `POST /auth/users` antes do login. O `http/phase2.http` faz isso no primeiro request.
 
-**422 no primeiro cadastro de usuário**  
-O banco vazio só aceita `MANAGER`. `CLIENT` não se cadastra em `/auth/users`. Senha curta ou sem letra+dígito também vira 422.
+**401 nas rotas de cliente, veículo ou OS**  
+Envie `Authorization: Bearer <accessToken>`. Papéis em [ENDPOINTS.md](ENDPOINTS.md).
 
-**Convite não chega**  
-Com o stack Compose, abra http://localhost:8025. Se a API está no host, o Mailpit precisa estar up (`docker compose up -d mailpit`) e `MAIL_HOST=localhost`.
+**422 no primeiro `POST /auth/users`**  
+O banco vazio só aceita `MANAGER`. `CLIENT` nasce pelo convite. Senha curta ou sem letra e dígito também devolve 422.
 
-**Token válido mas 401 “User is inactive”**  
-O `ActiveUserFilter` recarrega o usuário a cada request. Cliente desativado desativa o `User` ligado; o JWT antigo deixa de passar.
+**Convite ou e-mail de status não aparece**  
+Com o Compose, abra http://localhost:8025. Com a API no host, suba o Mailpit (`docker compose up -d mailpit`) e deixe `MAIL_HOST=localhost`.
+
+**Token válido e mesmo assim 401 `User is inactive`**  
+O `ActiveUserFilter` relê o usuário a cada request. Cliente desativado derruba o usuário ligado a ele.
+
+**A API em `8080` e a API em `30080` não compartilham dados**  
+`8080` é o Compose, com o código local. `30080` é o cluster, com a imagem publicada e outro Postgres.
