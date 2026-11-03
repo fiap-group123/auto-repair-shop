@@ -1,96 +1,190 @@
 # Auto Repair Shop
 
-API de um MVP de oficina mecânica (FIAP Tech Challenge, fases 1 e 2).
+API de uma oficina mecânica (FIAP Tech Challenge, fases 1 e 2). Um único deployável em Kotlin e Spring Boot registra clientes, veículos, estoque e ordens de serviço, conduz o orçamento até a entrega do carro e avisa o cliente por e-mail. A fase 2 abre a ordem numa chamada só, recebe a decisão do orçamento de um sistema externo, organiza a fila de trabalho e sobe o mesmo deployável em Kubernetes, com o banco provisionado por Terraform e a imagem publicada por um pipeline.
 
-Monólito Kotlin/Spring Boot com DDD tático: usuários da oficina (JWT), clientes (CPF/CNPJ), veículos (placa brasileira), ordens de serviço, orçamento, itens de serviço e estoque (peças e insumos). Um único deployável, PostgreSQL, eventos in-process. A fase 2 coloca esse mesmo deployável em Kubernetes, com banco provisionado por Terraform e pipeline de build, teste, imagem e deploy.
+Pacote raiz: `br.com.autorepairshop`. Banco: PostgreSQL 16. Autenticação: JWT. E-mail local: Mailpit.
 
-Como subir o projeto: **[Getting started](docs/GETTING_STARTED.md)**.
+## O que a oficina faz neste sistema
 
-## Fase 2
+1. O primeiro acesso cria um `MANAGER`. Esse usuário cadastra recepção e mecânicos.
+2. A recepção cadastra o cliente. O sistema manda um convite para o e-mail de contato. O cliente escolhe a senha e vira um usuário `CLIENT`.
+3. A recepção cadastra o veículo (placa brasileira, um dono) e o estoque de peças e insumos.
+4. A ordem de serviço nasce de um cliente e um veículo. Pode ser aberta só com documento e placa, quando os dois já existem, ou numa chamada só com cliente, veículo, serviços e peças. A resposta traz o id da OS.
+5. O mecânico inicia o diagnóstico. Nesse momento o orçamento passa a existir. Serviços, extras e peças compõem o total.
+6. Ao encerrar o diagnóstico, a OS fica aguardando aprovação. O cliente aprova, recusa ou negocia pela API, ou um sistema externo avisa a decisão com um token.
+7. Com o orçamento aprovado, o mecânico executa, conclui e a recepção entrega o veículo. Cada mudança de status gera um e-mail para o contato do cliente.
+8. A fila da oficina mostra o que ainda está em andamento, na ordem de prioridade abaixo. Ordens finalizadas e entregues saem da fila e continuam no banco, no histórico do cliente.
 
-A oficina já operava o ciclo da OS. Esta fase deixa o atendimento abrir a ordem numa chamada só, consulta o status, recebe a decisão do orçamento de um sistema externo, organiza a fila de trabalho e sobe o ambiente de forma repetível.
-
-### O que a API passou a fazer
-
-| Fluxo | Como |
-|---|---|
-| Abertura da OS | `POST /service-orders` recebe cliente, veículo, serviços e peças e devolve o id da OS. Documento ou placa que já existem são reutilizados. |
-| Status | `GET /service-orders/{id}/status` devolve `status` e o rótulo (Recebida, Diagnóstico, Aguardando Aprovação, Execução, Finalizada, Entregue, além de orçamento aprovado ou recusado). |
-| Orçamento externo | `POST /integrations/budget-decisions` com `X-Notification-Token`. `APPROVED` ou `REJECTED`. |
-| Fila | `GET /service-orders` ordena Em execução, orçamento aprovado, aguardando aprovação, diagnóstico, recebida e orçamento recusado. Mais antigas primeiro. `FINISHED` e `DELIVERED` saem da lista e continuam no banco. |
-| E-mail de status | Cada transição envia e-mail ao contato do cliente (Mailpit em http://localhost:8025). |
-
-Collection da API: pasta [`http/`](http/) (REST Client), em especial [`http/phase2.http`](http/phase2.http). Com a API no ar, Swagger em http://localhost:8080/swagger-ui.html e OpenAPI em http://localhost:8080/v3/api-docs.
-
-Vídeo de até 15 minutos (deploy, CI/CD, consumo das APIs e escala automática): `https://www.youtube.com/watch?v=SUBSTITUA_PELO_VIDEO`
-
-### Arquitetura e deploy
-
-```mermaid
-flowchart LR
-  dev[Push na main] --> gha[GitHub Actions]
-  gha --> checks[Build e testes]
-  checks --> image[Imagem Docker]
-  image --> ecr[Amazon ECR]
-  gha --> tf[Terraform]
-  tf --> kind[Cluster kind]
-  tf --> pg[PostgreSQL]
-  gha --> yml[Manifestos k8s]
-  yml --> api[API]
-  yml --> mail[Mailpit]
-  yml --> hpa[HPA]
-  api --> pg
-  api --> mail
-  oficina[Oficina e cliente] --> api
-  externo[Sistema externo] -->|X-Notification-Token| api
+```
+RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUTION → FINISHED → DELIVERED
+                              ↘ BUDGET_REJECTED
 ```
 
-| Peça | Onde |
+| Status | Rótulo público | Lugar na fila |
+|---|---|---|
+| `IN_EXECUTION` | Execução | 1 |
+| `BUDGET_APPROVED` | Orçamento aprovado | 2 |
+| `WAITING_APPROVAL` | Aguardando Aprovação | 3 |
+| `IN_DIAGNOSIS` | Diagnóstico | 4 |
+| `RECEIVED` | Recebida | 5 |
+| `BUDGET_REJECTED` | Orçamento recusado | 6 |
+| `FINISHED` | Finalizada | fora da fila |
+| `DELIVERED` | Entregue | fora da fila |
+
+Dentro do mesmo status, a mais antiga vem primeiro. A consulta `GET /service-orders/{id}/status` devolve o código e o rótulo.
+
+## Quem usa
+
+| Papel | O que faz |
 |---|---|
-| Aplicação | Deployment `api`, Service NodePort `30080`, probes em `/actuator/health` |
-| Banco | Deployment `postgres` + Service, aplicado pelo Terraform a partir de [`k8s/base`](k8s/base) |
-| E-mail | Deployment `mailpit`, UI no NodePort `30025` |
-| Configuração | ConfigMap `api-config` e Secret `api-secret` |
-| Escala | HPA `api`, 2 a 5 réplicas, CPU 70% e memória 80%. O metrics-server entra no `terraform apply` |
-| Cluster | [`infra/`](infra) cria um cluster kind e publica a API em `localhost:8080` e o Mailpit em `localhost:8025` |
-| Pipeline | [`.github/workflows/cd.yml`](.github/workflows/cd.yml): testes, imagem versionada no Amazon ECR, `terraform apply`, `kind load`, `kubectl apply -k k8s` |
+| `MANAGER` | Primeiro usuário do sistema. Cadastra a equipe, vê e altera o estoque, conduz a OS até a entrega. |
+| `RECEPTIONIST` | Cadastra cliente, veículo e OS. Entrega o carro. Ajusta quantidade de estoque. |
+| `MECHANIC` | Diagnóstico, execução dos serviços e registro de serviço extra. |
+| `CLIENT` | Só nasce pelo convite. Vê os próprios dados, aprova orçamento e serviço extra. |
 
-Os valores do Secret em `k8s/base/secret.yaml` são de desenvolvimento, iguais ao `.env.example`. Troque `JWT_SECRET` e `BUDGET_NOTIFICATION_TOKEN` antes de qualquer ambiente compartilhado.
+`POST /auth/users` é público somente enquanto o banco não tem nenhum usuário, e esse usuário precisa ser `MANAGER`. Conta `CLIENT` não se cadastra nessa rota.
 
-### Execução local
+## Como o código está organizado
 
-Pré-requisitos e o fluxo com Gradle estão em [Getting started](docs/GETTING_STARTED.md).
+Monólito em camadas, um módulo Gradle. O domínio não conhece Spring nem HTTP. Cada contexto de negócio tem `domain`, `application` e `infrastructure`. A borda HTTP fica em `api`.
+
+| Contexto | Pacote | Responsabilidade |
+|---|---|---|
+| Access identity | `accessidentity` | Equipe, convite do cliente, JWT e refresh |
+| Customer | `customer` | Cliente (CPF/CNPJ) e veículos |
+| Service and execution | `serviceandexecution` | Ciclo de vida da OS e a fila |
+| Budget | `budget` | Total do orçamento e a decisão, inclusive a notificação externa |
+| Catalog | `catalog` | Serviços do diagnóstico e serviços extras |
+| Input management | `inputmanagment` | Estoque da oficina (`Inventory`) e linhas de peça da OS (`Part`) |
+| Shared | `shared` | Agregados, dinheiro, eventos e envio de e-mail |
+
+Eventos de domínio rodam no mesmo processo: cadastro de cliente dispara o convite, item da OS recalcula o orçamento, mudança de status manda o e-mail. O desenho das camadas, das tabelas e das regras está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). A escolha do PostgreSQL está em [docs/adr/001-postgresql.md](docs/adr/001-postgresql.md).
+
+## Como executar
+
+Pré-requisito: Docker Desktop em execução. Copie [`.env.example`](.env.example) para `.env`. O Compose lê esse arquivo.
+
+O código desta máquina sobe pelo Compose. A imagem publicada sobe pelo cluster, onde o HPA escala as réplicas.
+
+### Projeto local, com Compose
+
+Constrói a API a partir deste repositório e grava a imagem `auto-repair-shop:local`. Postgres e Mailpit sobem junto.
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-API em http://localhost:8080. Swagger em http://localhost:8080/swagger-ui.html. Mailpit em http://localhost:8025.
+| Serviço | Porta | Função |
+|---|---|---|
+| API | `8080` | Spring Boot. Swagger em http://localhost:8080/swagger-ui.html |
+| Postgres | `5432` | PostgreSQL 16. O volume `postgres_data` guarda os dados |
+| Mailpit | SMTP `1025`, UI `8025` | Caixa local dos convites e dos e-mails de status. http://localhost:8025 |
 
-### Deploy em Kubernetes
+### Imagem publicada, no cluster
 
-Com um cluster já acessível pelo `kubectl` (Docker Desktop ou outro):
+[`scripts/up-cluster.sh`](scripts/up-cluster.sh) sobe o kind `autorepairshop` e aplica os manifestos. A imagem da API sai de [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml): `newName` é o registro e `newTag` é a versão. Hoje isso vale `public.ecr.aws/w2x8c5h2/auto-repair-shop:v0.1.0`. Para usar outra release, troque o `newTag` e rode o script de novo.
+
+Na raiz do repositório:
 
 ```bash
-docker build -t auto-repair-shop:local .
-kubectl apply -k k8s
-kubectl -n auto-repair-shop rollout status deployment/api
+bash scripts/up-cluster.sh
 ```
 
-No Docker Desktop a API fica em http://localhost:30080 e o Mailpit em http://localhost:30025. O metrics-server do Docker Desktop já cobre o HPA. Em kind, carregue a imagem (`kind load docker-image auto-repair-shop:local --name <cluster>`) antes do `kubectl apply`, porque o nó não enxerga o Docker do host.
+No PowerShell, o `bash` do Windows entra no WSL. Use o Git Bash:
 
-### Provisionamento com Terraform
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" scripts/up-cluster.sh
+```
 
-Recursos criados por `terraform apply` em [`infra/`](infra):
+O script faz o seguinte:
 
-1. Cluster kind `autorepairshop`, com a porta do host `8080` ligada ao NodePort `30080` e a `8025` ligada ao NodePort `30025`.
-2. metrics-server, com `--kubelet-insecure-tls`, para o HPA ter CPU e memória.
-3. Namespace, ConfigMap, Secret e PostgreSQL descritos em [`k8s/base`](k8s/base). O volume do Postgres é `emptyDir`: os dados somem com o pod.
+1. Se o container `autorepairshop-control-plane` estiver parado, ele é iniciado de novo. Encerrar o container no Docker Desktop não apaga o cluster.
+2. Se esse container não existir, o script baixa o nó `kindest/node:v1.37.0` definido em [`infra/kind-config.yaml`](infra/kind-config.yaml), cria o cluster, instala o metrics-server e deixa essa imagem com a tag da versão do Kubernetes.
+3. Aplica [`k8s/`](k8s). O HPA mantém de 2 a 5 réplicas.
 
-Pré-requisitos: Docker, [kind](https://kind.sigs.k8s.io/), kubectl, Terraform e bash.
+| Serviço | Endereço |
+|---|---|
+| API | http://localhost:30080 |
+| Swagger | http://localhost:30080/swagger-ui.html |
+| OpenAPI | http://localhost:30080/v3/api-docs |
+| Mailpit | http://localhost:30025 |
 
-O state do Terraform fica no bucket `fiap-group123-auto-repair-shop-tfstate`, não no Git. Na primeira vez, crie o bucket e inicialize o backend:
+O banco é o Postgres do cluster, separado do volume do Compose. O ConfigMap `api-config` não tem página: as variáveis da API saem com `kubectl --context kind-autorepairshop -n auto-repair-shop get configmap api-config -o yaml`.
+
+No Docker Desktop aparece um container só, o nó. As réplicas da API rodam dentro dele. A oscilação de CPU e memória de cada réplica sai em `kubectl --context kind-autorepairshop -n auto-repair-shop top pods` e em `kubectl --context kind-autorepairshop -n auto-repair-shop get hpa`. Os percentuais do HPA são sobre o pedido do pod (`200m` de CPU e `512Mi` de memória), não sobre o gráfico do nó.
+
+[`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU para 1%, gera tráfego e acompanha as réplicas subirem. O script imprime o comando que devolve o alvo para 70%.
+
+### API no host
+
+Útil para depurar no IDE. O banco e o Mailpit ficam no Docker. A API no host fala com `localhost`, não com o nome dos serviços.
+
+```bash
+docker compose up -d postgres mailpit
+./gradlew bootRun
+```
+
+No Windows CMD ou PowerShell: `gradlew.bat bootRun`. A classe principal é `src/main/kotlin/br/com/autorepairshop/AutoRepairShopApplication.kt`.
+
+### Parar e zerar
+
+`docker compose down` para os containers. `docker compose down -v` também apaga o volume do Postgres. Com o banco vazio, o próximo `POST /auth/users` volta a ser público.
+
+Variáveis, segredos e a diferença entre URL do host e URL de dentro do container: [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Passo a passo de testes e problemas comuns: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+
+## Consumir a API
+
+Com o Compose no ar, a API local responde em:
+
+- Swagger: http://localhost:8080/swagger-ui.html
+- OpenAPI: http://localhost:8080/v3/api-docs
+- Saúde: http://localhost:8080/actuator/health/readiness
+
+Com o cluster no ar, os mesmos caminhos ficam na porta `30080`.
+
+Rotas, papéis e corpos de request estão em [docs/ENDPOINTS.md](docs/ENDPOINTS.md). Erros em RFC 7807 estão em [docs/ERRORS.md](docs/ERRORS.md).
+
+As collections em [`http/`](http/) são lineares. Rode cada arquivo de cima para baixo. O IntelliJ HTTP Client e o REST Client do VS Code gravam token e ids nas variáveis globais.
+
+| Arquivo | O que percorre |
+|---|---|
+| [http/auth.http](http/auth.http) | Primeiro `MANAGER`, login, refresh e o restante da equipe |
+| [http/customer.http](http/customer.http) | Cliente, convite e veículos |
+| [http/inventory.http](http/inventory.http) | Catálogo de peças e insumos |
+| [http/service-order.http](http/service-order.http) | OS do diagnóstico até a entrega |
+| [http/extra-service.http](http/extra-service.http) | Serviço extra descoberto na execução |
+| [http/budget.http](http/budget.http) | Negociação do orçamento, numa OS à parte |
+| [http/apresentacao.http](http/apresentacao.http) | Um Civic do cadastro até a entrega, para a demonstração |
+
+Ordem da fase 1: **auth → customer → inventory → service-order → extra-service**. O `budget.http` pode rodar depois do `customer.http`. O `phase2.http` não depende dos outros: no banco vazio ele cria `gerente@oficina.com` com a senha `senha123`.
+
+No convite, abra o Mailpit, copie o token do link `/invite/{token}` e cole no request seguinte.
+
+A notificação externa não usa JWT. `POST /integrations/budget-decisions` leva o header `X-Notification-Token`. No ambiente local o valor é `local-budget-notification-token`.
+
+## Kubernetes
+
+Os manifestos ficam em [`k8s/`](k8s). `kubectl apply -k k8s` aplica a base e a aplicação no namespace `auto-repair-shop`.
+
+| Manifesto | O que cria |
+|---|---|
+| `k8s/base` | Namespace, ConfigMap `api-config`, Secret `api-secret`, Postgres e o Service dele |
+| `k8s/app/api.yaml` | Deployment `api` com 2 réplicas, probes em `/actuator/health/liveness` e `/readiness`, Service NodePort `30080` |
+| `k8s/app/mailpit.yaml` | Mailpit, UI no NodePort `30025` |
+| `k8s/app/hpa.yaml` | HPA de 2 a 5 réplicas, CPU 70% e memória 80% |
+
+O Deployment usa a imagem definida em [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml). Na máquina local, [`scripts/up-cluster.sh`](scripts/up-cluster.sh) cria ou religa o kind e aplica esses manifestos. A API fica em http://localhost:30080 e o Mailpit em http://localhost:30025. O metrics-server instalado pelo script alimenta o HPA.
+
+O Secret em `k8s/base/secret.yaml` repete os valores de desenvolvimento do `.env.example`. Troque `JWT_SECRET` e `BUDGET_NOTIFICATION_TOKEN` antes de um ambiente compartilhado. O volume do Postgres nesse manifesto é `emptyDir`: os dados somem com o pod.
+
+## Terraform
+
+[`infra/`](infra) cria um cluster [kind](https://kind.sigs.k8s.io/) chamado `autorepairshop` e aplica o banco. A porta `8080` do host chega no NodePort `30080`. A porta `8025` chega no NodePort `30025`. O mesmo apply instala o metrics-server com `--kubelet-insecure-tls`, para o HPA enxergar CPU e memória.
+
+Pré-requisitos: Docker, kind, kubectl, Terraform `>= 1.6` e bash.
+
+O state fica no bucket `fiap-group123-auto-repair-shop-tfstate`, chave `auto-repair-shop/terraform.tfstate`, região `us-east-1`, com versionamento, bloqueio de acesso público e cifra AES256. Ele não entra no Git.
 
 ```bash
 bash scripts/ensure-tfstate-bucket.sh
@@ -99,86 +193,94 @@ terraform init
 terraform apply
 ```
 
-O apply não sobe a API. Publique a imagem no cluster e aplique o restante dos manifestos:
+O apply sobe o cluster, o metrics-server e o PostgreSQL de `k8s/base`. A API entra no passo seguinte e o nó baixa a imagem publicada:
 
 ```bash
-docker build -t auto-repair-shop:local .
-kind load docker-image auto-repair-shop:local --name autorepairshop
 kubectl apply -k k8s --context kind-autorepairshop
 kubectl --context kind-autorepairshop -n auto-repair-shop rollout status deployment/api
 ```
 
 API: http://localhost:8080. Mailpit: http://localhost:8025. Para derrubar o cluster: `terraform destroy` dentro de `infra/`.
 
-Para o vídeo da escala, [`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU do HPA para 1% e gera tráfego. `kubectl -n auto-repair-shop get hpa -w` mostra as réplicas subindo. O script imprime o `kubectl patch` que devolve o alvo para 70%.
+[`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU do HPA para 1% e gera tráfego, para a demonstração da escala. `kubectl -n auto-repair-shop get hpa -w` mostra as réplicas. O script imprime o `kubectl patch` que devolve o alvo para 70%.
 
-### CI/CD
+O PostgreSQL deste projeto sobe no cluster. Não há instância RDS.
 
-Pull request: [`.github/workflows/pull-request-checks.yml`](.github/workflows/pull-request-checks.yml) compila, roda o Detekt e os testes com cobertura.
+## CI/CD
 
-`main`, uma tag `v*` ou o disparo manual: [`.github/workflows/cd.yml`](.github/workflows/cd.yml) repete essas checagens, constrói a imagem e publica no Amazon ECR. Na branch, a tag é `sha-<12 caracteres do commit>` e também `latest`. Numa tag Git `v1.2.3`, a imagem recebe essa mesma versão. O deploy de demonstração no kind do runner continua usando a imagem local. Variáveis `JAVA_VERSION` (`17`), `GRADLE_VERSION` (`9.5.1`), `AWS_REGION` e o secret `AWS_ROLE_ARN` estão em [CONFIGURATION.md](docs/CONFIGURATION.md#github-actions).
-
-## Documentação
-
-| Documento                                         | Conteúdo |
-|---------------------------------------------------|---|
-| [GETTING_STARTED.md](docs/GETTING_STARTED.md)     | Pré-requisitos, Docker, Gradle, IDE, testes, qualidade, CI |
-| [ENDPOINTS.md](docs/ENDPOINTS.md)                 | Rotas, papéis, request/response |
-| [ERRORS.md](docs/ERRORS.md)                       | RFC 7807, status HTTP, exceção → status |
-| [CONFIGURATION.md](docs/CONFIGURATION.md)         | Variáveis de ambiente, Compose, secrets do GitHub |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md)           | Camadas, bounded contexts, fluxo, persistência |
-| [ADR 001-postgresql.md](docs/adr/001-postgresql.md) | Por que PostgreSQL |
-| [Auth HTTP](http/auth.http)                       | 1. Staff, login, convite |
-| [Customer HTTP](http/customer.http)               | 2. Cliente e veículos |
-| [Inventory HTTP](http/inventory.http)             | 3. Catálogo de estoque |
-| [Service Order HTTP](http/service-order.http)     | 4. OS até a entrega (serviços + peças) |
-| [Budget HTTP](http/budget.http)                   | OS à parte: negociar, depois delete |
-| [Extra Service HTTP](http/extra-service.http)     | 5. Nova OS + extras |
-| [Fase 2 HTTP](http/phase2.http)                   | Abertura completa, status, fila e notificação externa |
-
-Cada `.http` é linear (de cima para baixo). Cada arquivo faz o próprio login. Ordem: **auth → customer → inventory → service-order → extra-service**. O `budget.http` pode rodar depois do `customer.http`. O `phase2.http` é independente e cadastra o próprio estoque. No convite, copie o token no [Mailpit](http://localhost:8025).
-
-## O que a API cobre
-
-| Contexto | Pacote | Responsabilidade |
+| Workflow | Quando | O que faz |
 |---|---|---|
-| Access identity | `accessidentity` | Staff, convite do cliente, JWT + refresh |
-| Customer | `customer` | Cliente (CPF/CNPJ) e veículos |
-| Service and execution | `serviceandexecution` | Ciclo de vida da OS |
-| Budget | `budget` | Total e aprovação do orçamento |
-| Catalog | `catalog` | Itens de diagnóstico (`Service`) e extras (`ExtraService`) |
-| Input management | `inputmanagment` | Estoque da oficina (`Inventory`) e linhas da OS (`Part`) |
+| [pull-request-checks.yml](.github/workflows/pull-request-checks.yml) | Pull request e disparo manual | Compila, roda o Detekt em `main` e os testes com cobertura. Comenta a porcentagem no PR |
+| [unit-tests.yml](.github/workflows/unit-tests.yml) | Chamado pelos outros workflows | `koverVerify`, mínimo de 80% de linha no núcleo |
+| [sonar.yml](.github/workflows/sonar.yml) | `main` | Análise no SonarQube Cloud |
+| [cd.yml](.github/workflows/cd.yml) | Push na `main`, tag `v*` e disparo manual | Checagens, imagem, release, cluster kind, banco e manifestos |
 
-Papéis: `MANAGER`, `RECEPTIONIST`, `MECHANIC`, `CLIENT`. Conta `CLIENT` só nasce pelo convite (e-mail de contato do cliente). Detalhe das rotas: [ENDPOINTS.md](docs/ENDPOINTS.md). Ciclo da OS:
+No CD, a imagem vai para o Amazon ECR Public. O pipeline lê a maior tag `vMAJOR.MINOR.PATCH` e calcula a próxima:
 
+- um commit `feat:` sobe o minor (`v0.1.3` vira `v0.2.0`);
+- `feat!:` ou `BREAKING CHANGE` sobe o major (`v0.1.3` vira `v1.0.0`);
+- o restante sobe o patch (`v0.1.3` vira `v0.1.4`).
+
+No disparo manual dá para escolher patch, minor ou major. A tag Git, a GitHub Release e a imagem usam essa mesma versão. A release nova também publica `latest`. Um push de uma tag que já existe só republica essa imagem.
+
+Depois da publicação, o job sobe um kind efêmero no runner: Terraform cria o cluster e o Postgres, e `kubectl apply -k k8s` sobe a API com a imagem que acabou de ir para o ECR Public. O HPA escala essa imagem. O cluster some quando o job termina.
+
+Variáveis `JAVA_VERSION` (`17`), `GRADLE_VERSION` (`9.5.1`), `AWS_REGION` (`us-east-1`) e o secret `AWS_ROLE_ARN` estão em [docs/CONFIGURATION.md](docs/CONFIGURATION.md#github-actions). A conta AWS, a role e o bucket do state estão em [docs/AWS.md](docs/AWS.md).
+
+```mermaid
+flowchart LR
+  dev[Push na main] --> gha[GitHub Actions]
+  gha --> checks[Build e testes]
+  checks --> image[Imagem Docker]
+  image --> ecr[Amazon ECR Public]
+  image --> release[Tag e GitHub Release]
+  gha --> tf[Terraform]
+  tf --> kind[Cluster kind no runner]
+  tf --> pg[PostgreSQL no cluster]
+  gha --> yml[Manifestos k8s]
+  yml --> api[API]
+  yml --> mail[Mailpit]
+  yml --> hpa[HPA]
+  api --> pg
+  api --> mail
 ```
-RECEIVED → IN_DIAGNOSIS → WAITING_APPROVAL → BUDGET_APPROVED → IN_EXECUTION → FINISHED → DELIVERED
-                              ↘ BUDGET_REJECTED
-```
+
+## Onde está cada assunto
+
+| Documento | Conteúdo |
+|---|---|
+| [GETTING_STARTED.md](docs/GETTING_STARTED.md) | Subir, primeiro usuário, collections, testes, qualidade e problemas comuns |
+| [ENDPOINTS.md](docs/ENDPOINTS.md) | Todas as rotas, papéis, request e response |
+| [ERRORS.md](docs/ERRORS.md) | RFC 7807 e o status de cada exceção |
+| [CONFIGURATION.md](docs/CONFIGURATION.md) | Variáveis, Compose, segredos e GitHub Actions |
+| [AWS.md](docs/AWS.md) | OIDC, role, ECR Public e bucket do Terraform |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Camadas, contextos, fluxos, tabelas e ambientes |
+| [ADR 001](docs/adr/001-postgresql.md) | Por que PostgreSQL |
 
 ## Stack
 
 | | |
 |---|---|
-| Linguagem | Kotlin 2.4.10, JDK 17 |
-| Framework | Spring Boot 4.1.1 (Web MVC, Security, JPA, Validation, Mail, Actuator) |
-| Auth | JWT HS256 (OAuth2 resource server), refresh no banco, senha BCrypt |
+| Linguagem | Kotlin 2.4, JDK 17 |
+| Framework | Spring Boot 4.1 (Web MVC, Security, JPA, Validation, Mail, Actuator) |
+| Auth | JWT HS256, refresh no banco, senha BCrypt |
 | Banco | PostgreSQL 16, Flyway, Hibernate `validate` |
-| API docs | SpringDoc OpenAPI 3.1 / Swagger UI |
-| Testes | JUnit 5, MockK, Testcontainers, ArchUnit, Kover (mín. **80%** de linha no núcleo) |
-| Qualidade | Detekt + ktlint |
-| Build | Gradle 9.5.1 (wrapper) |
-| Runtime | Dockerfile + docker-compose (API, Postgres, Mailpit) |
+| API docs | SpringDoc OpenAPI, Swagger UI |
+| Testes | JUnit 5, MockK, Testcontainers, ArchUnit, Kover (mínimo de 80% de linha no núcleo) |
+| Qualidade | Detekt e ktlint |
+| Build | Gradle 9.5.1, pelo wrapper |
+| Runtime | Dockerfile multi-stage (Temurin 17, usuário `spring`). Compose para o código local. Cluster para a imagem publicada |
+| Cluster | Kubernetes, HPA, kind via Terraform |
 
 ## Comandos frequentes
 
 ```bash
-./gradlew bootRun          # API no host (Postgres no Docker)
-./gradlew unitTest         # @Tag("unit") — sem Testcontainers
-./gradlew test             # todos os testes (precisa Docker)
+./gradlew bootRun          # API no host, com Postgres no Docker
+./gradlew unitTest         # testes unitários, sem Testcontainers
+./gradlew test             # unitários e integração; precisa do Docker
 ./gradlew koverHtmlReport koverVerify
 ./gradlew detektMain
-./gradlew check            # testes + Detekt
+./gradlew check            # testes e Detekt
 ```
 
-No Windows CMD/PowerShell use `gradlew.bat` no lugar de `./gradlew`.
+No Windows CMD ou PowerShell use `gradlew.bat` no lugar de `./gradlew`.

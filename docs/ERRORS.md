@@ -27,7 +27,7 @@ Não há `@Valid` nos DTOs: validação de documento, placa, senha, nome etc. ac
 | Status | Significado |
 |---|---|
 | `400` | Body malformado (JSON inválido, tipo incompatível) |
-| `401` | Sem JWT, JWT inválido/expirado, credenciais erradas, refresh inválido ou reutilizado, usuário inativo **no filtro** |
+| `401` | Sem JWT, JWT inválido/expirado, credenciais erradas, refresh inválido ou reutilizado, usuário inativo no filtro, ou `X-Notification-Token` ausente ou diferente em `POST /integrations/budget-decisions` |
 | `403` | Papel não permitido na rota, ou `CLIENT` acessando outro cliente (`AccessGuard`) |
 | `404` | Recurso inexistente |
 | `409` | Duplicidade ou conflito de estado (e-mail, documento, placa, OS aberta, orçamento já existe) |
@@ -183,7 +183,8 @@ Peça na OS só entra (e só sai) com a ordem em `RECEIVED`, `IN_DIAGNOSIS` ou `
 | `POST /vehicles` com placa `123` | 422 | `InvalidLicensePlate` |
 | `POST /service-orders` com veículo de outro cliente | 409 | `VehicleNotOwnedByCustomer` |
 | Segunda OS no mesmo carro (ainda não entregue) | 409 | `OpenOrderAlreadyExists` |
-| `POST …/diagnosis/complete` sem itens (total 0) | 422 | `EmptyBudget` |
+| `POST …/diagnosis/finish` sem itens (total 0) | 422 | `EmptyBudget` |
+| `POST /integrations/budget-decisions` sem o token ou com token diferente | 401 | `NotificationTokenGuard` compara em tempo constante e rejeita segredo em branco |
 | `POST /budgets/{id}/approve` já aprovado | 422 | `InvalidBudgetStatusTransition` |
 | `GET /customers/{id}` como `CLIENT` de outro id | 403 | `AccessGuard` → `Forbidden` |
 | `GET /invite/{token}` depois de 72 h | 410 | `InviteExpired` |

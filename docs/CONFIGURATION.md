@@ -28,6 +28,19 @@ Hibernate: `ddl-auto=validate` (Flyway é dono do schema). `open-in-view=false`.
 
 `spring.mail.properties.mail.smtp.auth` e `starttls.enable` estão `false`. SMTP autenticado precisa de `MAIL_USERNAME` / `MAIL_PASSWORD` **e** ligar auth/STARTTLS nas properties — só as env do Compose não bastam.
 
+## Arquivos de execução
+
+| Arquivo | Papel |
+|---|---|
+| [`docker-compose.yml`](../docker-compose.yml) | Código local. Constrói o Dockerfile, grava `auto-repair-shop:local` e sobe Postgres e Mailpit |
+| [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml) | Imagem publicada. `newName` é o registro e `newTag` é a versão. Hoje `public.ecr.aws/w2x8c5h2/auto-repair-shop` e `v0.1.0` |
+| [`infra/kind-config.yaml`](../infra/kind-config.yaml) | Nó do kind local: `kindest/node:v1.37.0`, API no host `30080` e Mailpit no host `30025` |
+| [`scripts/up-cluster.sh`](../scripts/up-cluster.sh) | Sobe esse kind, aplica os manifestos e nomeia o nó com a versão do Kubernetes |
+
+`docker compose up --build` é o caminho local. `bash scripts/up-cluster.sh` é o caminho da imagem publicada. O script inicia o container `autorepairshop-control-plane` se ele só estiver parado e cria o cluster apenas quando esse container não existe.
+
+No Kubernetes, o ConfigMap `api-config` e o Secret `api-secret` em [`k8s/base`](../k8s/base) carregam o equivalente. O Secret guarda `DATABASE_PASSWORD`, `JWT_SECRET` e `BUDGET_NOTIFICATION_TOKEN`. `api-config` não é uma URL.
+
 ## Compose vs host
 
 O `.env` pode ter `DATABASE_URL=…localhost…` para Gradle/IDE. O serviço `api` **ignora** esse URL e força:
@@ -74,21 +87,21 @@ Crie em **Settings → Secrets and variables → Actions**. Os workflows leem `$
 | `AWS_ROLE_ARN` | Secret | `arn:aws:iam::<conta>:role/github-auto-repair-shop` | Sim para o CD. A role é assumida por OIDC, sem access key no GitHub. |
 | `SONAR_TOKEN` | Secret | \*\*\* | Sim para o job Sonar. 403 costuma ser token ausente, errado ou sem Execute Analysis. |
 
-### Amazon ECR
+### Amazon ECR Public
 
-O CD autentica na AWS com OIDC e envia a imagem para `<conta>.dkr.ecr.<região>.amazonaws.com/auto-repair-shop`.
+O CD autentica na AWS com OIDC e envia a imagem para o registro público. A API pública do ECR só existe em `us-east-1`. A URI deste repositório é:
 
-Versões:
+`public.ecr.aws/w2x8c5h2/auto-repair-shop:<tag>`
 
-| Disparo | Tags no ECR |
+O alias `w2x8c5h2` vem de `aws ecr-public describe-registries`. O workflow cria o repositório `auto-repair-shop` se ele ainda não existir.
+
+| Disparo | Tag da imagem e da release |
 |---|---|
-| Push em `main` ou `master` | `sha-<12 caracteres do commit>` e `latest` |
-| Tag Git `v1.2.3` | `v1.2.3` |
-| `workflow_dispatch` numa branch | `sha-<12 caracteres do commit>` |
+| Push em `main` | o pipeline calcula a próxima tag a partir dos commits (`feat:` sobe minor, mudança incompatível sobe major, o resto sobe patch) e publica `latest` |
+| Disparo manual | a escolha patch, minor ou major define a próxima tag, e também publica `latest` |
+| Push de uma tag Git `v*` | a mesma tag, sem abrir outra release |
 
-O clique a clique da conta AWS (provedor OIDC, policy, role e o que copiar para o GitHub) está em [AWS.md](AWS.md).
-
-O workflow cria o repositório ECR se ele ainda não existir. O cluster kind do CD continua subindo a imagem local; a versão publicada para consumo fica no ECR.
+O cluster kind do CD baixa a tag publicada naquele job. No seu cluster, a versão padrão está em `newTag` de [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml). O passo a passo da conta está em [AWS.md](AWS.md).
 
 Não crie `GITHUB_TOKEN`: o GitHub injeta sozinho (comentário de cobertura no PR, checkout, decoração Sonar).
 

@@ -358,7 +358,7 @@ Três padrões, usados de propósito (não é acaso):
 
 | Padrão | Quando | Exemplo |
 |---|---|---|
-| Evento in-process | Efeito colateral depois de um fato do agregado | Cliente cadastrado → convite; item criado → recálculo do budget; budget aprovado → OS em execução |
+| Evento in-process | Efeito colateral depois de um fato do agregado | Cliente cadastrado → convite; item criado → recálculo do budget; mudança de status → e-mail |
 | Porta anti-corrupção | Um contexto precisa de um recorte do outro | `CustomerAntiLayer` / `CustomerRecord` |
 | Repositório de outro contexto | A transação precisa da verdade agora | Abrir OS valida cliente e veículo; registrar serviço valida a OS |
 | Assembler (leitura) | Response junta dados de dois contextos | `ServiceOrderAssembler` + `ServiceRepository` + `PartRepository` |
@@ -392,6 +392,21 @@ Flyway é dono do schema (`src/main/resources/db/migration/`). Hibernate só val
 | `parts` | inputmanagment | FK para `service_orders` e `inventories`; unique `(service_order_id, inventory_id)` |
 
 Timestamps em `TIMESTAMPTZ`. Soft delete de cliente e veículo: coluna `active`, histórico preservado.
+
+## Ambientes
+
+O mesmo artefato sobe nos ambientes abaixo. O banco fica no Compose ou no cluster. Não há instância na AWS.
+
+| Ambiente | Como sobe | Onde a API escuta | Banco |
+|---|---|---|---|
+| Compose | `docker compose up --build` constrói `auto-repair-shop:local` a partir deste código | http://localhost:8080 | Postgres do Compose, volume `postgres_data` |
+| Kubernetes local | [`scripts/up-cluster.sh`](../scripts/up-cluster.sh) sobe o kind de [`infra/kind-config.yaml`](../infra/kind-config.yaml) e aplica a imagem de `k8s/app/kustomization.yaml` (`newName` + `newTag`) | http://localhost:30080. O nó no Docker é um container só, `kindest/node:v1.37.0` | Deployment `postgres` em `k8s/base`, volume `emptyDir` |
+| Kubernetes via Terraform | `terraform apply` em [`infra/`](../infra) publica o host `8080` no NodePort `30080` e o host `8025` no NodePort `30025` | http://localhost:8080 nesse cluster | O mesmo Postgres de `k8s/base` |
+| CI | [`.github/workflows/cd.yml`](../.github/workflows/cd.yml) publica no ECR Public e, no mesmo job, sobe um kind efêmero | http://localhost:8080 só dentro do runner | Postgres aplicado pelo Terraform, some com o job |
+
+O HPA (`k8s/app/hpa.yaml`) mantém de 2 a 5 réplicas, com alvo de 70% de CPU e 80% de memória. O Terraform instala o metrics-server no kind para essas métricas existirem. [`scripts/simulate-load.sh`](../scripts/simulate-load.sh) baixa o alvo para 1% e gera tráfego, para a réplica subir à vista.
+
+Segredos de desenvolvimento (`JWT_SECRET`, senha do Postgres e `BUDGET_NOTIFICATION_TOKEN`) estão no Secret `api-secret`. Configuração não secreta está no ConfigMap `api-config`. O state do Terraform fica no bucket `fiap-group123-auto-repair-shop-tfstate`. O passo a passo da conta está em [AWS.md](AWS.md).
 
 ## Qualidade (fronteira arquitetural)
 

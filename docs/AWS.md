@@ -1,6 +1,6 @@
 # Configurar a AWS para o CI/CD
 
-O workflow [`.github/workflows/cd.yml`](../.github/workflows/cd.yml) publica a imagem da API no Amazon ECR. O GitHub entra na conta por OIDC e assume uma role. Não é preciso criar access key.
+O workflow [`.github/workflows/cd.yml`](../.github/workflows/cd.yml) publica a imagem da API no Amazon ECR Public. O GitHub entra na conta por OIDC e assume uma role. Não é preciso criar access key. Quem puxa a imagem usa `public.ecr.aws/w2x8c5h2/auto-repair-shop:<tag>`, sem `docker login`.
 
 Use a região **us-east-1** em todos os passos. Se escolher outra, troque `us-east-1` na policy e na variável `AWS_REGION`.
 
@@ -11,7 +11,7 @@ Anote antes de começar:
 | ID da conta | Canto superior direito do console AWS, ao lado do seu usuário | `123456789012` |
 | Dono e repositório | URL do GitHub: `github.com/<dono>/<repositorio>` | `fiap-group123/auto-repair-shop` |
 
-O repositório ECR `auto-repair-shop` é criado pelo próprio workflow na primeira publicação.
+O repositório público `auto-repair-shop` é criado pelo próprio workflow na primeira publicação. A API do ECR Public só atende em `us-east-1`. A conta deste projeto é `050079603682` e o alias do registro é `w2x8c5h2`.
 
 ## 1. Provedor OpenID Connect
 
@@ -55,6 +55,31 @@ Se esse provedor já aparecer na lista, não crie outro.
         "ecr:BatchGetImage"
       ],
       "Resource": "arn:aws:ecr:us-east-1:<conta>:repository/auto-repair-shop"
+    },
+    {
+      "Sid": "EcrPublicLogin",
+      "Effect": "Allow",
+      "Action": [
+        "ecr-public:GetAuthorizationToken",
+        "sts:GetServiceBearerToken"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcrPublicPush",
+      "Effect": "Allow",
+      "Action": [
+        "ecr-public:DescribeRegistries",
+        "ecr-public:DescribeRepositories",
+        "ecr-public:CreateRepository",
+        "ecr-public:BatchCheckLayerAvailability",
+        "ecr-public:InitiateLayerUpload",
+        "ecr-public:UploadLayerPart",
+        "ecr-public:CompleteLayerUpload",
+        "ecr-public:PutImage",
+        "ecr-public:BatchGetImage"
+      ],
+      "Resource": "*"
     },
     {
       "Sid": "TerraformStateList",
@@ -109,7 +134,7 @@ A role só pode ser assumida pelo repositório certo.
 
 1. Abra a role `github-auto-repair-shop`.
 2. Aba **Trust relationships** → **Edit trust policy**.
-3. Substitua o JSON. Troque `<conta>`, `<dono>` e `<repositorio>`.
+3. Substitua o JSON. Troque `<conta>` pelo ID de 12 dígitos. O `sub` abaixo é o desta organização: o GitHub inclui o id da org e o id do repositório. `StringEquals` com um `*` literal não casa.
 
 ```json
 {
@@ -126,7 +151,7 @@ A role só pode ser assumida pelo repositório certo.
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:<dono>/<repositorio>:*"
+          "token.actions.githubusercontent.com:sub": "repo:fiap-group123@321230723/auto-repair-shop@1343919151:*"
         }
       }
     }
@@ -161,8 +186,8 @@ Não crie access key da AWS no GitHub. A variável `ECR_REPOSITORY` só é neces
 
 1. Faça push na `main` ou abra **Actions** → **CD** → **Run workflow**.
 2. Espere o job `deliver` terminar.
-3. No console AWS, abra **ECR** → **Repositories** → `auto-repair-shop`.
-4. A imagem deve ter a tag `sha-` seguida de 12 caracteres do commit. Na `main`, também aparece `latest`.
+3. No console AWS, região **us-east-1**, abra **Amazon ECR** → **Public registry** → **Repositories** → `auto-repair-shop`.
+4. A imagem deve ter a tag criada pelo pipeline, por exemplo `v0.1.0`, e também `latest`. A URI é `public.ecr.aws/w2x8c5h2/auto-repair-shop:v0.1.0`. A mesma tag aparece em **Releases** no GitHub.
 
 O banco não é criado na AWS. O PostgreSQL sobe só no cluster kind do job e some quando o runner termina.
 

@@ -120,7 +120,6 @@ jobs:
           docker build \
             --label "org.opencontainers.image.version=${{ steps.image.outputs.version }}" \
             --label "org.opencontainers.image.revision=${{ github.sha }}" \
-            -t auto-repair-shop:local \
             -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}" .
 
       - name: Push image
@@ -186,12 +185,11 @@ jobs:
           fi
           terraform apply -auto-approve
 
-      - name: Load image into kind
-        run: kind load docker-image auto-repair-shop:local --name autorepairshop
-
       - name: Apply manifests
         run: |
           kubectl apply -k k8s --context kind-autorepairshop
+          kubectl --context kind-autorepairshop -n auto-repair-shop set image deployment/api \
+            api="${{ steps.image.outputs.name }}:${{ steps.image.outputs.version }}"
           if ! kubectl --context kind-autorepairshop -n auto-repair-shop rollout status deployment/api --timeout=300s; then
             kubectl --context kind-autorepairshop -n auto-repair-shop get pods
             kubectl --context kind-autorepairshop -n auto-repair-shop describe pods

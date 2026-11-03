@@ -23,7 +23,7 @@ spec:
             - until pg_isready -h postgres -U postgres -d autorepairshop; do sleep 2; done
       containers:
         - name: api
-          image: auto-repair-shop:local
+          image: auto-repair-shop
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
