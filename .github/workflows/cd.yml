@@ -165,7 +165,7 @@ jobs:
         id: cd-app
         uses: actions/create-github-app-token@v2
         with:
-          app-id: ${{ vars.CD_APP_ID }}
+          app-id: ${{ secrets.CD_APP_ID }}
           private-key: ${{ secrets.CD_APP_PRIVATE_KEY }}
 
       - name: Record published version
