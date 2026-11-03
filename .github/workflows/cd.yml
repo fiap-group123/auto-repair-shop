@@ -189,11 +189,15 @@ jobs:
           fi
           git commit -m "chore: record published image ${VERSION}"
           echo "Pushing with GitHub App installation ${{ steps.cd-app.outputs.installation-id }}"
-          basic=$(printf 'x-access-token:%s' "$APP_TOKEN" | base64 -w 0)
+          header=$(git config --local --get http.https://github.com/.extraheader || true)
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git config --local --unset-all http.extraheader || true
           git \
             -c credential.helper= \
-            -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic}" \
-            push "https://github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${GITHUB_REF_NAME}"
+            push "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${GITHUB_REF_NAME}"
+          if [[ -n "${header}" ]]; then
+            git config --local http.https://github.com/.extraheader "${header}"
+          fi
 
       - name: Publish Git tag and release
         if: steps.gate.outputs.skip != 'true' && steps.image.outputs.create_release == 'true'
