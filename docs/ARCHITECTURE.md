@@ -400,7 +400,8 @@ O mesmo artefato sobe nos ambientes abaixo. O banco fica no Compose ou no cluste
 | Ambiente | Como sobe | Onde a API escuta | Banco |
 |---|---|---|---|
 | Compose | `docker compose up --build` constrói `auto-repair-shop:local` a partir deste código | http://localhost:8080 | Postgres do Compose, volume `postgres_data` |
-| Kubernetes | `kubectl apply -k k8s` puxa a imagem de `k8s/app/kustomization.yaml` (`newName` + `newTag`) | NodePort `30080`. No kind do Terraform, o host `8080` aponta para essa porta | Deployment `postgres` em `k8s/base`, volume `emptyDir` |
+| Kubernetes local | [`scripts/up-cluster.sh`](../scripts/up-cluster.sh) sobe o kind de [`infra/kind-config.yaml`](../infra/kind-config.yaml) e aplica a imagem de `k8s/app/kustomization.yaml` (`newName` + `newTag`) | http://localhost:30080. O nó no Docker é um container só, `kindest/node:v1.37.0` | Deployment `postgres` em `k8s/base`, volume `emptyDir` |
+| Kubernetes via Terraform | `terraform apply` em [`infra/`](../infra) publica o host `8080` no NodePort `30080` e o host `8025` no NodePort `30025` | http://localhost:8080 nesse cluster | O mesmo Postgres de `k8s/base` |
 | CI | [`.github/workflows/cd.yml`](../.github/workflows/cd.yml) publica no ECR Public e, no mesmo job, sobe um kind efêmero | http://localhost:8080 só dentro do runner | Postgres aplicado pelo Terraform, some com o job |
 
 O HPA (`k8s/app/hpa.yaml`) mantém de 2 a 5 réplicas, com alvo de 70% de CPU e 80% de memória. O Terraform instala o metrics-server no kind para essas métricas existirem. [`scripts/simulate-load.sh`](../scripts/simulate-load.sh) baixa o alvo para 1% e gera tráfego, para a réplica subir à vista.

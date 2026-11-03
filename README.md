@@ -83,15 +83,38 @@ docker compose up --build
 
 ### Imagem publicada, no cluster
 
-A imagem publicada fica em [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml): `newName` é o registro e `newTag` é a versão. Hoje isso vale `public.ecr.aws/w2x8c5h2/auto-repair-shop:v0.1.0`. O HPA mantém de 2 a 5 réplicas. Se o kind `autorepairshop` não existir ou a API dele não responder, o comando cria o cluster de novo, instala o metrics-server e aplica os manifestos.
+[`scripts/up-cluster.sh`](scripts/up-cluster.sh) sobe o kind `autorepairshop` e aplica os manifestos. A imagem da API sai de [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml): `newName` é o registro e `newTag` é a versão. Hoje isso vale `public.ecr.aws/w2x8c5h2/auto-repair-shop:v0.1.0`. Para usar outra release, troque o `newTag` e rode o script de novo.
 
-Na raiz do repositório, pelo Git Bash:
+Na raiz do repositório:
 
 ```bash
 bash scripts/up-cluster.sh
 ```
 
-A API fica em http://localhost:30080 e o Mailpit em http://localhost:30025. O banco é o Postgres do cluster, separado do volume do Compose.
+No PowerShell, o `bash` do Windows entra no WSL. Use o Git Bash:
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" scripts/up-cluster.sh
+```
+
+O script faz o seguinte:
+
+1. Se o container `autorepairshop-control-plane` estiver parado, ele é iniciado de novo. Encerrar o container no Docker Desktop não apaga o cluster.
+2. Se esse container não existir, o script baixa o nó `kindest/node:v1.37.0` definido em [`infra/kind-config.yaml`](infra/kind-config.yaml), cria o cluster, instala o metrics-server e deixa essa imagem com a tag da versão do Kubernetes.
+3. Aplica [`k8s/`](k8s). O HPA mantém de 2 a 5 réplicas.
+
+| Serviço | Endereço |
+|---|---|
+| API | http://localhost:30080 |
+| Swagger | http://localhost:30080/swagger-ui.html |
+| OpenAPI | http://localhost:30080/v3/api-docs |
+| Mailpit | http://localhost:30025 |
+
+O banco é o Postgres do cluster, separado do volume do Compose. O ConfigMap `api-config` não tem página: as variáveis da API saem com `kubectl --context kind-autorepairshop -n auto-repair-shop get configmap api-config -o yaml`.
+
+No Docker Desktop aparece um container só, o nó. As réplicas da API rodam dentro dele. A oscilação de CPU e memória de cada réplica sai em `kubectl --context kind-autorepairshop -n auto-repair-shop top pods` e em `kubectl --context kind-autorepairshop -n auto-repair-shop get hpa`. Os percentuais do HPA são sobre o pedido do pod (`200m` de CPU e `512Mi` de memória), não sobre o gráfico do nó.
+
+[`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU para 1%, gera tráfego e acompanha as réplicas subirem. O script imprime o comando que devolve o alvo para 70%.
 
 ### API no host
 
@@ -112,11 +135,13 @@ Variáveis, segredos e a diferença entre URL do host e URL de dentro do contain
 
 ## Consumir a API
 
-Com a API no ar:
+Com o Compose no ar, a API local responde em:
 
 - Swagger: http://localhost:8080/swagger-ui.html
 - OpenAPI: http://localhost:8080/v3/api-docs
 - Saúde: http://localhost:8080/actuator/health/readiness
+
+Com o cluster no ar, os mesmos caminhos ficam na porta `30080`.
 
 Rotas, papéis e corpos de request estão em [docs/ENDPOINTS.md](docs/ENDPOINTS.md). Erros em RFC 7807 estão em [docs/ERRORS.md](docs/ERRORS.md).
 
@@ -149,14 +174,7 @@ Os manifestos ficam em [`k8s/`](k8s). `kubectl apply -k k8s` aplica a base e a a
 | `k8s/app/mailpit.yaml` | Mailpit, UI no NodePort `30025` |
 | `k8s/app/hpa.yaml` | HPA de 2 a 5 réplicas, CPU 70% e memória 80% |
 
-O Deployment usa a imagem definida em [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml). O HPA escala essas réplicas. No Docker Desktop:
-
-```bash
-kubectl apply -k k8s
-kubectl -n auto-repair-shop rollout status deployment/api
-```
-
-A API fica em http://localhost:30080 e o Mailpit em http://localhost:30025. O metrics-server do Docker Desktop já alimenta o HPA.
+O Deployment usa a imagem definida em [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml). Na máquina local, [`scripts/up-cluster.sh`](scripts/up-cluster.sh) cria ou religa o kind e aplica esses manifestos. A API fica em http://localhost:30080 e o Mailpit em http://localhost:30025. O metrics-server instalado pelo script alimenta o HPA.
 
 O Secret em `k8s/base/secret.yaml` repete os valores de desenvolvimento do `.env.example`. Troque `JWT_SECRET` e `BUDGET_NOTIFICATION_TOKEN` antes de um ambiente compartilhado. O volume do Postgres nesse manifesto é `emptyDir`: os dados somem com o pod.
 

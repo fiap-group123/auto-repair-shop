@@ -34,10 +34,12 @@ Hibernate: `ddl-auto=validate` (Flyway é dono do schema). `open-in-view=false`.
 |---|---|
 | [`docker-compose.yml`](../docker-compose.yml) | Código local. Constrói o Dockerfile, grava `auto-repair-shop:local` e sobe Postgres e Mailpit |
 | [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml) | Imagem publicada. `newName` é o registro e `newTag` é a versão. Hoje `public.ecr.aws/w2x8c5h2/auto-repair-shop` e `v0.1.0` |
+| [`infra/kind-config.yaml`](../infra/kind-config.yaml) | Nó do kind local: `kindest/node:v1.37.0`, API no host `30080` e Mailpit no host `30025` |
+| [`scripts/up-cluster.sh`](../scripts/up-cluster.sh) | Sobe esse kind, aplica os manifestos e nomeia o nó com a versão do Kubernetes |
 
-`docker compose up --build` é o caminho local. `kubectl apply -k k8s` é o caminho da imagem publicada.
+`docker compose up --build` é o caminho local. `bash scripts/up-cluster.sh` é o caminho da imagem publicada. O script inicia o container `autorepairshop-control-plane` se ele só estiver parado e cria o cluster apenas quando esse container não existe.
 
-No Kubernetes, o ConfigMap `api-config` e o Secret `api-secret` em [`k8s/base`](../k8s/base) carregam o equivalente. O Secret guarda `DATABASE_PASSWORD`, `JWT_SECRET` e `BUDGET_NOTIFICATION_TOKEN`.
+No Kubernetes, o ConfigMap `api-config` e o Secret `api-secret` em [`k8s/base`](../k8s/base) carregam o equivalente. O Secret guarda `DATABASE_PASSWORD`, `JWT_SECRET` e `BUDGET_NOTIFICATION_TOKEN`. `api-config` não é uma URL.
 
 ## Compose vs host
 

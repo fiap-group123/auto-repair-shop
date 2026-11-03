@@ -21,10 +21,12 @@ O Compose lê o `.env` sozinho. Não commite esse arquivo.
 | Modo | Comando | Quando usar |
 |---|---|---|
 | Compose | `docker compose up --build` | Código deste repositório. A imagem fica `auto-repair-shop:local`, em http://localhost:8080 |
-| Cluster | `bash scripts/up-cluster.sh` | Imagem publicada `public.ecr.aws/w2x8c5h2/auto-repair-shop:v0.1.0`, com HPA, em http://localhost:30080. Recria o kind se ele não responder |
+| Cluster | `bash scripts/up-cluster.sh` | Imagem publicada, com HPA, em http://localhost:30080. Religa o container parado. Cria o kind só se ele ainda não existir |
 | API no host | `docker compose up -d postgres mailpit` e depois `./gradlew bootRun` | Depurar no IDE. A API fala com `localhost` |
 
 O Compose sobe Postgres 16 (`autorepairshop`) e Mailpit junto com a API local. O cluster tem o próprio Postgres e o próprio Mailpit.
+
+No cluster, a versão da imagem publicada é o `newTag` de [`k8s/app/kustomization.yaml`](../k8s/app/kustomization.yaml). O nó é `kindest/node:v1.37.0`, em [`infra/kind-config.yaml`](../infra/kind-config.yaml). Swagger: http://localhost:30080/swagger-ui.html. No PowerShell, rode o script pelo Git Bash: `"C:\Program Files\Git\bin\bash.exe" scripts/up-cluster.sh`. Parar o container no Docker Desktop e rodar o script de novo reaproveita o mesmo cluster.
 
 A API só sobe depois do healthcheck do Postgres. Confira com `docker compose ps`.
 
@@ -147,3 +149,12 @@ O `ActiveUserFilter` relê o usuário a cada request. Cliente desativado derruba
 
 **A API em `8080` e a API em `30080` não compartilham dados**  
 `8080` é o Compose, com o código local. `30080` é o cluster, com a imagem publicada e outro Postgres.
+
+**`connectex` ou connection refused em `30080`**  
+O kind não está rodando. `bash scripts/up-cluster.sh` inicia o container existente ou cria o cluster se ele não estiver no Docker.
+
+**`execvpe(/bin/bash) failed` ao rodar o script**  
+O `bash` do PowerShell é o do WSL. Use `"C:\Program Files\Git\bin\bash.exe" scripts/up-cluster.sh`.
+
+**O Docker Desktop não mostra a CPU de cada réplica**  
+A lista de containers mostra o nó `autorepairshop-control-plane`. As réplicas ficam dentro dele. `kubectl --context kind-autorepairshop -n auto-repair-shop top pods` e `get hpa` mostram a escala.
