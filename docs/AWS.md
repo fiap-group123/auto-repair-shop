@@ -187,7 +187,7 @@ Não crie access key da AWS no GitHub. A variável `ECR_REPOSITORY` só é neces
 1. Faça push na `main` ou abra **Actions** → **CD** → **Run workflow**.
 2. Espere o job `deliver` terminar.
 3. No console AWS, região **us-east-1**, abra **Amazon ECR** → **Public registry** → **Repositories** → `auto-repair-shop`.
-4. A imagem deve ter a tag criada pelo pipeline e também `latest`. A URI é `public.ecr.aws/w2x8c5h2/auto-repair-shop:<tag>`. A mesma tag aparece em **Releases** no GitHub e num pull request que atualiza o `newTag` de `k8s/app/kustomization.yaml`.
+4. A imagem deve ter a tag criada pelo pipeline e também `latest`. A URI é `public.ecr.aws/w2x8c5h2/auto-repair-shop:<tag>`. A mesma tag aparece em **Releases** no GitHub e no `newTag` de `k8s/app/kustomization.yaml`, gravado pela action na branch em que o workflow rodou.
 
 O banco não é criado na AWS. O PostgreSQL sobe só no cluster kind do job e some quando o runner termina.
 

@@ -83,7 +83,7 @@ docker compose up --build
 
 ### Imagem publicada, no cluster
 
-[`scripts/up-cluster.sh`](scripts/up-cluster.sh) sobe o kind `autorepairshop` e aplica os manifestos. A imagem da API sai de [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml): `newName` é o registro e `newTag` é a versão. Depois que o pipeline publica a imagem no ECR Public, ele abre um pull request gravando essa versão no `newTag`. A `main` não aceita push direto. Para apontar o cluster local para outra release, troque o `newTag` e rode o script de novo.
+[`scripts/up-cluster.sh`](scripts/up-cluster.sh) sobe o kind `autorepairshop` e aplica os manifestos. A imagem da API sai de [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml): `newName` é o registro e `newTag` é a versão. Depois que o pipeline publica a imagem no ECR Public, a action grava essa versão no `newTag` e envia o commit para a mesma branch em que o workflow rodou. Para apontar o cluster local para outra release, troque o `newTag` e rode o script de novo.
 
 Na raiz do repositório:
 
@@ -221,7 +221,7 @@ No CD, a imagem vai para o Amazon ECR Public. O pipeline lê a maior tag `vMAJOR
 - `feat!:` ou `BREAKING CHANGE` sobe o major (`v0.1.3` vira `v1.0.0`);
 - o restante sobe o patch (`v0.1.3` vira `v0.1.4`).
 
-No disparo manual dá para escolher patch, minor ou major. A tag Git, a GitHub Release e a imagem usam essa mesma versão. A release nova também publica `latest`. Em seguida o pipeline abre um pull request que grava essa versão em `newTag` de [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml). O merge precisa ser squash, com o título do pull request, para a `main` não publicar outra imagem. Um push de uma tag que já existe só republica essa imagem.
+No disparo manual dá para escolher patch, minor ou major. A tag Git, a GitHub Release e a imagem usam essa mesma versão. A release nova também publica `latest`. Em seguida a action grava essa versão em `newTag` de [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml) e envia o commit para a branch que disparou o workflow. Esse commit não dispara outro deploy. Um push de uma tag que já existe só republica essa imagem.
 
 Depois da publicação, o job sobe um kind efêmero no runner: Terraform cria o cluster e o Postgres, e `kubectl apply -k k8s` sobe a API com a imagem que acabou de ir para o ECR Public. O HPA escala essa imagem. O cluster some quando o job termina.
 
