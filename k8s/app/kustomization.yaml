@@ -4,7 +4,7 @@ namespace: auto-repair-shop
 images:
   - name: auto-repair-shop
     newName: public.ecr.aws/w2x8c5h2/auto-repair-shop
-    newTag: v0.2.0
+    newTag: v0.2.1
 resources:
   - ../base
   - mailpit.yaml
