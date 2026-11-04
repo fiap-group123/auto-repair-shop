@@ -404,7 +404,7 @@ O mesmo artefato sobe nos ambientes abaixo. O banco fica no Compose ou no cluste
 | Kubernetes via Terraform | `terraform apply` em [`infra/`](../infra) publica o host `8080` no NodePort `30080` e o host `8025` no NodePort `30025` | http://localhost:8080 nesse cluster | O mesmo Postgres de `k8s/base` |
 | CI | [`.github/workflows/cd.yml`](../.github/workflows/cd.yml) publica no ECR Public e, no mesmo job, sobe um kind efêmero | http://localhost:8080 só dentro do runner | Postgres aplicado pelo Terraform, some com o job |
 
-O HPA (`k8s/app/hpa.yaml`) mantém de 2 a 5 réplicas, com alvo de 70% de CPU e 80% de memória. O Terraform instala o metrics-server no kind para essas métricas existirem. [`scripts/simulate-load.sh`](../scripts/simulate-load.sh) baixa o alvo para 1% e gera tráfego, para a réplica subir à vista.
+O HPA (`k8s/app/hpa.yaml`) mantém de 2 a 5 réplicas, com alvo de 70% de CPU. A memória fica de fora: a JVM em repouso usa cerca de 60% do pedido de `512Mi`, e com alvo de 80% o HPA nunca pede menos de 4 réplicas. O Terraform instala o metrics-server no kind para essas métricas existirem. [`scripts/simulate-load.sh`](../scripts/simulate-load.sh) baixa o alvo para 1% e gera tráfego, para a réplica subir à vista. Ao sair, o script devolve o alvo para 70%. A redução segue a janela de 120 segundos e o ritmo de uma réplica por minuto.
 
 Segredos de desenvolvimento (`JWT_SECRET`, senha do Postgres e `BUDGET_NOTIFICATION_TOKEN`) estão no Secret `api-secret`. Configuração não secreta está no ConfigMap `api-config`. O state do Terraform fica no bucket `fiap-group123-auto-repair-shop-tfstate`. O passo a passo da conta está em [AWS.md](AWS.md).
 

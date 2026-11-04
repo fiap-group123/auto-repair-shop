@@ -112,9 +112,9 @@ O script faz o seguinte:
 
 O banco é o Postgres do cluster, separado do volume do Compose. O ConfigMap `api-config` não tem página: as variáveis da API saem com `kubectl --context kind-autorepairshop -n auto-repair-shop get configmap api-config -o yaml`.
 
-No Docker Desktop aparece um container só, o nó. As réplicas da API rodam dentro dele. A oscilação de CPU e memória de cada réplica sai em `kubectl --context kind-autorepairshop -n auto-repair-shop top pods` e em `kubectl --context kind-autorepairshop -n auto-repair-shop get hpa`. Os percentuais do HPA são sobre o pedido do pod (`200m` de CPU e `512Mi` de memória), não sobre o gráfico do nó.
+No Docker Desktop aparece um container só, o nó. As réplicas da API rodam dentro dele. A oscilação de CPU e memória de cada réplica sai em `kubectl --context kind-autorepairshop -n auto-repair-shop top pods` e em `kubectl --context kind-autorepairshop -n auto-repair-shop get hpa`. O percentual de CPU do HPA é sobre o pedido do pod (`200m`), não sobre o gráfico do nó.
 
-[`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU para 1%, gera tráfego e acompanha as réplicas subirem. O script imprime o comando que devolve o alvo para 70%.
+[`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU para 1%, gera tráfego e acompanha as réplicas subirem. Ctrl+C devolve o alvo para 70%. O HPA segura a contagem alta por 2 minutos e depois tira uma réplica por minuto, até voltar a 2.
 
 ### API no host
 
@@ -172,7 +172,7 @@ Os manifestos ficam em [`k8s/`](k8s). `kubectl apply -k k8s` aplica a base e a a
 | `k8s/base` | Namespace, ConfigMap `api-config`, Secret `api-secret`, Postgres e o Service dele |
 | `k8s/app/api.yaml` | Deployment `api` com 2 réplicas, probes em `/actuator/health/liveness` e `/readiness`, Service NodePort `30080` |
 | `k8s/app/mailpit.yaml` | Mailpit, UI no NodePort `30025` |
-| `k8s/app/hpa.yaml` | HPA de 2 a 5 réplicas, CPU 70% e memória 80% |
+| `k8s/app/hpa.yaml` | HPA de 2 a 5 réplicas, CPU 70% |
 
 O Deployment usa a imagem definida em [`k8s/app/kustomization.yaml`](k8s/app/kustomization.yaml). Na máquina local, [`scripts/up-cluster.sh`](scripts/up-cluster.sh) cria ou religa o kind e aplica esses manifestos. A API fica em http://localhost:30080 e o Mailpit em http://localhost:30025. O metrics-server instalado pelo script alimenta o HPA.
 
@@ -202,7 +202,7 @@ kubectl --context kind-autorepairshop -n auto-repair-shop rollout status deploym
 
 API: http://localhost:8080. Mailpit: http://localhost:8025. Para derrubar o cluster: `terraform destroy` dentro de `infra/`.
 
-[`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU do HPA para 1% e gera tráfego, para a demonstração da escala. `kubectl -n auto-repair-shop get hpa -w` mostra as réplicas. O script imprime o `kubectl patch` que devolve o alvo para 70%.
+[`scripts/simulate-load.sh`](scripts/simulate-load.sh) baixa o alvo de CPU do HPA para 1% e gera tráfego, para a demonstração da escala. `kubectl -n auto-repair-shop get hpa -w` mostra as réplicas. Ctrl+C devolve o alvo para 70%. A volta a 2 réplicas leva o tempo da janela de scale-down: 2 minutos parados e depois uma réplica por minuto.
 
 O PostgreSQL deste projeto sobe no cluster. Não há instância RDS.
 
